@@ -67,3 +67,7 @@ export * from "./catalog.js";
 // An order that arrived from somewhere else. The channel does not matter; the
 // contract does.
 export * from "./externalOrder.js";
+
+// The files that reach a machine, and what each one is FOR — declared by
+// whatever produced it, so nothing downstream infers purpose from a filename.
+export * from "./productionAsset.js";

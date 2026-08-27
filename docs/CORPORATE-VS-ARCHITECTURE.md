@@ -27,7 +27,7 @@ Reusable engine + platform IP
     ├── WorkOrderIQ     what work must be executed, and what state is it in
     ├── InventoryIQ     what is on hand, spoken for, and about to run out
     ├── ReceiptIQ       normalized purchase knowledge
-    ├── VisionIQ        planned; not yet specified
+    ├── VisionIQ        an engine, placed; domain not yet specified
     └── shared services  tracking · notifications · order ingestion · event bus
 ```
 
