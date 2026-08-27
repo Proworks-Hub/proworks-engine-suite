@@ -1,6 +1,6 @@
 {
   "name": "@proworks-hub/workorderiq",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "type": "module",
   "description": "WorkOrder Engine — the canonical work order and its production execution state. Usable at its basic level with no orchestrator and no shop-floor system.",
   "author": "Steven Kreutzer",

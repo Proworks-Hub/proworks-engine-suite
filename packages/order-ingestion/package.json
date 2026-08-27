@@ -1,6 +1,6 @@
 {
   "name": "@proworks-hub/order-ingestion",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "type": "module",
   "description": "Order ingestion — normalizes an order from any channel into the canonical order contract, once.",
   "author": "Steven Kreutzer",

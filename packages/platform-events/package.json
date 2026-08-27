@@ -1,6 +1,6 @@
 {
   "name": "@proworks-hub/platform-events",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "type": "module",
   "description": "In-memory EventBus and processed-event ledger. The development and test binding for the platform event port.",
   "author": "Steven Kreutzer",
