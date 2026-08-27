@@ -289,9 +289,45 @@ The machine layer arrived with no tests. Eleven now pin what it does today — m
 contains `"dtf"`, so checking DTF first would route every UV DTF machine wrongly *and the label
 would still look right*.
 
+## Extraction pass 4 — the PixelBuffer seam and the prep algorithms
+
+18 more files. **`packages/visioniq` is now 37 files, ~9,070 lines, with zero host imports.**
+
+`core/pixelBuffer.ts` is the raster seam. `ImageData` is structurally
+`{ width, height, data: Uint8ClampedArray }`, so `PixelBuffer` accepts one **without a cast** — a
+browser host passes its own objects straight in. Only *construction* needed real work:
+`new ImageData(...)` is a runtime call, not a type, so it became `createPixelBuffer(...)`.
+
+Extracted: halftone, vector prep, spot channels and their validator, accent layers, background
+removal, quality scoring, preflight checks, print-mode rules, QA checklist, workflow mapping, auto-tune,
+studio settings, recipes, and `actionPacks` (956 lines).
+
+Deferred: `detectArtworkType` (14 DOM refs) and `canvas-ops/canvasProcessing` (23). Those need a real
+canvas adapter, not a type swap.
+
+### Three findings
+
+**An automated coupling count over-reports.** `actionPacks` was flagged with 3 DOM references; all
+three were the English word "document" in comments about Photoshop documents. It is entirely
+DOM-free. Counts locate candidates; they do not classify them.
+
+**A third `MACHINE_PRESETS` exists** — beyond the two found earlier — in `prep/quickPrepConstants`.
+And it is not a copy: `machines/machinePresets` is `Record<MachinePresetKey, MachinePresetConfig>`
+keyed uppercase (routing identity), while this one is `Record<string, QuickMachinePreset>` keyed
+lowercase with entirely different fields (`cleanupAggression`, `targetDpi`, `sharpen`). **Different
+concepts sharing a name**, invisible while they sat in separate module scopes. Both are exported;
+`quickPrepConstants`, `spotChannels` and `spotChannelValidator` are namespaced so the ambiguity is
+explicit rather than resolved by whoever imported first.
+
+**Three modules persisted to `localStorage` directly** — recipe variants, QA checklist, studio
+settings. They now share **one** port (`core/storage.ts`), wired once:
+`setVisionStorage(window.localStorage)`. Three separate ports would let a host wire two and silently
+lose the third. It fails *quiet*, not closed: without a store, preferences last the session and
+preparation is unaffected — a shop losing a checklist tick should not be a shop that stops working.
+
 ### Next
 
-Step 7 onward: the `PixelBuffer` seam, then `lib/` algorithms (halftone, vector prep, spot channels),
-then process capabilities — laser first. Then rewire Prep Studio as the first consumer.
+Process capabilities — `modules/laser-prep` (35 files) first, then DTF. Then the canvas adapter for
+the two deferred files, then rewire Prep Studio as the first consumer.
 
 Still true: **nothing deleted anywhere.** Prep Studio owns and runs its own copy.

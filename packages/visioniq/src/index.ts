@@ -44,9 +44,10 @@ export {
   type SharedPrepOverrides,
 } from "./core/sharedPrepEngine.js";
 
-// The one seam extraction required: operator recipe variants persisted through
-// a host-supplied store rather than ambient browser storage.
-export { setRecipeVariantStore, type RecipeVariantStore } from "./core/recipeEngine.js";
+// The seam extraction required. Three modules persisted preferences to browser
+// storage directly; they now share one port, wired once by the host:
+//   setVisionStorage(window.localStorage)
+export * from "./core/storage.js";
 
 // The preparation vocabulary — background, cleanup, colour, halftone, vector
 // and export settings. Declared here rather than imported from a generated API
@@ -60,3 +61,45 @@ export * from "./machines/machinePresets.js";
 export * from "./machines/machineTargeting.js";
 export * from "./machines/machineTemplateEngine.js";
 export * from "./machines/recipeOperatingSystem.js";
+
+// The raster seam. ImageData satisfies PixelBuffer structurally, so a browser
+// host passes its own objects straight in.
+export * from "./core/pixelBuffer.js";
+
+// Preparation algorithms — halftone, vector, spot channels, accent layers,
+// background removal, quality scoring, preflight, action packs.
+export * from "./prep/accentLayerPrep.js";
+export * from "./prep/actionPacks.js";
+export * from "./prep/artworkTypes.js";
+export * from "./prep/autoTunePreset.js";
+export * from "./prep/backgroundRemoval.js";
+export * from "./prep/halftonePrep.js";
+export * from "./prep/printModeRules.js";
+export * from "./prep/qaChecklist.js";
+export * from "./prep/qualityScore.js";
+export * from "./prep/recipeTypes.js";
+export * from "./prep/recipesPrep.js";
+export * from "./prep/runPreflightChecks.js";
+export * from "./prep/spotChannelPrep.js";
+export * from "./prep/studioSettingsPrep.js";
+export * from "./prep/validateTiffExport.js";
+export * from "./prep/vectorPrep.js";
+export * from "./prep/workflowMapping.js";
+
+// THREE MODULES ARE NAMESPACED RATHER THAN FLATTENED, because extracting them
+// into one package surfaced name collisions that separate module scopes had
+// been hiding:
+//
+//   MACHINE_PRESETS   machines/machinePresets  vs  prep/quickPrepConstants
+//   CHANNEL_LABELS    prep/printModeRules      vs  prep/spotChannels
+//   PRINT_MODE_RULES  prep/printModeRules      vs  prep/spotChannels
+//   PreflightResult   prep/runPreflightChecks  vs  prep/spotChannelValidator
+//
+// The MACHINE_PRESETS pair is the instructive one: they are DIFFERENT CONCEPTS
+// sharing a name. One is machine preset config keyed by uppercase preset
+// (routing identity); the other is quick-prep tuning keyed lowercase
+// (cleanupAggression, targetDpi, sharpen). Picking a winner would silently drop
+// a real thing, so both are exported and the ambiguity is made explicit.
+export * as quickPrep from "./prep/quickPrepConstants.js";
+export * as spotChannels from "./prep/spotChannels.js";
+export * as spotChannelValidation from "./prep/spotChannelValidator.js";

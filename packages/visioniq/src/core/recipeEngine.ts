@@ -14,6 +14,7 @@
  */
 
 import type { PrepProfileDomain } from "./profileEngine.js";
+import { getVisionStorage } from "./storage.js";
 
 export interface SharedRecipePreset {
   id: string;
@@ -159,48 +160,13 @@ function fromPresetMap(
   };
 }
 
-/**
- * Where operator recipe variants persist.
- *
- * A PORT, added during extraction — the only behavioural seam this file needed
- * to leave the host. It previously reached for `window.localStorage` directly,
- * which a portable engine cannot do: a licensee running VisionIQ in a Node
- * service has no window, and the suite's portability guard rejects ambient I/O
- * in a pure engine. It caught this.
- *
- * HOSTS MUST INJECT ONE TO KEEP PERSISTENCE. In a browser that is
- * `setRecipeVariantStore(window.localStorage)` and behaviour is identical to
- * before extraction. Without a store, variants last the session — which is what
- * already happened outside a browser, so no existing path regressed.
- */
-export interface RecipeVariantStore {
-  getItem(key: string): string | null;
-  setItem(key: string, value: string): void;
-}
-
-let injectedStore: RecipeVariantStore | null = null;
-
-/** Host-supplied persistence. Pass `null` to fall back to the default. */
-export function setRecipeVariantStore(store: RecipeVariantStore | null): void {
-  injectedStore = store;
-  // The cache is keyed to whatever was previously readable, so a store swap
-  // must invalidate it — otherwise the first read after injection returns the
-  // old host's data.
-  operatorPresetCache = null;
-}
-
-function resolveStore(): RecipeVariantStore | null {
-  // No fallback to ambient storage, deliberately. Reaching for
-  // `globalThis.localStorage` is exactly the ambient I/O a portable engine must
-  // not do, and the suite's guard rejects it by name — it caught my first
-  // attempt, which kept a browser default "to preserve behaviour".
-  //
-  // A host that wants operator recipe variants to persist injects a store. In
-  // the browser that is one line: `setRecipeVariantStore(window.localStorage)`.
-  // Without one, variants live for the session — which is already what happened
-  // outside a browser before extraction, so nothing regressed.
-  return injectedStore;
-}
+// Operator recipe variants persist through the engine's shared storage port —
+// see core/storage.ts. This file originally reached for `window.localStorage`
+// directly, and the portability guard rejected it; it briefly had a port of its
+// own before two more modules turned out to need the same thing.
+//
+// One port, wired once. Three would mean a host could wire two and silently
+// lose the third.
 
 function migrateLegacyPresetState(raw: unknown): PersistedRecipeVariantState {
   if (!raw || typeof raw !== "object") {
@@ -224,7 +190,7 @@ function migrateLegacyPresetState(raw: unknown): PersistedRecipeVariantState {
 }
 
 function readPersistedOperatorPresets(): Map<string, Map<PrepProfileDomain, OperatorRecipeVariant>> {
-  const store = resolveStore();
+  const store = getVisionStorage();
   if (!store) {
     return new Map();
   }
@@ -246,7 +212,7 @@ function readPersistedOperatorPresets(): Map<string, Map<PrepProfileDomain, Oper
 }
 
 function persistOperatorPresets(map: Map<string, Map<PrepProfileDomain, OperatorRecipeVariant>>): void {
-  const store = resolveStore();
+  const store = getVisionStorage();
   if (!store) return;
   try {
     store.setItem(RECIPE_VARIANT_STORAGE_KEY, JSON.stringify(fromPresetMap(map)));

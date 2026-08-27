@@ -130,13 +130,16 @@ export interface PrepJob {
   sourceDpi?: number | null;
   sourceWidth?: number | null;
   sourceHeight?: number | null;
-  machinePreset?: string | null;
-  backgroundSettings?: BackgroundSettings | null;
-  cleanupSettings?: CleanupSettings | null;
-  colorSettings?: ColorSettings | null;
-  halftoneSettings?: HalftoneSettings | null;
-  vectorSettings?: VectorSettings | null;
-  exportSettings?: ExportSettings | null;
+  machinePreset?: string;
+  // No `| null` on the settings, matching the host exactly. My first cut added
+  // it "to be permissive" and broke assignability at five call sites — being
+  // looser than the source is not the same as being compatible with it.
+  backgroundSettings?: BackgroundSettings;
+  cleanupSettings?: CleanupSettings;
+  colorSettings?: ColorSettings;
+  halftoneSettings?: HalftoneSettings;
+  vectorSettings?: VectorSettings;
+  exportSettings?: ExportSettings;
 }
 
 /**
