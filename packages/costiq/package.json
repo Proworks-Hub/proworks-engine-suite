@@ -18,6 +18,9 @@
     "@proworks/contracts": "*",
     "zod": "^3.23.0"
   },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  },
   "files": [
     "dist",
     "README.md"

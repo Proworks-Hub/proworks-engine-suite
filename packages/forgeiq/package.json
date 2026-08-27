@@ -42,6 +42,9 @@
     "@proworks/contracts": "*",
     "zod": "^3.23.0"
   },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  },
   "peerDependencies": {
     "@tanstack/react-query": "^5.0.0",
     "drizzle-orm": "^0.39.0",
