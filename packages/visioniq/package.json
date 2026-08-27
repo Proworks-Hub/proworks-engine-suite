@@ -1,6 +1,6 @@
 {
   "name": "@proworks-hub/visioniq",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "type": "module",
   "description": "VisionIQ — how a digital asset should be prepared for a process, machine and material.",
   "author": "Steven Kreutzer",

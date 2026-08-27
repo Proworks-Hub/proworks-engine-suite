@@ -123,3 +123,4 @@ export * from "./learning/difference.js";
 // core/pixelBuffer exports one over three channels. Same word, different
 // signature — the fifth name collision this extraction has surfaced.
 export * as colorOps from "./prep/colorOps.js";
+export * from "./learning/toneCorrections.js";

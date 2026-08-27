@@ -1,6 +1,6 @@
 {
   "name": "@proworks-hub/costiq",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "type": "module",
   "description": "CostIQ — cost it, margin it, price it. Consumes a ManufacturingPlan; owns the economics.",
   "author": "Steven Kreutzer",
