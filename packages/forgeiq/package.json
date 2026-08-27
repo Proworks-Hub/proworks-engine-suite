@@ -43,7 +43,8 @@
     "zod": "^3.23.0"
   },
   "devDependencies": {
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "@types/node": "^22.10.2"
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.0.0",
