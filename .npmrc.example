@@ -9,5 +9,5 @@
 # The token needs write:packages and read:packages. Generate it at
 # GitHub > Settings > Developer settings > Personal access tokens (classic).
 
-@proworks:registry=https://npm.pkg.github.com
+@proworks-hub:registry=https://npm.pkg.github.com
 //npm.pkg.github.com/:_authToken=REPLACE_WITH_YOUR_TOKEN
