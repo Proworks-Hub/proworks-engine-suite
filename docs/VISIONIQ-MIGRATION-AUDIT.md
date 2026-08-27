@@ -370,10 +370,44 @@ forgetting to save.
 exclusion is what that setting is for — the delay guards against a compromised third-party publish,
 and these are first-party packages from our own org.
 
+## Pass 6 — the laser capability
+
+19 files, the whole intelligence half of `modules/laser-prep`. **`packages/visioniq` is now 60 files,
+~11,640 lines.** The other 16 files are React panels, pages and hooks, and stay in the host.
+
+Every one of its imports pointed at its own siblings — **zero dependencies outside the module** — and
+the whole layer was already free of the DOM and of React.
+
+### It had already solved the seam better than I had
+
+The tone pipeline works on **normalized grayscale `Float32Array`**, not RGBA. It had separated tone
+from pixel storage on its own, so it needed no `PixelBuffer` conversion at all. A better internal
+boundary than the one I assumed before reading it.
+
+### `LaserToneBuilderConfig` exists twice
+
+`LaserPrepConfig.ts` and `tone/LaserToneBuilderTypes.ts` each declare one. Fields match; the `mode`
+union does not — `LaserToneMode` versus `LaserToneMethod`. Merging them would be a behavioural change
+disguised as tidying, so `tone` is namespaced and the split is visible in the import path.
+
+That is the fourth duplicate-with-divergence found in this codebase. The pattern is consistent:
+separate module scopes hide them, and one package boundary surfaces them all.
+
+### Tests: 14, and two of them failed against correct code first
+
+Written against the invariants a laser depends on, not exact pixels: **two-state output** (a laser
+fires or it does not — grey reaches the machine as a guess about what grey means, and machines guess
+differently), input immutability (Prep Studio previews several methods against one upload), and
+**monotonicity** (a darker photograph coming out with less ink is the washed-out engraving no machine
+tuning fixes).
+
+Two failed on the first run because I had the ink polarity backwards: the pipeline emits
+`gray <= threshold ? 1 : 0`, so **1 means fire**. The code was right and my assumption was wrong —
+which is the correct way round for a characterization test to fail.
+
 ### Next
 
-Process capabilities — `modules/laser-prep` (35 files), then DTF — now on a proven boundary rather
-than on faith. Then the canvas adapter for the two deferred files.
+DTF (`modules/dtf-prep`, 20 files), then the canvas adapter for `detectArtworkType` and
+`canvasProcessing`.
 
-Still true: **nothing deleted anywhere.** The originals sit in `.visioniq-backup/`, and the shims can
-be reverted with one copy.
+Still true: **nothing deleted anywhere.**

@@ -103,3 +103,8 @@ export * from "./prep/workflowMapping.js";
 export * as quickPrep from "./prep/quickPrepConstants.js";
 export * as spotChannels from "./prep/spotChannels.js";
 export * as spotChannelValidation from "./prep/spotChannelValidator.js";
+
+// Process capabilities. Namespaced because a capability is a coherent unit,
+// and because flattening 19 more modules into the root barrel is how the
+// MACHINE_PRESETS collision happened.
+export * as laser from "./capabilities/laser/index.js";
