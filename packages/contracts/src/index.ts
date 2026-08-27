@@ -28,6 +28,9 @@ export * from "./domainEvents.js";
 // What happens when delivery goes wrong: retry policy, the transient/permanent
 // distinction that decides whether retrying is even sensible, and dead letters.
 export * from "./resilience.js";
+// Workflow state that outlives the process running it. PRIME owns the state
+// machine; a host owns the storage, which is what keeps PRIME pure.
+export * from "./workflow.js";
 export * from "./trace.js";
 
 export * from "./manufacturingPlan.js";

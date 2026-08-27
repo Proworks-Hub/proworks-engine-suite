@@ -72,6 +72,10 @@ export * from "./core/logging/inMemoryEventLog.js";
 export * from "./core/logging/migrations.js";
 export * from "./core/logging/replay.js";
 
+// ── Durable workflows: the state machine here, the storage in a host ─────
+export * from "./workflow/workflowRunner.js";
+export * from "./workflow/inMemoryWorkflowStateStore.js";
+
 // ── Projections: an event stream becomes the views a floor reads ─────────
 export * from "./projections/workOrderSummaryTypes.js";
 export * from "./projections/workOrderSummaryReducer.js";
