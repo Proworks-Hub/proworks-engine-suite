@@ -11,3 +11,4 @@
 // in behind the same interface without an engine noticing.
 
 export * from "./inMemoryEventBus.js";
+export * from "./resilientDelivery.js";

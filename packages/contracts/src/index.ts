@@ -25,6 +25,9 @@ export * from "./tenancy.js";
 // no longer be lifted out alone.
 export * from "./events.js";
 export * from "./domainEvents.js";
+// What happens when delivery goes wrong: retry policy, the transient/permanent
+// distinction that decides whether retrying is even sensible, and dead letters.
+export * from "./resilience.js";
 export * from "./trace.js";
 
 export * from "./manufacturingPlan.js";
