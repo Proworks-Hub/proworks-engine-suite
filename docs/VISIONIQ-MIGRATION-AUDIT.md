@@ -163,7 +163,53 @@ tests) — a genuine starting point, and I have not yet run them.
 
 ---
 
-## What I did not do
+---
 
-No `packages/visioniq`. No code moved, nothing deleted, nothing pushed to InvoFlowHub. §49 requires
-the audit first, and questions 1 and 2 need answers before extraction starts.
+## Extraction pass 1 — done
+
+`packages/visioniq` exists. **Seven files, ~1,530 lines, plus the host's own two test files, moved
+without behavioural change.**
+
+| Extracted | Lines |
+|---|---|
+| `types.ts`, `sharedChecks.ts` | 112 |
+| `profileEngine.ts` | 355 |
+| `colorEngine.ts` | 95 |
+| `recipeEngine.ts` | 508 |
+| `preflightEngine.ts` | 185 |
+| `sharedPrepEngine.ts` | 275 |
+| `__tests__/{recipeEngine,sharedPrepEngine}.test.ts` | — |
+
+Chosen because they are the only core files with **zero dependencies outside `core/`**. Import paths
+were rewritten (bundler alias → relative ESM with `.js`); the logic is untouched.
+
+**The host's own 9 tests pass unchanged against the extracted code.** That is core parity for what
+they cover.
+
+### The one seam extraction required
+
+The portability guard rejected `recipeEngine.ts`: it reached for `window.localStorage` to persist
+operator recipe variants. Ambient I/O — a licensee running VisionIQ in a Node service has no window.
+
+It is now a port, `RecipeVariantStore`, with `setRecipeVariantStore()`.
+
+My first attempt kept a `globalThis.localStorage` default "to preserve behaviour", and **the guard
+rejected that too — correctly.** Reaching for ambient storage is the thing being forbidden, whatever
+it is guarded by. The browser default belongs in a host adapter.
+
+**Hosts must inject to keep persistence:** `setRecipeVariantStore(window.localStorage)`. Without one,
+variants last the session — already the behaviour outside a browser, so no existing path regressed.
+
+### Not done, deliberately
+
+Nothing deleted. Prep Studio is untouched and still owns this code; the extracted copy has no
+consumer yet. `recipeOperatingSystem.ts` and `intelligence/` stayed behind — they import
+`@ksix/lib/*`, `@/modules/machines/*` and `@workspace/api-client-react`, and belong in a later pass.
+
+That last one is trivial when it comes: `import type { Job }` in all four intelligence files is
+**type-only**, so it erases. Replacing it with a local structural type is the whole job.
+
+### Next
+
+Steps 2–6 of the directive's order: contracts, preflight, profile resolution, recipes, machine
+targeting — then rewire Prep Studio as the first consumer, per §"FIRST CONSUMER".

@@ -23,6 +23,7 @@
       "@proworks-hub/inventoryiq": ["./packages/inventoryiq/src/index.ts"],
       "@proworks-hub/notifications": ["./packages/notifications/src/index.ts"],
       "@proworks-hub/order-ingestion": ["./packages/order-ingestion/src/index.ts"],
+      "@proworks-hub/visioniq": ["./packages/visioniq/src/index.ts"],
       "@proworks-hub/platform-events": ["./packages/platform-events/src/index.ts"],
       "@proworks-hub/platform-runtime": ["./packages/platform-runtime/src/index.ts"]
     }

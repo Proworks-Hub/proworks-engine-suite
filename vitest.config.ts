@@ -28,6 +28,7 @@ export default defineConfig({
       "@proworks-hub/inventoryiq": pkg("inventoryiq", "src/index.ts"),
       "@proworks-hub/notifications": pkg("notifications", "src/index.ts"),
       "@proworks-hub/order-ingestion": pkg("order-ingestion", "src/index.ts"),
+      "@proworks-hub/visioniq": pkg("visioniq", "src/index.ts"),
     },
   },
   test: {
