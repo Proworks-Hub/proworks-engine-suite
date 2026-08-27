@@ -1,0 +1,5 @@
+# NEVER install dependencies here — the host app's node_modules provides all
+# peer deps. An engine-local node_modules would duplicate React and break hooks.
+node_modules/
+dist/
+*.tsbuildinfo
