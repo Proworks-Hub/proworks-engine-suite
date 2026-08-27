@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "ForgeIQ Engine — data-driven, manufacturing-aware product configurator. Consumed as TypeScript source by host applications.",
+  "description": "ForgeIQ Engine — a portable, host-independent product configuration and manufacturability engine. Consumed as TypeScript source by host applications.",
   "peerDependencies": {
     "@tanstack/react-query": "^5.0.0",
     "drizzle-orm": "^0.39.0",

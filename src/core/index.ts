@@ -1,4 +1,4 @@
-// ForgeIQ Engine core — pure, isomorphic, imports only zod.
+// ForgeIQ Engine core — portable and host-independent — pure, isomorphic, imports only zod.
 export * from "./schemas/productDefinition";
 export * from "./schemas/configuration";
 export * from "./schemas/machineProfile";
@@ -14,6 +14,8 @@ export * from "./export/workOrder";
 export * from "./repair/designRepair";
 export * from "./production/bom";
 export * from "./production/nesting";
+export * from "./manufacturing/manufacturingPlan";
+export * from "./cost/costEngine";
 export * from "./ai/types";
 export * from "./ai/conceptPrompt";
 export * from "./ai/conceptService";

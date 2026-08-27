@@ -6,6 +6,12 @@ import { selectedOptionValues, totalSurfaceAreaSqFt } from "../resolve";
 import { buildBillOfMaterials } from "../production/bom";
 import { resolveQuantityTier } from "./quantity";
 
+// NOTE ON ARCHITECTURE: this engine computes the customer price and a rough
+// internal cost estimate. The internal-cost half is the piece a dedicated
+// costing engine (CostIQ) is expected to supplement or replace, by consuming
+// the `ManufacturingPlan` instead — see src/core/cost/costEngine.ts. Nothing
+// here depends on that migration happening; both paths can coexist.
+
 export interface PricingInput {
   definition: ProductDefinition;
   configuration: ProductConfiguration;
