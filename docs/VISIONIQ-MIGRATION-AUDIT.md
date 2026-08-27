@@ -325,9 +325,55 @@ settings. They now share **one** port (`core/storage.ts`), wired once:
 lose the third. It fails *quiet*, not closed: without a store, preferences last the session and
 preparation is unaffected — a shop losing a checklist tick should not be a shop that stops working.
 
+## Pass 5 — WIRED. Prep Studio now consumes the engine
+
+Four passes of *extract* with no consumer is the risk the directive warns about, so this pass wired
+before extracting anything further.
+
+**Result: Prep Studio's `core/` is now seven re-export shims. Its 166 passing tests run against
+`@proworks-hub/visioniq@0.10.0`, and nothing else in the Studio changed.**
+
+### Parity, measured against a captured baseline
+
+| | Typecheck | Tests |
+|---|---|---|
+| Before wiring | 0 errors | 7 failed / 166 passed (4 files) |
+| After wiring | **0 errors** | **7 failed / 166 passed (4 files)** |
+
+The seven failures are **pre-existing** — I restored the originals, re-ran, and got the identical
+count *and* the identical set of failing files, then re-applied the shims and diffed the failing
+lists to confirm. They are unrelated to the extraction.
+
+### One real behaviour change, found and closed
+
+The engine will not reach for `localStorage` — it has to run in a Node service for a licensee with
+no browser. So three preferences (operator recipe variants, QA checklist, studio settings) stopped
+persisting the moment the shims landed.
+
+Closed by `src/modules/ksix-prep-studio/visionIqStorage.ts`, imported first from the Studio's index.
+Nothing breaks without it and no preparation is affected — **which is exactly why it was worth doing
+deliberately rather than discovering.** A silently unsaved recipe variant looks like the operator
+forgetting to save.
+
+### Changes made to InvoFlowHub (local only — not pushed, and it has no git remote)
+
+| File | Change | Reversal |
+|---|---|---|
+| `.npmrc` | Added `@proworks-hub:registry` | `.npmrc.before-visioniq` |
+| `pnpm-workspace.yaml` | `@proworks-hub/*` added to `minimumReleaseAgeExclude` | `.before-visioniq` |
+| `package.json` | Added the dependency | `.before-visioniq` |
+| `core/*.ts` (7) | Replaced with re-export shims | `.visioniq-backup/core/` |
+| `visionIqStorage.ts` | New — wires the storage port | delete |
+| `index.ts` | One import line | remove the line |
+
+`minimumReleaseAge: 1440` blocked the install: pnpm refuses packages published within 24 hours. The
+exclusion is what that setting is for — the delay guards against a compromised third-party publish,
+and these are first-party packages from our own org.
+
 ### Next
 
-Process capabilities — `modules/laser-prep` (35 files) first, then DTF. Then the canvas adapter for
-the two deferred files, then rewire Prep Studio as the first consumer.
+Process capabilities — `modules/laser-prep` (35 files), then DTF — now on a proven boundary rather
+than on faith. Then the canvas adapter for the two deferred files.
 
-Still true: **nothing deleted anywhere.** Prep Studio owns and runs its own copy.
+Still true: **nothing deleted anywhere.** The originals sit in `.visioniq-backup/`, and the shims can
+be reverted with one copy.
