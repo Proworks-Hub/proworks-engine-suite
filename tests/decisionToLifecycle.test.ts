@@ -7,7 +7,7 @@ import {
   createCreateWorkOrderUseCase,
   type EventActor,
   type IntakeInput,
-} from "@proworks-hub/workorder";
+} from "@proworks-hub/workorderiq";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Two ENGINES, composed. This used to be Prime's two internal layers; the

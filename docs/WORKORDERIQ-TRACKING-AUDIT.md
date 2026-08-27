@@ -41,9 +41,9 @@ Shared services: `platform-events` ✅, `platform-runtime` ✅, **tracking ❌**
 
 ### The naming question
 
-§27 says a third party installs `@proworks-hub/workorderiq`. The package is `@proworks-hub/workorder`.
+§27 says a third party installs `@proworks-hub/workorderiq`. The package was `@proworks-hub/workorder`.
 
-**Recommendation: rename.** Not for consistency's sake — because §27 is a *licensing* statement, and
+**Recommendation: rename.** *(Done — step 1 of §8 below.)* Not for consistency's sake — because §27 is a *licensing* statement, and
 the package name is what a customer types. Every other engine carries the IQ suffix; the one an
 outside developer is most likely to license standalone should not be the exception. It is a
 one-line change per consumer and both consumers are ours.
@@ -78,7 +78,7 @@ prefer existing semantics.
 
 ## 3. Tracking already exists — as projections, not a service
 
-`packages/workorder/src/projections/` holds seven, including:
+`packages/workorderiq/src/projections/` holds seven, including:
 
 - **`customerProjection.ts`** — already implements §14. Its own header: *"Deliberately narrow — no
   station names, no step-level detail, no operator IDs, no internal priority."* It maps internal

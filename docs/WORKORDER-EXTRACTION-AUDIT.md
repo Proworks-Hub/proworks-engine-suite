@@ -55,7 +55,7 @@ ProWorks reaches Prime through **one barrel** — `src/modules/prime-engine/inde
 re-exports 236 names. That barrel exists precisely so internal layout stays invisible to the app.
 
 **So the compatibility strategy is: the barrel absorbs the split.** It imports the lifecycle from
-`@proworks-hub/workorder` and the decision layer from `@proworks-hub/prime`. Its 12 consuming
+`@proworks-hub/workorderiq` and the decision layer from `@proworks-hub/prime`. Its 12 consuming
 files change by zero lines.
 
 This is better than the alternative the directive allows (§32 Phase E, a temporary compatibility

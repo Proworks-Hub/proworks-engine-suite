@@ -1,5 +1,5 @@
 {
-  "name": "@proworks-hub/workorder",
+  "name": "@proworks-hub/workorderiq",
   "version": "0.7.0",
   "type": "module",
   "description": "WorkOrder Engine — the canonical work order and its production execution state. Usable at its basic level with no orchestrator and no shop-floor system.",

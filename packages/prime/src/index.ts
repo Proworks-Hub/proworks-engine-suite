@@ -5,7 +5,7 @@
 // Prime — decide what happens next, and coordinate whoever does it.
 //
 // Prime used to contain the entire work-order lifecycle. That moved to
-// @proworks-hub/workorder, because they were never the same domain: this
+// @proworks-hub/workorderiq, because they were never the same domain: this
 // decides, that executes. Keeping them together meant a maker who wanted a
 // printable work order had to take an orchestrator with it.
 //

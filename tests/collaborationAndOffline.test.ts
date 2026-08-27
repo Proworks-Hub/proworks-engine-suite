@@ -16,7 +16,7 @@ import {
   createInMemoryEventLog,
   toSubcontractView,
   type EventActor,
-} from "@proworks-hub/workorder";
+} from "@proworks-hub/workorderiq";
 import { createInMemoryOutbox } from "@proworks-hub/platform-runtime";
 
 const trace = { correlationId: "cor_1" };

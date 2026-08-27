@@ -14,7 +14,7 @@ import {
   createCreateWorkOrderUseCase,
   createInMemoryEventLog,
   type EventActor,
-} from "@proworks-hub/workorder";
+} from "@proworks-hub/workorderiq";
 import { createCostIqEngine } from "@proworks-hub/costiq";
 import { createReceiptIqEngine } from "@proworks-hub/receiptiq";
 
@@ -55,7 +55,7 @@ describe("a work order with no orchestrator", () => {
 
   it("does not pull Prime in through the back door", async () => {
     // The engine's own manifest is the proof: contracts, and nothing else.
-    const pkg = await import("../packages/workorder/package.json", { with: { type: "json" } });
+    const pkg = await import("../packages/workorderiq/package.json", { with: { type: "json" } });
     const deps = Object.keys((pkg.default as { dependencies: Record<string, string> }).dependencies);
     expect(deps.filter((d) => d.startsWith("@proworks-hub/"))).toEqual(["@proworks-hub/contracts"]);
   });
@@ -153,7 +153,7 @@ describe("Prime orchestrates without owning", () => {
     const pkg = await import("../packages/prime/package.json", { with: { type: "json" } });
     const deps = Object.keys((pkg.default as { dependencies: Record<string, string> }).dependencies);
     // Prime references a workOrderId. It does not import the work order.
-    expect(deps).not.toContain("@proworks-hub/workorder");
+    expect(deps).not.toContain("@proworks-hub/workorderiq");
     expect(deps.filter((d) => d.startsWith("@proworks-hub/"))).toEqual(["@proworks-hub/contracts"]);
   });
 });

@@ -13,7 +13,7 @@ import {
   createCreateWorkOrderUseCase,
   createInMemoryEventLog,
   type EventActor,
-} from "@proworks-hub/workorder";
+} from "@proworks-hub/workorderiq";
 import { createReceiptIqEngine } from "@proworks-hub/receiptiq";
 import { createInMemoryEventBus } from "@proworks-hub/platform-events";
 import { createInMemoryJobQueue } from "@proworks-hub/platform-runtime";
