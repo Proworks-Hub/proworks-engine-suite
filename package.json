@@ -11,17 +11,18 @@
     "packages/forgeiq",
     "packages/costiq",
     "packages/prime",
-    "packages/receiptiq"
+    "packages/receiptiq",
+    "packages/platform-events"
   ],
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "build": "tsc -b packages/contracts packages/forgeiq packages/costiq packages/prime packages/receiptiq",
+    "build": "tsc -b packages/contracts packages/platform-events packages/forgeiq packages/costiq packages/prime packages/receiptiq",
     "test": "vitest run",
     "test:watch": "vitest",
     "verify": "npm run typecheck && npm run test",
     "publish:all": "npm run verify && npm publish --workspaces",
     "publish:dry": "npm publish --workspaces --dry-run",
-    "clean": "tsc -b --clean packages/contracts packages/forgeiq packages/costiq packages/prime packages/receiptiq"
+    "clean": "tsc -b --clean packages/contracts packages/platform-events packages/forgeiq packages/costiq packages/prime packages/receiptiq"
   },
   "devDependencies": {
     "@tanstack/react-query": "^5.102.6",

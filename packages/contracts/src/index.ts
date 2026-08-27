@@ -20,6 +20,11 @@
 // Both are prerequisites for the event bus, and both are far cheaper to add
 // before hosts depend on the contracts than after.
 export * from "./tenancy.js";
+// The event seam. Engines publish facts and never learn who listens; without
+// this they end up importing each other, and each arrow is a package that can
+// no longer be lifted out alone.
+export * from "./events.js";
+export * from "./domainEvents.js";
 export * from "./trace.js";
 
 export * from "./manufacturingPlan.js";
