@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { runValidation } from "../src/core/validation/validationEngine";
 import type { SurfaceElement } from "../src/core/schemas/configuration";
-import { baseConfig, definition, machine, materials } from "./helpers";
+import { baseConfig, definition, machine, machines, materials, IDS } from "./helpers";
 
 const validate = (config = baseConfig(), def = definition, mach = machine) =>
   runValidation({ definition: def, configuration: config, materials, machine: mach });
@@ -97,7 +97,7 @@ describe("validation rules", () => {
     expect(tooThick.issues.some((i) => i.rule === "machine-material-compat")).toBe(true);
   });
 
-  it("machine-work-area: errors when a panel cannot fit in any orientation", () => {
+  it("machine-work-area: errors when a part cannot fit in any orientation", () => {
     const small = validate(baseConfig(), definition, {
       ...machine,
       workAreaWidthIn: 20,
@@ -105,12 +105,52 @@ describe("validation rules", () => {
     });
     expect(small.issues.some((i) => i.rule === "machine-work-area" && i.severity === "error")).toBe(true);
 
-    // 24×18 panel fits a 18×24 machine via rotation.
-    const rotatedFit = validate(baseConfig(), definition, {
+    // Every part fits the real 24×24 machine.
+    expect(validate(baseConfig()).issues.some((i) => i.rule === "machine-work-area")).toBe(false);
+  });
+
+  it("machine-work-area: catches a part that fits the laser but not the brake", () => {
+    // The whole point of routing-aware validation: the laser handles every
+    // part comfortably, but the brake that folds the panels is too small.
+    const smallBrake = new Map(machines);
+    smallBrake.set(IDS.pressBrakeMachineId, {
+      name: "Press brake",
+      specs: { ...machines.get(IDS.pressBrakeMachineId)!.specs, workAreaWidthIn: 12, workAreaHeightIn: 12 },
+    });
+    const result = runValidation({
+      definition,
+      configuration: baseConfig(),
+      materials,
+      machine,
+      machines: smallBrake,
+    });
+    const issues = result.issues.filter((i) => i.rule === "machine-work-area");
+    // Only the four side panels are folded, so only they are flagged — and
+    // the message names the brake, not the machine that cut them.
+    expect(issues).toHaveLength(4);
+    expect(issues[0].message).toContain("Press brake");
+    expect(issues[0].message).toContain("form top flange");
+    expect(result.valid).toBe(false);
+
+    // With the real brake, nothing is flagged.
+    expect(
+      runValidation({ definition, configuration: baseConfig(), materials, machine, machines })
+        .issues.some((i) => i.rule === "machine-work-area"),
+    ).toBe(false);
+  });
+
+  it("machine-work-area: checks parts the customer never sees", () => {
+    // The 24×18 side panels fit an 18×24 machine by rotation, but the 24×24
+    // bottom plate does not — a part with no customizable surface, which a
+    // surface-only check would have missed entirely.
+    const result = validate(baseConfig(), definition, {
       ...machine,
       workAreaWidthIn: 18,
       workAreaHeightIn: 24,
     });
-    expect(rotatedFit.issues.some((i) => i.rule === "machine-work-area")).toBe(false);
+    const issues = result.issues.filter((i) => i.rule === "machine-work-area");
+    expect(issues).toHaveLength(1);
+    expect(issues[0].message).toContain("Bottom plate");
+    expect(issues[0].severity).toBe("error");
   });
 });

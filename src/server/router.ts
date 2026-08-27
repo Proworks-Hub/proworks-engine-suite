@@ -110,6 +110,7 @@ export function createBuilderEngineRouter(deps: BuilderEngineRouterDeps): Router
         configuration: ctx.config,
         materials: ctx.materials,
         machine: ctx.machine,
+        machines: ctx.machines,
       }),
     );
   });
@@ -123,7 +124,7 @@ export function createBuilderEngineRouter(deps: BuilderEngineRouterDeps): Router
       materials: ctx.materials,
       machine: ctx.machine,
     };
-    const validation = runValidation(engineInput);
+    const validation = runValidation({ ...engineInput, machines: ctx.machines });
     if (!validation.valid) {
       return res.status(422).json({
         message: "Configuration failed manufacturing validation",
