@@ -14,6 +14,19 @@ const btn: React.CSSProperties = {
 let elementCounter = 0;
 const nextId = (prefix: string) => `${prefix}-${Date.now()}-${elementCounter++}`;
 
+// Web-safe display faces that read well cut from metal. Production text is
+// re-set in LightBurn, so these only need to exist on the customer's machine.
+const FONTS = [
+  "Arial",
+  "Arial Black",
+  "Impact",
+  "Georgia",
+  "Palatino Linotype",
+  "Trebuchet MS",
+  "Verdana",
+  "Courier New",
+];
+
 export function ElementControls(props: {
   surfaceId: string;
   allowedTypes: ("text" | "image")[];
@@ -118,6 +131,17 @@ export function ElementControls(props: {
                 onChange={(e) => props.onUpdate(sel.id, { text: e.target.value })}
                 style={{ padding: "5px 8px", border: "1px solid #d4d4d8", borderRadius: 6, width: 180 }}
               />
+              <select
+                value={sel.fontFamily}
+                onChange={(e) => props.onUpdate(sel.id, { fontFamily: e.target.value })}
+                style={{ padding: "5px 6px", border: "1px solid #d4d4d8", borderRadius: 6, fontFamily: sel.fontFamily }}
+              >
+                {FONTS.map((f) => (
+                  <option key={f} value={f} style={{ fontFamily: f }}>
+                    {f}
+                  </option>
+                ))}
+              </select>
               <label>
                 Height (in){" "}
                 <input

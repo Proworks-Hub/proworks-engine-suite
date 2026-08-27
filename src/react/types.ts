@@ -9,6 +9,10 @@ export interface AddToCartPayload {
   summary: string;
   customerPrice: number;
   previewImageUrls: string[];
+  // Generated production files (per-panel cutline SVGs), already uploaded via
+  // the injected uploadFile — hosts attach these to the order so production
+  // tooling picks them up.
+  productionFileUrls: string[];
   config: ProductConfiguration;
 }
 

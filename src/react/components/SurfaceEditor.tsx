@@ -3,6 +3,7 @@ import type { SurfaceElement } from "../../core/schemas/configuration";
 import type { ProductSurface } from "../../core/schemas/productDefinition";
 import type { SurfaceDims } from "../../core/resolve";
 import type { ValidationIssue } from "../../core/validation/types";
+import { CUT_TEXT_COLOR, CUT_TEXT_SHADOW, panelBackground } from "./panelStyle";
 
 const EDITOR_WIDTH_PX = 560;
 
@@ -15,6 +16,7 @@ export function SurfaceEditor(props: {
   elements: SurfaceElement[];
   issues: ValidationIssue[];
   selectedElementId: string | null;
+  materialPreview?: string;
   onSelect: (elementId: string | null) => void;
   onMove: (elementId: string, xIn: number, yIn: number) => void;
 }) {
@@ -61,7 +63,7 @@ export function SurfaceEditor(props: {
           position: "relative",
           width: EDITOR_WIDTH_PX,
           height: heightPx,
-          background: "linear-gradient(135deg, #3f3f46 0%, #52525b 50%, #3f3f46 100%)",
+          background: panelBackground(props.materialPreview),
           borderRadius: 6,
           border: "1px solid #27272a",
           overflow: "hidden",
@@ -110,7 +112,8 @@ export function SurfaceEditor(props: {
                   fontWeight: 800,
                   fontSize: el.heightIn * pxPerIn,
                   lineHeight: 1,
-                  color: "#fbbf24",
+                  color: CUT_TEXT_COLOR,
+                  textShadow: CUT_TEXT_SHADOW,
                   whiteSpace: "nowrap",
                 }}
               >

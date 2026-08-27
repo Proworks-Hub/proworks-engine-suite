@@ -225,6 +225,26 @@ export class BuilderEngineStorage {
     return row;
   }
 
+  // Host-trusted lookups (no org filter) — for server-side flows like
+  // checkout verification where the host, not a request, is the caller.
+  // Never expose these through request-scoped endpoints.
+  async getConfigurationById(id: number) {
+    const rows = await this.db
+      .select()
+      .from(fiqProductConfigurations)
+      .where(eq(fiqProductConfigurations.id, id));
+    return rows[0];
+  }
+
+  async setConfigurationStatusById(id: number, status: "draft" | "ordered") {
+    const [row] = await this.db
+      .update(fiqProductConfigurations)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(fiqProductConfigurations.id, id))
+      .returning();
+    return row;
+  }
+
   async getConfiguration(orgId: number, id: number) {
     const rows = await this.db
       .select()

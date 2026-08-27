@@ -99,7 +99,7 @@ export function buildFirepitDefinition(ids: FirepitProfileIds): ProductDefinitio
             label: 'Corten Steel 1/8"',
             description: "Weathers to a rich rust patina; never needs paint.",
             materialProfileId: ids.cortenMaterialId,
-            meta: {},
+            meta: { preview: "corten" },
           },
           {
             id: "mat_mild",
@@ -107,7 +107,7 @@ export function buildFirepitDefinition(ids: FirepitProfileIds): ProductDefinitio
             description: "Classic raw steel; pair with a high-temp finish.",
             materialProfileId: ids.mildSteelMaterialId,
             priceModifier: { kind: "flat", amount: -40 },
-            meta: {},
+            meta: { preview: "mild-steel" },
           },
         ],
       },

@@ -1,11 +1,13 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { resolveSurfaceDims } from "../core/resolve";
+import { buildPanelCutlineSvg, cutlineFilename } from "../core/export/cutlineSvg";
 import type { SurfaceElement } from "../core/schemas/configuration";
 import { fetchProduct, postConfiguration } from "./engineClient";
 import { useBuilderState } from "./useBuilderState";
 import { usePriceAndValidation } from "./usePriceAndValidation";
 import { OptionGroupPicker } from "./components/OptionGroupPicker";
+import { AssembledPreview } from "./components/AssembledPreview";
 import { SurfaceTabs } from "./components/SurfaceTabs";
 import { SurfaceEditor } from "./components/SurfaceEditor";
 import { ElementControls } from "./components/ElementControls";
@@ -56,6 +58,13 @@ function LoadedBuilder(
     if (issue.surfaceId) issueCounts[issue.surfaceId] = (issueCounts[issue.surfaceId] ?? 0) + 1;
   }
 
+  // Visual hint for material-realistic rendering, carried on the selected
+  // material option's meta (data-driven, host-agnostic).
+  const materialPreview = definition.optionGroups
+    .flatMap((g) => g.values)
+    .find((v) => v.id === state.selections.material && v.materialProfileId !== undefined)
+    ?.meta?.preview as string | undefined;
+
   const activeSurface = definition.surfaces.find((s) => s.id === state.activeSurfaceId);
   const activeElements: SurfaceElement[] = state.activeSurfaceId
     ? (state.surfaces[state.activeSurfaceId] ?? [])
@@ -78,6 +87,49 @@ function LoadedBuilder(
       const sizeLabel = definition.optionGroups
         .find((g) => g.id === "size")
         ?.values.find((v) => v.id === config.selections.size)?.label;
+      const materialValue = definition.optionGroups
+        .find((g) => g.id === "material")
+        ?.values.find((v) => v.id === config.selections.material);
+      const materialSlug = materialValue?.label
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+
+      // Generate + upload per-panel cutline SVGs so the order arrives
+      // production-ready. Best-effort: a failed upload must not block the
+      // sale — the shop can re-export from the saved configuration.
+      const productionFileUrls: string[] = [];
+      for (const surface of definition.surfaces) {
+        const elements = config.surfaces[surface.id] ?? [];
+        if (elements.length === 0) continue;
+        const dims = surfaceDims.get(surface.id);
+        if (!dims) continue;
+        try {
+          const svg = buildPanelCutlineSvg({
+            productSlug: definition.slug,
+            panelId: surface.id,
+            panelName: surface.name,
+            widthIn: dims.widthIn,
+            heightIn: dims.heightIn,
+            elements,
+            materialLabel: materialValue?.label,
+            machineLabel: definition.manufacturingProcess,
+          });
+          const filename = cutlineFilename({
+            productSlug: definition.slug,
+            panelId: surface.id,
+            widthIn: dims.widthIn,
+            heightIn: dims.heightIn,
+            materialSlug,
+          });
+          const file = new File([svg], filename, { type: "image/svg+xml" });
+          const { url } = await props.uploadFile(file);
+          productionFileUrls.push(url);
+        } catch (err) {
+          console.error(`ForgeIQ: cutline upload failed for ${surface.id}:`, err);
+        }
+      }
+
       props.onAddToCart({
         configurationId: saved.id,
         productSlug: definition.slug,
@@ -85,6 +137,7 @@ function LoadedBuilder(
         summary: [sizeLabel, definition.name].filter(Boolean).join(" "),
         customerPrice: saved.customerPrice,
         previewImageUrls: previews,
+        productionFileUrls,
         config,
       });
     } catch (err) {
@@ -121,6 +174,7 @@ function LoadedBuilder(
               elements={activeElements}
               issues={issues.filter((i) => i.surfaceId === activeSurface.id)}
               selectedElementId={state.selectedElementId}
+              materialPreview={materialPreview}
               onSelect={(elementId) => dispatch({ type: "SELECT_ELEMENT", elementId })}
               onMove={(elementId, xIn, yIn) =>
                 dispatch({ type: "UPDATE_ELEMENT", surfaceId: activeSurface.id, elementId, patch: { xIn, yIn } })
@@ -143,8 +197,14 @@ function LoadedBuilder(
         )}
       </div>
 
-      {/* Right: validation + price */}
+      {/* Right: assembled view + validation + price */}
       <div style={{ width: 300, flexShrink: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+        <AssembledPreview
+          definition={definition}
+          surfaces={state.surfaces}
+          surfaceDims={surfaceDims}
+          materialPreview={materialPreview}
+        />
         <ValidationPanel
           validation={validation.data}
           onFocusIssue={(surfaceId, elementId) => {

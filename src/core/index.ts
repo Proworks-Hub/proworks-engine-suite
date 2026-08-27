@@ -8,3 +8,4 @@ export * from "./pricing/pricingEngine";
 export * from "./pricing/quantity";
 export * from "./validation/validationEngine";
 export { elementBounds } from "./validation/geometry";
+export * from "./export/cutlineSvg";
