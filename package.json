@@ -1,9 +1,9 @@
 {
-  "name": "@makerops/builder-engine",
+  "name": "@forgeiq/engine",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "MakerOps Custom Builder Engine — data-driven, manufacturing-aware product configurator. Consumed as TypeScript source by host applications.",
+  "description": "ForgeIQ Engine — data-driven, manufacturing-aware product configurator. Consumed as TypeScript source by host applications.",
   "peerDependencies": {
     "@tanstack/react-query": "^5.0.0",
     "drizzle-orm": "^0.39.0",

@@ -1,6 +1,6 @@
-# @makerops/builder-engine
+# ForgeIQ Engine (`@forgeiq/engine`)
 
-The MakerOps Custom Builder Engine: a portable, multi-tenant, **data-driven product
+ForgeIQ is MakerOps' custom builder engine: a portable, multi-tenant, **data-driven product
 configurator that understands manufacturing**. Products are data (`ProductDefinition`),
 not code — one generic engine renders the builder, validates manufacturability against
 machine/material profiles, prices with a rules-based engine, and (later phases)
@@ -24,7 +24,7 @@ import host-application code.** Hosts consume the engine; never the reverse.
   `node_modules`; a local one would duplicate React and break hooks.
 - Engine-internal imports are **always relative** (tsx/esbuild resolve tsconfig `paths`
   per-file against the nearest tsconfig, so the host's alias is not visible here).
-- Hosts import via their own alias, e.g. `@makerops/builder-engine/server` →
+- Hosts import via their own alias, e.g. `@forgeiq/engine/server` →
   `<this repo>/src/server`.
 - The host injects everything environment-specific into `createBuilderEngineRouter`:
   drizzle `db`, admin middleware, `getOrgId`, `getUserId`. The React component receives
