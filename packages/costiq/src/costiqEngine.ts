@@ -1,18 +1,29 @@
-import type { ManufacturingPlan } from "@proworks/contracts";
-import type { CostEngine, CostLine, CostResult } from "@proworks/contracts";
+import type {
+  CostEngine,
+  CostLine,
+  CostResult,
+  ManufacturingPlan,
+} from "@proworks/contracts";
+import { calculateJobCost } from "./core/costCalculator";
+import type { OverheadModel } from "./models/jobCostInputModel";
+import {
+  manufacturingPlanToJobCostInput,
+  type PlanToJobCostOptions,
+} from "./adapters/manufacturingPlanAdapter";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CostIQ — cost it, margin it, price it.
 //
-// A first, deliberately simple costing engine. It consumes a ManufacturingPlan
-// and nothing else: note that every import above is `import type`, so this
-// engine has ZERO runtime dependency on ForgeIQ. It can be lifted out with its
-// contracts and dropped into another application unchanged.
+// This file is the public boundary: it consumes a ManufacturingPlan and
+// returns a CostResult, and nothing else about CostIQ is visible to a caller.
+// Behind it sits the mature 6-layer calculator, reached through the plan
+// adapter. Every contract import above is `import type`, so CostIQ carries no
+// runtime dependency on ForgeIQ.
 //
-// What it does NOT do yet is listed in `assumptions` on every result, so a
+// What it does NOT do yet is stated in `assumptions` on every result, so a
 // caller always knows what the number does and does not include. Machine-rate
-// management, labor databases, real overhead accounting, supplier pricing,
-// quantity economics, and wholesale/dealer tiers are all deferred.
+// management, labor databases, real overhead allocation, supplier pricing,
+// quantity economics, and wholesale/dealer tiers remain ahead.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface CostIqConfig {
@@ -21,18 +32,18 @@ export interface CostIqConfig {
   overheadPct?: number;
   /** Drives the recommended price: price = cost / (1 - margin). */
   targetMarginPct?: number;
-  /** Used when a plan carries no advisory machine rate. */
+  /** Used when the plan carries no advisory machine rate. */
   fallbackMachineRatePerHour?: number;
-  /** Used when a plan carries no advisory labor rate. */
+  /** Used when the plan carries no advisory labor rate. */
   fallbackLaborRatePerHour?: number;
+  /** Identifies the shop when a plan is costed for a specific tenant. */
+  tenantId?: string;
 }
 
 const DEFAULTS = {
   currency: "USD",
   overheadPct: 0.15,
   targetMarginPct: 0.5,
-  fallbackMachineRatePerHour: 0,
-  fallbackLaborRatePerHour: 0,
 } as const;
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -47,160 +58,81 @@ export interface CostIqEngine extends CostEngine {
 }
 
 export function createCostIqEngine(config: CostIqConfig = {}): CostIqEngine {
-  const settings = { ...DEFAULTS, ...config };
+  const overheadPct = config.overheadPct ?? DEFAULTS.overheadPct;
+  const overhead: OverheadModel =
+    overheadPct > 0 ? { kind: "percent_of_direct", percent: overheadPct } : { kind: "none" };
+
+  const adapterOptions: PlanToJobCostOptions = {
+    tenantId: config.tenantId,
+    overhead,
+    fallbackMachineRatePerHour: config.fallbackMachineRatePerHour,
+    fallbackLaborRatePerHour: config.fallbackLaborRatePerHour,
+  };
 
   return {
     name: "costiq",
     calculate(plan: ManufacturingPlan): CostResult {
+      const { input, materialCategories, unpriced, assumptions } =
+        manufacturingPlanToJobCostInput(plan, adapterOptions);
+
+      // The mature 6-layer calculator owns the arithmetic.
+      const breakdown = calculateJobCost(input);
+
+      // Lines are built from the same input the calculator consumed, so they
+      // reconcile to its total by construction rather than by coincidence.
       const lines: CostLine[] = [];
-      const assumptions: string[] = [];
-      const unpriced: string[] = [];
-      const rates = plan.advisoryRates;
 
-      // ── Material ────────────────────────────────────────────────────────
-      // Stock is bought by the sheet, so the job carries the whole sheet.
-      // Splitting it into consumed and wasted shows the shop what poor
-      // nesting actually costs; the two lines sum to the sheets purchased.
-      if (plan.stock && rates.materialCostPerSqFt !== undefined) {
-        const rate = rates.materialCostPerSqFt;
+      for (const material of input.materials) {
         lines.push({
-          code: "material-consumed",
-          label: `${plan.stock.materialCategory} consumed by parts`,
-          amount: round2(plan.stock.partAreaSqFt * rate),
-          category: "material",
+          code: material.materialId,
+          label: material.name,
+          amount: round2(material.quantity * material.unitCost * material.wasteFactor),
+          category: materialCategories[material.materialId] ?? "material",
         });
-        if (plan.stock.wasteAreaSqFt > 0) {
+      }
+
+      for (const station of input.workstations) {
+        lines.push({
+          code: `run-${station.stationId}`,
+          label: `${station.stationId} run time`,
+          amount: round2(station.minutes * station.profile.ratePerMinute),
+          category: "machine",
+        });
+        const setup = station.profile.setup;
+        if (setup) {
           lines.push({
-            code: "material-waste",
-            label: `Unused stock (${Math.round((1 - plan.stock.utilizationPct) * 100)}% of purchased sheets)`,
-            amount: round2(plan.stock.wasteAreaSqFt * rate),
-            category: "material",
-          });
-        }
-        assumptions.push(
-          `${plan.stock.sheetsNeeded} full sheet(s) charged to this job at $${rate.toFixed(2)}/sq ft; offcuts are not credited back to stock.`,
-        );
-      } else if (plan.stock) {
-        unpriced.push("stock");
-        assumptions.push("No material rate available — stock is not costed.");
-      }
-
-      // ── Bought-in parts ─────────────────────────────────────────────────
-      for (const part of plan.parts) {
-        if (part.kind === "cut-part") continue; // covered by stock
-        if (part.knownUnitCost === undefined) {
-          unpriced.push(part.id);
-          continue;
-        }
-        lines.push({
-          code: part.id,
-          label: part.name,
-          amount: round2(part.knownUnitCost * part.quantity),
-          category: part.kind === "packaging" ? "packaging" : "consumable",
-        });
-      }
-
-      // ── Operations: machine time, setup, and bench labor ────────────────
-      // Each operation is costed at the rate that matches who does it. A job
-      // may cross several machines at different hourly rates, so a machine
-      // step uses its own rate before falling back to the plan's headline
-      // rate — otherwise bending would be billed at laser prices.
-      const machineRate = rates.machineCostPerHour ?? settings.fallbackMachineRatePerHour;
-      const laborRate = rates.laborRatePerHour ?? settings.fallbackLaborRatePerHour;
-      const rateFor = (op: (typeof plan.operations)[number]) =>
-        op.isLabor ? laborRate : (op.advisoryRatePerHour ?? machineRate);
-      const laborOps = plan.operations.filter((op) => op.isLabor);
-      const unratedMachineOps = plan.operations.filter(
-        (op) => !op.isLabor && rateFor(op) <= 0,
-      );
-
-      if (unratedMachineOps.length > 0) {
-        unpriced.push("machine-time");
-        assumptions.push(
-          `No machine rate available for: ${unratedMachineOps.map((o) => o.name ?? o.id).join(", ")}.`,
-        );
-      }
-      if (laborRate <= 0 && laborOps.length > 0) {
-        unpriced.push("bench-labor");
-        assumptions.push("No labor rate available — bench operations are not costed.");
-      }
-
-      for (const op of plan.operations) {
-        const rate = rateFor(op);
-        if (rate <= 0) continue;
-        const where = op.isLabor ? "bench" : (op.machineName ?? op.machineProcess);
-        lines.push({
-          code: `run-${op.id}`,
-          label: `${op.name ?? op.type} — ${where}`,
-          amount: round2((op.estimatedMinutes / 60) * rate),
-          category: op.isLabor ? "labor" : "machine",
-        });
-        if (op.setupMinutes > 0) {
-          lines.push({
-            code: `setup-${op.id}`,
-            label: `${op.name ?? op.type} setup`,
-            amount: round2((op.setupMinutes / 60) * rate),
+            code: `setup-${station.stationId}`,
+            label: `${station.stationId} setup`,
+            amount: round2(setup.flatCost ?? setup.timeMinutes * setup.ratePerMinute),
             category: "setup",
           });
         }
       }
-      if (plan.operations.length > 0) {
-        assumptions.push(
-          "Operation times are ForgeIQ's estimates; actual runtime is not yet fed back from production.",
-        );
+
+      for (const entry of input.labor) {
+        lines.push({
+          code: `labor-${entry.stationId}`,
+          label: `${entry.stationId} labor`,
+          amount: round2(entry.minutes * entry.loadedRatePerMinute),
+          category: "labor",
+        });
       }
 
-      // ── Labor not already covered by the routing ────────────────────────
-      // When the plan derived its labor total from labor operations, those
-      // minutes are already costed above — charging the block again would
-      // double count.
-      if (!plan.labor.derivedFromOperations && plan.labor.estimatedMinutes > 0) {
-        if (laborRate > 0) {
-          lines.push({
-            code: "labor",
-            label: "Production labor",
-            amount: round2((plan.labor.estimatedMinutes / 60) * laborRate),
-            category: "labor",
-          });
-        } else {
-          unpriced.push("labor");
-          assumptions.push("No labor rate available — labor is not costed.");
-        }
-      }
-
-      // ── Finishing ───────────────────────────────────────────────────────
-      // ForgeIQ knows which finish was chosen but carries no finishing rates,
-      // so it is reported rather than guessed at.
-      for (const finish of plan.finishing) {
-        unpriced.push(finish.id);
-      }
-      if (plan.finishing.length > 0) {
-        assumptions.push(
-          `Finishing (${plan.finishing.map((f) => f.name).join(", ")}) is not costed — no finishing rates exist yet.`,
-        );
-      }
-
-      // ── Overhead ────────────────────────────────────────────────────────
-      const directCost = lines.reduce((sum, l) => sum + l.amount, 0);
-      if (settings.overheadPct > 0) {
+      if (breakdown.overheadCost > 0) {
         lines.push({
           code: "overhead",
-          label: `Shop overhead (${Math.round(settings.overheadPct * 100)}%)`,
-          amount: round2(directCost * settings.overheadPct),
+          label: `Shop overhead (${Math.round(overheadPct * 100)}%)`,
+          amount: round2(breakdown.overheadCost),
           category: "overhead",
         });
-        assumptions.push(
-          `Overhead applied as a flat ${Math.round(settings.overheadPct * 100)}% of direct cost, not allocated from real shop expenses.`,
-        );
       }
 
-      // ── Totals ──────────────────────────────────────────────────────────
-      const totalCost = round2(lines.reduce((sum, l) => sum + l.amount, 0));
+      const totalCost = round2(breakdown.totalCost);
       // CostIQ owns the economics, so an explicitly configured target margin
       // always wins. A margin recorded on the product is advisory, like every
       // other rate on the plan, and is used only when CostIQ was given none.
       const targetMarginPct =
-        config.targetMarginPct ?? rates.targetMarginPct ?? DEFAULTS.targetMarginPct;
+        config.targetMarginPct ?? plan.advisoryRates.targetMarginPct ?? DEFAULTS.targetMarginPct;
       const recommendedPrice =
         targetMarginPct < 1 ? round2(totalCost / (1 - targetMarginPct)) : totalCost;
       const margin = round2(recommendedPrice - totalCost);
@@ -214,7 +146,7 @@ export function createCostIqEngine(config: CostIqConfig = {}): CostIqEngine {
       return {
         engine: "costiq",
         resultVersion: 1,
-        currency: settings.currency,
+        currency: config.currency ?? DEFAULTS.currency,
         totalCost,
         lines,
         recommendedPrice,
