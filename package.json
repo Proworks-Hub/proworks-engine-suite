@@ -14,17 +14,18 @@
     "packages/receiptiq",
     "packages/platform-events",
     "packages/platform-runtime",
-    "packages/workorder"
+    "packages/workorderiq",
+    "packages/tracking"
   ],
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "build": "tsc -b packages/contracts packages/platform-events packages/platform-runtime packages/forgeiq packages/costiq packages/workorderiq packages/prime packages/receiptiq",
+    "build": "tsc -b packages/contracts packages/platform-events packages/platform-runtime packages/forgeiq packages/costiq packages/workorderiq packages/prime packages/receiptiq packages/tracking",
     "test": "vitest run",
     "test:watch": "vitest",
     "verify": "npm run typecheck && npm run test",
     "publish:all": "npm run verify && npm publish --workspaces",
     "publish:dry": "npm publish --workspaces --dry-run",
-    "clean": "tsc -b --clean packages/contracts packages/platform-events packages/platform-runtime packages/forgeiq packages/costiq packages/workorderiq packages/prime packages/receiptiq"
+    "clean": "tsc -b --clean packages/contracts packages/platform-events packages/platform-runtime packages/forgeiq packages/costiq packages/workorderiq packages/prime packages/receiptiq packages/tracking"
   },
   "devDependencies": {
     "@tanstack/react-query": "^5.102.6",

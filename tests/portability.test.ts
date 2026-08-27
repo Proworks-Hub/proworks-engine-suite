@@ -24,7 +24,7 @@ const ROOT = join(fileURLToPath(new URL(".", import.meta.url)), "..");
 const PACKAGES = join(ROOT, "packages");
 
 /** Published entry points the engines may import from one another. */
-const SUITE_PACKAGES = /^@proworks-hub\/(contracts|forgeiq|costiq|prime|receiptiq|platform-events|platform-runtime|workorderiq)(\/|$)/;
+const SUITE_PACKAGES = /^@proworks-hub\/(contracts|forgeiq|costiq|prime|receiptiq|platform-events|platform-runtime|workorderiq|tracking)(\/|$)/;
 
 /** Host applications. Nothing here may import from them, ever. */
 const HOST_IMPORTS = [
@@ -196,6 +196,45 @@ describe("engine suite portability", () => {
     }
   });
 
+  it("lets no package in the suite import another, contracts excepted", () => {
+    // The general form of the rule above, and the reason it is here: the
+    // Prime/WorkOrder guard names a PAIR, so every package added afterwards is
+    // unguarded by default. That is not hypothetical — tracking was added and
+    // could import the work-order engine freely until this test existed.
+    //
+    // Contracts is the exception on purpose. It is the shared vocabulary and
+    // depends on nothing but zod, so depending on it couples a package to a
+    // set of types rather than to another package's behaviour.
+    //
+    // Tests are exempt. A test that wires two engines together to prove they
+    // compose is demonstrating the seam, not violating it — it is the host's
+    // job it is imitating.
+    const offenders: string[] = [];
+    for (const file of sourceFiles) {
+      if (/(^|\/)(__tests__|tests)\//.test(file.relative)) continue;
+      const pkg = file.relative.split("/")[0]!;
+      if (pkg === "contracts") continue;
+
+      for (const spec of importSpecifiers(file.text)) {
+        const match = SUITE_PACKAGES.exec(spec);
+        if (!match) continue;
+        const target = match[1];
+        if (target === "contracts" || target === pkg) continue;
+        offenders.push(`${file.relative} → ${spec}`);
+      }
+    }
+    expect(offenders).toEqual([]);
+
+    // And the same at the manifest level, so a dependency cannot be declared
+    // ahead of the import that would use it.
+    for (const name of ["forgeiq", "costiq", "prime", "receiptiq", "workorderiq", "tracking", "platform-events", "platform-runtime"]) {
+      const suiteDeps = Object.keys(pkgJson(name).dependencies ?? {}).filter((d) =>
+        d.startsWith("@proworks-hub/"),
+      );
+      expect(suiteDeps).toEqual(["@proworks-hub/contracts"]);
+    }
+  });
+
   it("keeps ForgeIQ core pure: no express, drizzle, or react", () => {
     const banned = ["express", "drizzle-orm", "react", "react-dom", "@tanstack/react-query"];
     const offenders: string[] = [];
@@ -245,7 +284,7 @@ describe("engine suite portability", () => {
     //
     // ForgeIQ is deliberately absent: it ships optional `server` and `react`
     // layers, and its `core` purity is covered by its own test above.
-    const PURE_PACKAGES = ["prime", "costiq", "receiptiq", "contracts", "workorderiq", "platform-events", "platform-runtime"];
+    const PURE_PACKAGES = ["prime", "costiq", "receiptiq", "contracts", "workorderiq", "platform-events", "platform-runtime", "tracking"];
 
     const bannedExact = [
       "express",
@@ -296,7 +335,7 @@ describe("engine suite portability", () => {
     // A package can stay import-clean and still reach for a browser or Node
     // global. These are the ones that would quietly tie an engine to one
     // runtime, or give it hidden state that does not survive being moved.
-    const PURE_PACKAGES = ["prime", "costiq", "receiptiq", "contracts", "workorderiq", "platform-events", "platform-runtime"];
+    const PURE_PACKAGES = ["prime", "costiq", "receiptiq", "contracts", "workorderiq", "platform-events", "platform-runtime", "tracking"];
     const bannedGlobals = [
       /\blocalStorage\b/,
       /\bsessionStorage\b/,
@@ -333,7 +372,7 @@ describe("engine suite portability", () => {
   it("declares only suite packages and zod as runtime dependencies", () => {
     // A host framework appearing here would make the engine un-liftable; the
     // host-facing layers declare theirs as optional peers instead.
-    for (const name of ["contracts", "forgeiq", "costiq", "prime", "receiptiq", "workorderiq", "platform-events", "platform-runtime"]) {
+    for (const name of ["contracts", "forgeiq", "costiq", "prime", "receiptiq", "workorderiq", "platform-events", "platform-runtime", "tracking"]) {
       for (const dep of Object.keys(pkgJson(name).dependencies ?? {})) {
         expect(dep === "zod" || SUITE_PACKAGES.test(dep)).toBe(true);
       }

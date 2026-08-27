@@ -1,14 +1,14 @@
 {
-  "name": "@proworks-hub/workorderiq",
+  "name": "@proworks-hub/tracking",
   "version": "0.7.0",
   "type": "module",
-  "description": "WorkOrder Engine — the canonical work order and its production execution state. Usable at its basic level with no orchestrator and no shop-floor system.",
+  "description": "Tracking — where an order actually is, merged across production and the carrier, narrowed per audience.",
   "author": "Steven Kreutzer",
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Proworks-Hub/proworks-engine-suite.git",
-    "directory": "packages/workorderiq"
+    "directory": "packages/tracking"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"

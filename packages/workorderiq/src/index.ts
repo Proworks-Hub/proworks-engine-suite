@@ -83,3 +83,8 @@ export * from "./projections/masterTabletProjection.js";
 export * from "./projections/preProductionProjection.js";
 export * from "./projections/stationKioskProjection.js";
 export * from "./bootstrap/createWorkOrderProjectionsBundle.js";
+
+// The public tracking answer. The milestone-to-stage mapping lives with the
+// engine that owns the milestone names, so a rename cannot escape into a
+// public contract without the compiler noticing.
+export * from "./tracking/toOrderTrackingSnapshot.js";
