@@ -207,3 +207,54 @@ export function eventTypeMatches(pattern: string, eventType: string): boolean {
   if (pattern.endsWith(".*")) return eventType.startsWith(pattern.slice(0, -1));
   return false;
 }
+
+// ── Publishing from inside an engine ─────────────────────────────────────────
+
+export interface EnginePublisherOptions {
+  /** Absent means the engine publishes nothing. That is a supported setup. */
+  bus?: EventBus;
+  source: EventSource;
+  /**
+   * Called when publication fails. Publication is best-effort and MUST NOT
+   * fail the operation that produced the fact — a plan that was generated was
+   * still generated even if telling the world about it did not work.
+   *
+   * That is also the honest limitation of this design: the domain operation and
+   * its event are not one transaction, so a crash between them loses the event.
+   * Closing that gap is what the transactional outbox is for, and it belongs in
+   * a host that has a database, not in a pure engine.
+   */
+  onPublishError?: (error: Error, eventType: string) => void;
+}
+
+/**
+ * Returns a publish function an engine can call without becoming asynchronous
+ * and without learning who listens.
+ *
+ * Deliberately fire-and-forget. `calculate()` is synchronous by design so a
+ * caller gets a cost without awaiting, and making it async so an event could be
+ * awaited would be the tail wagging the dog.
+ */
+export function createEnginePublisher(
+  options: EnginePublisherOptions,
+): <TPayload>(input: Omit<PublishEventInput<TPayload>, "source">) => void {
+  return <TPayload>(input: Omit<PublishEventInput<TPayload>, "source">) => {
+    if (!options.bus) return;
+    try {
+      const result = options.bus.publish({ ...input, source: options.source } as PublishEventInput<TPayload>);
+      // A rejected promise nobody handles crashes some runtimes outright, so
+      // the rejection is routed rather than left floating.
+      void Promise.resolve(result).catch((cause: unknown) => {
+        options.onPublishError?.(
+          cause instanceof Error ? cause : new Error(String(cause)),
+          input.eventType,
+        );
+      });
+    } catch (cause) {
+      options.onPublishError?.(
+        cause instanceof Error ? cause : new Error(String(cause)),
+        input.eventType,
+      );
+    }
+  };
+}

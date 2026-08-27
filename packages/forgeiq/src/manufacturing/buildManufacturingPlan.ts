@@ -23,6 +23,8 @@ import {
   type PlanPart,
   type PlanStock,
 } from "@proworks-hub/contracts";
+import type { EventBus, EventSource, TenantContext, TraceContext } from "@proworks-hub/contracts";
+import { EVENT_TYPES, createEnginePublisher, newCorrelationId } from "@proworks-hub/contracts";
 
 // ForgeIQ's producer for the shared ManufacturingPlan contract. The contract
 // itself lives in @proworks-hub/contracts so CostIQ, Prime, and hosts can consume
@@ -85,11 +87,28 @@ export interface BuildManufacturingPlanInput {
 }
 
 /**
+ * Announcing a plan is opt-in.
+ *
+ * Absent, `buildManufacturingPlan` stays what it has always been: a pure
+ * normalizer that returns a value and touches nothing. Supplied, the caller has
+ * chosen to make the call announce itself — a decision worth being explicit
+ * about rather than hiding in a constructor.
+ */
+export interface PlanAnnouncement {
+  bus: EventBus;
+  source?: EventSource;
+  tenant?: TenantContext;
+  trace?: TraceContext;
+  onPublishError?: (error: Error, eventType: string) => void;
+}
+
+/**
  * Normalizes a configured product into the manufacturing requirements a
  * costing engine needs. Contains no pricing and no host concepts.
  */
 export function buildManufacturingPlan(
   input: BuildManufacturingPlanInput,
+  announce?: PlanAnnouncement,
 ): ManufacturingPlan {
   const { definition, configuration, materials, machine } = input;
   const quantity = configuration.quantity;
@@ -247,7 +266,7 @@ export function buildManufacturingPlan(
       }
     : { estimatedMinutes: round4(knobs.laborMinutes * quantity), derivedFromOperations: false };
 
-  return manufacturingPlanSchema.parse({
+  const plan: ManufacturingPlan = manufacturingPlanSchema.parse({
     planVersion: PLAN_VERSION,
     product: {
       definitionId: input.productDefinitionId,
@@ -295,4 +314,30 @@ export function buildManufacturingPlan(
     },
     estimatedFromArea: bom.estimatedFromArea,
   });
+
+  if (announce) {
+    // Counts, not the plan itself. An event carries a fact and a reference; a
+    // consumer that needs the whole plan fetches it, and an envelope big enough
+    // to hold one is an envelope that will not fit down a real transport.
+    createEnginePublisher({
+      bus: announce.bus,
+      source: announce.source ?? { service: "forgeiq" },
+      ...(announce.onPublishError ? { onPublishError: announce.onPublishError } : {}),
+    })({
+      eventType: EVENT_TYPES.manufacturingPlanGenerated,
+      ...(announce.tenant ? { tenant: announce.tenant } : {}),
+      trace: announce.trace ?? plan.trace ?? { correlationId: newCorrelationId() },
+      aggregate: { type: "manufacturing-plan", id: String(plan.configurationId ?? plan.product.slug) },
+      payload: {
+        productSlug: plan.product.slug,
+        ...(plan.configurationId !== undefined ? { configurationId: plan.configurationId } : {}),
+        quantity: plan.quantity,
+        partCount: plan.parts.length,
+        operationCount: plan.operations.length,
+        manufacturable: plan.manufacturability.valid,
+      },
+    });
+  }
+
+  return plan;
 }

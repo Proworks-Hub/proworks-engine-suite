@@ -6,7 +6,16 @@ import type {
   CostEngine,
   CostLine,
   CostResult,
+  EventBus,
+  EventSource,
   ManufacturingPlan,
+  TenantContext,
+  TraceContext,
+} from "@proworks-hub/contracts";
+import {
+  EVENT_TYPES,
+  createEnginePublisher,
+  newCorrelationId,
 } from "@proworks-hub/contracts";
 import { calculateJobCost } from "./core/costCalculator.js";
 import type { OverheadModel } from "./models/jobCostInputModel.js";
@@ -42,6 +51,14 @@ export interface CostIqConfig {
   fallbackLaborRatePerHour?: number;
   /** Identifies the shop when a plan is costed for a specific tenant. */
   tenantId?: string;
+  /**
+   * Where to announce a completed calculation. Optional: with no bus, CostIQ
+   * publishes nothing and behaves exactly as before.
+   */
+  eventBus?: EventBus;
+  eventSource?: EventSource;
+  /** Publication is best-effort; failures are reported here, never thrown. */
+  onPublishError?: (error: Error, eventType: string) => void;
 }
 
 const DEFAULTS = {
@@ -58,7 +75,13 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
  * the port, so it can be injected anywhere a CostEngine is expected.
  */
 export interface CostIqEngine extends CostEngine {
-  calculate(plan: ManufacturingPlan): CostResult;
+  calculate(plan: ManufacturingPlan, context?: CostPublishContext): CostResult;
+}
+
+/** Request-scoped context. Supplied per call, because a tenant is not a config. */
+export interface CostPublishContext {
+  tenant?: TenantContext;
+  trace?: TraceContext;
 }
 
 export function createCostIqEngine(config: CostIqConfig = {}): CostIqEngine {
@@ -73,9 +96,15 @@ export function createCostIqEngine(config: CostIqConfig = {}): CostIqEngine {
     fallbackLaborRatePerHour: config.fallbackLaborRatePerHour,
   };
 
+  const publish = createEnginePublisher({
+    ...(config.eventBus ? { bus: config.eventBus } : {}),
+    source: config.eventSource ?? { service: "costiq" },
+    ...(config.onPublishError ? { onPublishError: config.onPublishError } : {}),
+  });
+
   return {
     name: "costiq",
-    calculate(plan: ManufacturingPlan): CostResult {
+    calculate(plan: ManufacturingPlan, context: CostPublishContext = {}): CostResult {
       const { input, materialCategories, unpriced, assumptions } =
         manufacturingPlanToJobCostInput(plan, adapterOptions);
 
@@ -147,7 +176,7 @@ export function createCostIqEngine(config: CostIqConfig = {}): CostIqEngine {
         );
       }
 
-      return {
+      const result: CostResult = {
         engine: "costiq",
         resultVersion: 1,
         currency: config.currency ?? DEFAULTS.currency,
@@ -159,6 +188,32 @@ export function createCostIqEngine(config: CostIqConfig = {}): CostIqEngine {
         assumptions,
         unpriced,
       };
+
+      publish({
+        eventType: EVENT_TYPES.costCalculationCompleted,
+        ...(context.tenant ? { tenant: context.tenant } : {}),
+        trace: context.trace ?? plan.trace ?? { correlationId: newCorrelationId() },
+        aggregate: { type: "cost-result", id: String(plan.configurationId ?? plan.product.slug) },
+        payload: {
+          engine: "costiq",
+          subject: String(plan.configurationId ?? plan.product.slug),
+          totalCost: { cents: Math.round(totalCost * 100), currency: result.currency },
+          ...(result.recommendedPrice !== undefined
+            ? {
+                recommendedPrice: {
+                  cents: Math.round(result.recommendedPrice * 100),
+                  currency: result.currency,
+                },
+              }
+            : {}),
+          // Carried so a consumer knows this is a floor, not a total, without
+          // having to re-derive it from the lines.
+          unpricedCount: unpriced.length,
+          assumptionCount: assumptions.length,
+        },
+      });
+
+      return result;
     },
   };
 }

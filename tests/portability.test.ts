@@ -137,6 +137,36 @@ describe("engine suite portability", () => {
     }
   });
 
+  it("keeps the engines depending on the port, never on an adapter", () => {
+    // The engines publish through the EventBus PORT, which lives in contracts.
+    // platform-events is one implementation of it. An engine that depended on
+    // the implementation could no longer be lifted out without the in-memory
+    // bus coming too — which is the exact coupling the bus was added to remove.
+    //
+    // A host wires the adapter in. An engine must never reach for it.
+    const ENGINES = ["forgeiq", "costiq", "prime", "receiptiq"];
+    for (const name of ENGINES) {
+      const deps = Object.keys(pkgJson(name).dependencies ?? {});
+      expect(deps).not.toContain("@proworks-hub/platform-events");
+      // Contracts is the only suite package an engine may depend on at runtime.
+      expect(deps.filter((d) => d.startsWith("@proworks-hub/"))).toEqual([
+        "@proworks-hub/contracts",
+      ]);
+    }
+
+    const offenders: string[] = [];
+    for (const file of sourceFiles) {
+      const pkg = file.relative.split("/")[0]!;
+      if (!ENGINES.includes(pkg)) continue;
+      for (const spec of importSpecifiers(file.text)) {
+        if (spec.startsWith("@proworks-hub/platform-events")) {
+          offenders.push(`${file.relative} → ${spec}`);
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps ForgeIQ core pure: no express, drizzle, or react", () => {
     const banned = ["express", "drizzle-orm", "react", "react-dom", "@tanstack/react-query"];
     const offenders: string[] = [];
