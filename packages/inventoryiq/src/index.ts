@@ -19,3 +19,7 @@ export * from "./events.js";
 export * from "./ports.js";
 export * from "./reservations.js";
 export * from "./inMemory.js";
+
+// The producer for a decision-context block that has had none: Prime has been
+// asking whether there is material and getting silence.
+export * from "./decisionSignal.js";

@@ -3,7 +3,28 @@
   "compilerOptions": {
     "noEmit": true,
     "allowImportingTsExtensions": true,
-    "types": ["node"]
+    "types": ["node"],
+    // Resolve suite packages to their SOURCES, exactly as vitest.config.ts
+    // does. Without this, typecheck reads each package's built `dist` while
+    // the tests read `src`, so the two disagree whenever dist is stale or
+    // absent — and the disagreement shows up as a phantom "has no exported
+    // member" for code that plainly exports it. The suite must also be
+    // verifiable from a fresh clone, where no dist exists at all.
+    "paths": {
+      "@proworks-hub/forgeiq/demo/*": ["./packages/forgeiq/src/demo/*"],
+      "@proworks-hub/forgeiq/manufacturing": ["./packages/forgeiq/src/manufacturing/buildManufacturingPlan.ts"],
+      "@proworks-hub/forgeiq": ["./packages/forgeiq/src/core/index.ts"],
+      "@proworks-hub/contracts": ["./packages/contracts/src/index.ts"],
+      "@proworks-hub/costiq": ["./packages/costiq/src/index.ts"],
+      "@proworks-hub/prime": ["./packages/prime/src/index.ts"],
+      "@proworks-hub/workorderiq": ["./packages/workorderiq/src/index.ts"],
+      "@proworks-hub/receiptiq": ["./packages/receiptiq/src/index.ts"],
+      "@proworks-hub/tracking": ["./packages/tracking/src/index.ts"],
+      "@proworks-hub/inventoryiq": ["./packages/inventoryiq/src/index.ts"],
+      "@proworks-hub/notifications": ["./packages/notifications/src/index.ts"],
+      "@proworks-hub/platform-events": ["./packages/platform-events/src/index.ts"],
+      "@proworks-hub/platform-runtime": ["./packages/platform-runtime/src/index.ts"]
+    }
   },
   "include": ["packages/*/src/**/*", "packages/*/tests/**/*", "tests/**/*"],
   "exclude": ["node_modules", "dist"]

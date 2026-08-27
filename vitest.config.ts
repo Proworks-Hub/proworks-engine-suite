@@ -24,6 +24,9 @@ export default defineConfig({
       "@proworks-hub/receiptiq": pkg("receiptiq", "src/index.ts"),
       "@proworks-hub/platform-events": pkg("platform-events", "src/index.ts"),
       "@proworks-hub/platform-runtime": pkg("platform-runtime", "src/index.ts"),
+      "@proworks-hub/tracking": pkg("tracking", "src/index.ts"),
+      "@proworks-hub/inventoryiq": pkg("inventoryiq", "src/index.ts"),
+      "@proworks-hub/notifications": pkg("notifications", "src/index.ts"),
     },
   },
   test: {

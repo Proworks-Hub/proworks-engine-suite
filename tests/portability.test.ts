@@ -235,6 +235,31 @@ describe("engine suite portability", () => {
     }
   });
 
+  it("gives every workspace package a vitest alias to its sources", () => {
+    // The alias list is hand-maintained, and a package missing from it does not
+    // fail loudly — it silently resolves to `dist`, which for a new package
+    // does not exist and for an old one is stale. I added three packages and
+    // missed all three; the vertical slice caught it, but only because it
+    // imported them by name. A guard is cheaper than that coincidence.
+    const packageNames = readdirSync(PACKAGES).filter((name) =>
+      statSync(join(PACKAGES, name)).isDirectory(),
+    );
+
+    const vitestConfig = readFileSync(join(ROOT, "vitest.config.ts"), "utf8");
+    expect(
+      packageNames.filter((name) => !vitestConfig.includes(`"@proworks-hub/${name}"`)),
+    ).toEqual([]);
+
+    // The same list exists twice, and it has to agree with itself: tsconfig
+    // resolves the typecheck, vitest resolves the run. When they disagree, the
+    // symptom is a phantom "has no exported member" for code that plainly
+    // exports it — because one of them is reading a stale `dist`.
+    const rootTsconfig = readFileSync(join(ROOT, "tsconfig.json"), "utf8");
+    expect(
+      packageNames.filter((name) => !rootTsconfig.includes(`"@proworks-hub/${name}"`)),
+    ).toEqual([]);
+  });
+
   it("keeps ForgeIQ core pure: no express, drizzle, or react", () => {
     const banned = ["express", "drizzle-orm", "react", "react-dom", "@tanstack/react-query"];
     const offenders: string[] = [];
