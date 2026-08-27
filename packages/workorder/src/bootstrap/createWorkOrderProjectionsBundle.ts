@@ -20,8 +20,8 @@
  * PRIME Engine — Phase 2 Batch Y — projection bundle factory.
  *
  * One-shot composition helper that takes an `EventLog` and returns
- * the full `PrimeProjections` bundle expected by
- * `<PrimeProjectionsProvider>`. Lives here (not in hooks/) because
+ * the full `WorkOrderProjections` bundle expected by
+ * `<WorkOrderProjectionsProvider>`. Lives here (not in hooks/) because
  * it's an app-boot concern, not a render-time one — you call it
  * once before mounting the React tree and memoize the result.
  *
@@ -39,14 +39,14 @@
  *
  *   const eventLog = useMemo(() => createEventLog({ ... }), []);
  *   const projections = useMemo(
- *     () => createPrimeProjectionsBundle({ eventLog }),
+ *     () => createWorkOrderProjectionsBundle({ eventLog }),
  *     [eventLog],
  *   );
  *   return (
- *     <PrimeProjectionsProvider value={projections}>
- *       <PrimeSubscriptionRuntime eventLog={eventLog} />
+ *     <WorkOrderProjectionsProvider value={projections}>
+ *       <WorkOrderSubscriptionRuntime eventLog={eventLog} />
  *       <Routes />
- *     </PrimeProjectionsProvider>
+ *     </WorkOrderProjectionsProvider>
  *   );
  */
 
@@ -68,7 +68,7 @@ import { createCustomerProjection } from "../projections/customerProjection.js";
  * a React hook, because the shape is a pure engine concern — a host binds it
  * to whatever view layer it has.
  */
-export interface PrimeProjections {
+export interface WorkOrderProjections {
   readonly workOrderSummary: WorkOrderSummaryProjection;
   readonly stationKiosk: StationKioskProjection;
   readonly masterTablet: MasterTabletProjection;
@@ -76,7 +76,7 @@ export interface PrimeProjections {
   readonly customer: CustomerProjection;
 }
 
-export interface CreatePrimeProjectionsBundleDeps {
+export interface CreateWorkOrderProjectionsBundleDeps {
   readonly eventLog: EventLog;
   /**
    * Clock override applied to every projection that accepts one.
@@ -86,9 +86,9 @@ export interface CreatePrimeProjectionsBundleDeps {
   readonly now?: () => Date;
 }
 
-export function createPrimeProjectionsBundle(
-  deps: CreatePrimeProjectionsBundleDeps,
-): PrimeProjections {
+export function createWorkOrderProjectionsBundle(
+  deps: CreateWorkOrderProjectionsBundleDeps,
+): WorkOrderProjections {
   const { eventLog, now } = deps;
 
   // WorkOrderSummary is the base — every other projection reads from

@@ -82,4 +82,4 @@ export * from "./projections/customerProjection.js";
 export * from "./projections/masterTabletProjection.js";
 export * from "./projections/preProductionProjection.js";
 export * from "./projections/stationKioskProjection.js";
-export * from "./bootstrap/createPrimeProjectionsBundle.js";
+export * from "./bootstrap/createWorkOrderProjectionsBundle.js";

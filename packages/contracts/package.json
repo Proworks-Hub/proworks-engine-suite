@@ -1,6 +1,6 @@
 {
   "name": "@proworks-hub/contracts",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "type": "module",
   "description": "Normalized contracts exchanged between the portable engines. Depends on nothing but zod.",
   "author": "Steven Kreutzer",

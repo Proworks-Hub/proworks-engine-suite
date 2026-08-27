@@ -21,7 +21,7 @@
  *
  * Spec: PRIME-ENGINE-SPEC.md §3.2 (Template Resolver Module).
  *
- * End-to-end resolution: takes a `PrimeWorkOrderDraft` (from Intake §3.1),
+ * End-to-end resolution: takes a `WorkOrderDraft` (from Intake §3.1),
  * fans each line item through its matched `ProcessTemplate`, and produces a
  * flat `TentativeStep[]` ready for Routing (§3.3).
  *
@@ -52,7 +52,7 @@ import type {
   EventLog,
   IdGenerator,
 } from "../logging/eventLog.js";
-import type { PrimeWorkOrderDraft } from "../intake/intakeTypes.js";
+import type { WorkOrderDraft } from "../intake/intakeTypes.js";
 import type {
   TemplateLibrary,
   TemplateResolutionError,
@@ -83,7 +83,7 @@ export interface ResolveTemplateUseCaseDeps {
 
 export interface ResolveTemplateUseCase {
   execute(
-    draft: PrimeWorkOrderDraft,
+    draft: WorkOrderDraft,
     actor: EventActor
   ): Promise<ResolveTemplateResult>;
 }

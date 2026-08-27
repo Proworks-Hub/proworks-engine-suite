@@ -22,7 +22,7 @@ import { createInMemoryEventLog } from "../../logging/inMemoryEventLog.js";
 import type { EventLog } from "../../logging/eventLog.js";
 import type {
   IntakeLineItem,
-  PrimeWorkOrderDraft,
+  WorkOrderDraft,
 } from "../../intake/intakeTypes.js";
 import type {
   ProcessTemplate,
@@ -97,7 +97,7 @@ const DTF_TEE_TEMPLATE: ProcessTemplate = {
 function draftWith(
   lineItems: ReadonlyArray<IntakeLineItem>,
   workOrderId = "wo-1"
-): PrimeWorkOrderDraft {
+): WorkOrderDraft {
   return {
     workOrderId,
     status: "draft",

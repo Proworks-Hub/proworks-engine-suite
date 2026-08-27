@@ -44,7 +44,7 @@
  *     owns that; it'll expose its own projection for the File-
  *     ready gate).
  *
- * A future `usePrimeProjections` hook joins this with the Proofs
+ * A future `useWorkOrderProjections` hook joins this with the Proofs
  * module's data for a fully-featured pre-production dashboard. This
  * projection delivers the PRIME-side half of that join.
  *

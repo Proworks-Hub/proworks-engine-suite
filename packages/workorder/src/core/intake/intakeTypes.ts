@@ -32,7 +32,7 @@
  * - All shapes are `readonly`. Intake inputs and drafts are value objects.
  * - Validation errors are coded (stable `IntakeValidationCode`) so UIs and
  *   downstream event consumers can switch on them without string matching.
- * - `PrimeWorkOrderDraft` is what the Intake Module hands off to the
+ * - `WorkOrderDraft` is what the Intake Module hands off to the
  *   Template Resolver (§3.2). It is always in `status: "draft"`.
  */
 
@@ -153,7 +153,7 @@ export type IntakeValidationResult =
  * (§3.2) consumes. It carries everything Intake knows; subsequent modules
  * layer on template, routing, priority, etc. by emitting their own events.
  */
-export interface PrimeWorkOrderDraft {
+export interface WorkOrderDraft {
   readonly workOrderId: WorkOrderId;
   readonly status: "draft";
   readonly customerId: CustomerId;

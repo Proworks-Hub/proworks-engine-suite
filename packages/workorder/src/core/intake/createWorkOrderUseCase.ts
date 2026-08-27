@@ -22,7 +22,7 @@
  * Spec: PRIME-ENGINE-SPEC.md §3.1 (Intake Module).
  *
  * End-to-end intake: takes an `IntakeInput`, validates it, and either:
- *   (a) emits `work_order.intake.created` and returns a `PrimeWorkOrderDraft`, or
+ *   (a) emits `work_order.intake.created` and returns a `WorkOrderDraft`, or
  *   (b) emits `work_order.intake.validation_failed` and returns the errors.
  *
  * The event log is the source of truth — the returned draft is a
@@ -54,14 +54,14 @@ import type {
   IntakeInput,
   IntakeValidationError,
   IntakeValidationFailedPayload,
-  PrimeWorkOrderDraft,
+  WorkOrderDraft,
 } from "./intakeTypes.js";
 import { DEFAULT_INTAKE_PRIORITY } from "./intakeTypes.js";
 
 // ---------- Public surface ----------
 
 export type CreateWorkOrderResult =
-  | { readonly ok: true; readonly draft: PrimeWorkOrderDraft }
+  | { readonly ok: true; readonly draft: WorkOrderDraft }
   | {
       readonly ok: false;
       readonly attemptedWorkOrderId: WorkOrderId;
@@ -124,7 +124,7 @@ export function createCreateWorkOrderUseCase(
       }
 
       const priority = input.priority ?? DEFAULT_INTAKE_PRIORITY;
-      const draft: PrimeWorkOrderDraft = Object.freeze({
+      const draft: WorkOrderDraft = Object.freeze({
         workOrderId: candidateWorkOrderId,
         status: "draft",
         customerId: input.customerId,

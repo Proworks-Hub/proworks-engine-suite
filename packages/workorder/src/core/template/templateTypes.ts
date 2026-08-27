@@ -28,7 +28,7 @@
  * - A `ProcessTemplate.kind` of `recipe` means it came from the finished-product
  *   catalog; `template` means it came from the custom-process library. PRIME
  *   treats both uniformly.
- * - Resolution takes a `PrimeWorkOrderDraft` (from Intake §3.1) and fans each
+ * - Resolution takes a `WorkOrderDraft` (from Intake §3.1) and fans each
  *   line item through its matched template, producing a flat list of
  *   `TentativeStep`s. Tentative steps reference `workstationClass` — NOT a
  *   physical station id. Concrete station assignment is Routing's job (§3.3).
