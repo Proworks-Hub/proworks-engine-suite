@@ -34,6 +34,11 @@ export * from "./workflow.js";
 // Background work, and being able to answer "what happened?" months later.
 export * from "./jobs.js";
 export * from "./observability.js";
+// The boundary a request crosses on its way in, following it across engines,
+// and the services every engine would otherwise reinvent.
+export * from "./gateway.js";
+export * from "./tracing.js";
+export * from "./platformServices.js";
 export * from "./trace.js";
 
 export * from "./manufacturingPlan.js";

@@ -1,6 +1,6 @@
 {
   "name": "@proworks-hub/prime",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
   "description": "Prime — evaluate it, route it, decide what happens next. Consumes normalized engine output.",
   "author": "Steven Kreutzer",

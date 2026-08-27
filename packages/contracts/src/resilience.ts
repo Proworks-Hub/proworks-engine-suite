@@ -149,3 +149,66 @@ export interface DeadLetterQueue {
   /** Removes one, after an operator has dealt with it or replayed it. */
   resolve(deadLetterId: string): Promise<void> | void;
 }
+
+// ── Circuit breaking ─────────────────────────────────────────────────────────
+
+/**
+ * A circuit breaker exists for one situation: a dependency is down, and every
+ * call to it is going to fail after a timeout.
+ *
+ * Retrying through that is worse than useless. Each attempt holds a worker for
+ * the full timeout, so a slow dependency does not just fail — it consumes the
+ * capacity that the healthy work behind it needed. Opening the circuit turns a
+ * slow failure into a fast one, which is the difference between one engine
+ * being down and everything being down.
+ */
+export type CircuitState =
+  /** Calls flow. Failures are counted. */
+  | "closed"
+  /** Calls fail immediately without being attempted. */
+  | "open"
+  /** One call is let through to see whether the dependency came back. */
+  | "half-open";
+
+export interface CircuitBreakerPolicy {
+  /** Consecutive failures before the circuit opens. */
+  failureThreshold: number;
+  /** How long to stay open before letting a probe through. */
+  openDurationMs: number;
+  /** Consecutive successes on probes before closing again. */
+  successThreshold: number;
+}
+
+export const DEFAULT_CIRCUIT_POLICY: CircuitBreakerPolicy = {
+  failureThreshold: 5,
+  openDurationMs: 30_000,
+  successThreshold: 2,
+};
+
+/**
+ * Raised instead of calling a dependency whose circuit is open.
+ *
+ * Transient by classification: the dependency is expected back, and the caller
+ * should treat this as "try later", not "this will never work".
+ */
+export class CircuitOpenError extends Error {
+  readonly transient = true as const;
+  constructor(
+    readonly circuit: string,
+    readonly retryAfterMs: number,
+  ) {
+    super(
+      `Circuit "${circuit}" is open — not attempting the call. Retry in ${retryAfterMs}ms. ` +
+        `Failing fast here is what stops a slow dependency consuming the capacity healthy work needs.`,
+    );
+    this.name = "CircuitOpenError";
+  }
+}
+
+export interface CircuitBreaker {
+  /** Runs the work, or refuses immediately if the circuit is open. */
+  run<T>(circuit: string, work: () => Promise<T> | T): Promise<T>;
+  state(circuit: string): CircuitState;
+  /** Forces a circuit closed — an operator saying "it is fixed, try now". */
+  reset(circuit: string): void;
+}
