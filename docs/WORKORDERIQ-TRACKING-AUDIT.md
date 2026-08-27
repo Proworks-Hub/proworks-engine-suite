@@ -197,7 +197,7 @@ Each step ends green — typecheck, tests, and both hosts building.
 | 7. VisionIQ | ⛔ | **Blocked** — §8 was never saved, and inferring an engine's whole domain is the expensive kind of guess |
 | 8. Notifications | ✅ | Decides and records; the host sends |
 | 9. Vertical slice | ✅ | Closed the `DecisionContext.inventory` seam, open since Prime was written |
-| 10. KSix, then ProWorks | ⏸ | **Needs a go** — KSix `render.yaml` has `autoDeploy: true` on `main` |
+| 10. KSix, then ProWorks | ✅ | Both on **branches**. Neither `main` touched, so nothing is deployed |
 
 ### Two findings from doing the work
 
@@ -233,5 +233,10 @@ was verified by removing an alias and watching it fail by name.
   mentions the engine. What it owns needs stating before it is built.
 - **`material.*` events are defined and unpublished.** InventoryIQ returns them; no host drains them
   to a bus yet.
-- **Nothing is deployed.** Every package above is built, tested and committed, and no host consumes
-  any of it. Steps 10's integration is what makes it real.
+- **Nothing is deployed.** Both host integrations sit on branches —
+  `ksix/feat/tracking-integration` and `prowork-hub/feat/engine-suite-0.8`. Merging either to `main`
+  is the deploy, and that decision is not mine.
+- **KSix reports no shipment block**, because the `orders` table has no carrier or tracking number.
+  Wiring a `ShipmentProvider` is what makes the merge rule earn its place.
+- **`workOrderTrackingProjector.test.ts` in ProWorks is failing and was failing before.** It is worth
+  returning to now that a shared tracking service exists.
