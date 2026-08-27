@@ -1,6 +1,6 @@
 {
   "name": "@proworks-hub/forgeiq",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "ForgeIQ — configure it, validate it, manufacture it. Produces the ManufacturingPlan.",
   "author": "Steven Kreutzer",
