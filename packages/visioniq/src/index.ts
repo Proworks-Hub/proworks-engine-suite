@@ -110,3 +110,10 @@ export * as spotChannelValidation from "./prep/spotChannelValidator.js";
 export * as laser from "./capabilities/laser/index.js";
 export * as dtf from "./capabilities/dtf/index.js";
 export * from "./prep/artworkAnalysis.js";
+
+// The learning loop: what happened to an asset, what a human changed, and what
+// that suggests — recommendations for a person to approve, never silent
+// rewrites, and never customer artwork leaving its tenant.
+export * from "./learning/provenance.js";
+export * from "./learning/feedback.js";
+export * from "./learning/difference.js";

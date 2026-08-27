@@ -405,9 +405,54 @@ Two failed on the first run because I had the ink polarity backwards: the pipeli
 `gray <= threshold ? 1 : 0`, so **1 means fire**. The code was right and my assumption was wrong —
 which is the correct way round for a characterization test to fail.
 
+## Passes 7–9 — DTF, the canvas boundary, and the learning loop
+
+**`packages/visioniq` is now 72 files, ~13,540 lines. Prep Studio's core, laser and DTF
+intelligence all run through it — 27 more shims, parity re-proven.**
+
+**DTF** (6 files, 685 lines) had zero DOM, zero `ImageData` and no imports outside its own module.
+The layout engine is the substance: packing designs onto a gang sheet is where a shop wins or loses
+film cost.
+
+**Artwork analysis** split cleanly — scoring, classification and colour-mode inference are pure and
+came across unchanged. Resampling became a **port** rather than something I reimplemented: the host
+does it by drawing to a canvas, and writing a resampler inside the engine would change results
+subtly. A different filter is a different answer, and this analysis feeds classification decisions.
+Canvas resampling stays canvas resampling.
+
+Capabilities now have subpath exports — `visioniq/laser`, `visioniq/dtf` — so a host can take one
+without the whole engine.
+
+### The learning loop — the one genuinely new thing
+
+Three modules, 23 tests. Everything else in VisionIQ was extraction; this did not exist anywhere.
+
+**Provenance** records what happened and *who decided it*. The actor is on every step because
+"contrast +18" means three different things depending on whether the engine proposed it, a customer
+chose it, or an operator overrode it — and only the third is evidence the engine was wrong.
+
+**The difference operator** compares before and after when somebody edits outside the system. It
+recognises knockouts, resizes, crops, grayscale conversion, brightness and contrast shifts — and
+says `unknown_visual_change` when nothing fits, because §23 is explicit that VisionIQ must not
+pretend to understand an edit it cannot. It asks for confirmation unless a change is both confident
+**and singular**: two competing explanations mean it does not know which the operator intended,
+however sure it is of each.
+
+**Feedback** turns corrections into observations and observations into *proposals*. Two rules shape
+it:
+
+- **No customer artwork leaves its tenant.** Observations record the structure of a correction —
+  "operators raised contrast by 6 on black slate" — never the image. `assertObservationIsSafe`
+  refuses any unrecognised field and any record without an `organizationId`, failing towards keeping
+  data out.
+- **It recommends; it does not rewrite.** Median rather than mean, so one operator's typo cannot
+  move a profile. An agreement threshold, because operators disagreeing with each other is not the
+  engine being wrong. A minimum sample size, because a profile changed on four jobs changes back on
+  the next four. The output is a sentence an admin approves or ignores.
+
 ### Next
 
-DTF (`modules/dtf-prep`, 20 files), then the canvas adapter for `detectArtworkType` and
-`canvasProcessing`.
+The canvas adapter for `canvasProcessing` (23 DOM refs) is the last significant coupling. Then the
+host-side wiring of the learning loop — capturing Prep Studio's own edits as observations.
 
 Still true: **nothing deleted anywhere.**
