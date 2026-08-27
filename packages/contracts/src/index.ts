@@ -56,3 +56,6 @@ export * from "./receipt.js";
 // Where an order actually is, normalized across production and the carrier,
 // and narrowed to what each audience may see.
 export * from "./tracking.js";
+
+// Asking an engine to do something, as distinct from being told it happened.
+export * from "./commands.js";

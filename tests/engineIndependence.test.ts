@@ -26,7 +26,7 @@ import { createReceiptIqEngine } from "@proworks-hub/receiptiq";
 // tests is a claim that quietly stops being true.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const actor: EventActor = { kind: "user", userId: "maker-1" };
+const actor: EventActor = { kind: "user", userId: "maker-1", role: "operator" };
 
 describe("a work order with no orchestrator", () => {
   it("can be created without Prime, ProWorks, or anything else", async () => {
@@ -140,11 +140,17 @@ describe("capabilities decide what a consumer may do", () => {
   });
 
   it("says what was missing, so the refusal is explicable", async () => {
+    // Typed as the error rather than the union with the resolved void. A
+    // `.catch` that widens is how assertions like these stop being checked.
     const error = await requireCapability(
       resolver, "small-maker", "makerops", CAPABILITIES.workOrder.scheduling,
-    ).catch((e: unknown) => e as CapabilityError);
-    expect(error.capability).toBe(CAPABILITIES.workOrder.scheduling);
-    expect(error.message).toMatch(/entitlement, not a bug/);
+    ).then(
+      () => undefined,
+      (e: unknown) => e as CapabilityError,
+    );
+    expect(error).toBeInstanceOf(CapabilityError);
+    expect(error!.capability).toBe(CAPABILITIES.workOrder.scheduling);
+    expect(error!.message).toMatch(/entitlement, not a bug/);
   });
 });
 

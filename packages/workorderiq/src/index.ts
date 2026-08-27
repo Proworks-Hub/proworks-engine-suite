@@ -88,3 +88,7 @@ export * from "./bootstrap/createWorkOrderProjectionsBundle.js";
 // engine that owns the milestone names, so a rename cannot escape into a
 // public contract without the compiler noticing.
 export * from "./tracking/toOrderTrackingSnapshot.js";
+
+// The one door into this engine's mutations: entitlement, tenancy and trace
+// enforced once instead of in ten use cases.
+export * from "./commands/workOrderCommands.js";

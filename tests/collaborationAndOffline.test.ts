@@ -20,7 +20,7 @@ import {
 import { createInMemoryOutbox } from "@proworks-hub/platform-runtime";
 
 const trace = { correlationId: "cor_1" };
-const actor: EventActor = { kind: "user", userId: "op-1" };
+const actor: EventActor = { kind: "user", userId: "op-1", role: "operator" };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Two shops transacting, and one shop working through an outage.

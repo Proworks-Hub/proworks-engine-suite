@@ -37,7 +37,7 @@ import { formatResult, measure, scalingProfile } from "./harness.js";
 // change that makes something QUADRATIC, not to police milliseconds.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const actor: EventActor = { kind: "user", userId: "op-1" };
+const actor: EventActor = { kind: "user", userId: "op-1", role: "operator" };
 const trace = () => ({ correlationId: newCorrelationId() });
 
 const intake = (org: string, n: number) => ({
@@ -175,14 +175,18 @@ describe("the event bus under fan-out", () => {
     }
 
     const result = await measure(
-      () =>
-        bus.publish({
+      // Braces and an await, not `void`: dropping the promise makes this
+      // fire-and-forget, and the assertion below then counts deliveries that
+      // are still in flight.
+      async () => {
+        await bus.publish({
           eventType: "receipt.ingested",
           source: { service: "test" },
           tenant: { organizationId: "org-a", roles: [] },
           trace: trace(),
           payload: { fingerprint: "f", source: "photo", extractor: "x", lineCount: 1 },
-        }),
+        });
+      },
       {
         label: "publish to 50 consumers",
         operations: 200,
@@ -209,11 +213,12 @@ describe("the receipt pipeline at volume", () => {
     const text = "HOME DEPOT\nBrighton, CO\n08/26/2026\nBolt 4.50\nScrews 8.99\nTotal 13.49";
 
     const result = await measure(
-      () =>
-        engine.read(
+      async () => {
+        await engine.read(
           { kind: "text", text },
           { ownerRef: "shop-1", ownership: "tenant-private" },
-        ),
+        );
+      },
       { label: "receipt read+normalize", operations: 500, warmup: 25 },
     );
 
