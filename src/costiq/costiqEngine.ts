@@ -92,17 +92,24 @@ export function createCostIqEngine(config: CostIqConfig = {}): CostEngine {
       }
 
       // ── Operations: machine time, setup, and bench labor ────────────────
-      // Each operation is costed at the rate that matches who does it — a
-      // machine or a person — so a routing of cut, deburr, weld, and coat
-      // costs correctly rather than charging bench work at machine rates.
+      // Each operation is costed at the rate that matches who does it. A job
+      // may cross several machines at different hourly rates, so a machine
+      // step uses its own rate before falling back to the plan's headline
+      // rate — otherwise bending would be billed at laser prices.
       const machineRate = rates.machineCostPerHour ?? settings.fallbackMachineRatePerHour;
       const laborRate = rates.laborRatePerHour ?? settings.fallbackLaborRatePerHour;
-      const machineOps = plan.operations.filter((op) => !op.isLabor);
+      const rateFor = (op: (typeof plan.operations)[number]) =>
+        op.isLabor ? laborRate : (op.advisoryRatePerHour ?? machineRate);
       const laborOps = plan.operations.filter((op) => op.isLabor);
+      const unratedMachineOps = plan.operations.filter(
+        (op) => !op.isLabor && rateFor(op) <= 0,
+      );
 
-      if (machineRate <= 0 && machineOps.length > 0) {
+      if (unratedMachineOps.length > 0) {
         unpriced.push("machine-time");
-        assumptions.push("No machine rate available — machine time is not costed.");
+        assumptions.push(
+          `No machine rate available for: ${unratedMachineOps.map((o) => o.name ?? o.id).join(", ")}.`,
+        );
       }
       if (laborRate <= 0 && laborOps.length > 0) {
         unpriced.push("bench-labor");
@@ -110,7 +117,7 @@ export function createCostIqEngine(config: CostIqConfig = {}): CostEngine {
       }
 
       for (const op of plan.operations) {
-        const rate = op.isLabor ? laborRate : machineRate;
+        const rate = rateFor(op);
         if (rate <= 0) continue;
         const where = op.isLabor ? "bench" : (op.machineName ?? op.machineProcess);
         lines.push({

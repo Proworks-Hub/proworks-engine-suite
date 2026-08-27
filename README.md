@@ -157,9 +157,17 @@ numbered routing for the floor. `labor.derivedFromOperations` tells a costing
 engine when labor is already covered by the routing, so the same minutes are
 never charged twice.
 
+An operation can name the machine it runs on, so one job crosses several: the
+fire pit is cut on the fiber laser and folded on the press brake. Each
+operation carries its own machine and that machine's hourly rate, `machines`
+lists everything the job touches in first-use order, and Prime matches capacity
+per process — so an overloaded brake is flagged while the free laser is not.
+
 Products with no routing — including definitions persisted before it existed —
 still work: the plan derives a single operation from the product's time
-estimate, exactly as before, and the work order says so plainly.
+estimate, exactly as before, and the work order says so plainly. A host that
+supplies no machine map gets the same graceful result: every step routes to the
+product's primary machine.
 
 ### The contract surface
 

@@ -16,6 +16,18 @@ export const demoFiberLaserSpecs: MachineProfileSpecs = {
   setupMinutesDefault: 10,
 };
 
+// A second machine, so the fire pit routes across two: panels are cut on the
+// laser, then their top edge is folded on the brake for rigidity.
+export const demoPressBrakeSpecs: MachineProfileSpecs = {
+  process: "press-brake",
+  workAreaWidthIn: 48,
+  workAreaHeightIn: 48,
+  maxMaterialThicknessIn: 0.25,
+  compatibleMaterialCategories: ["corten", "mild-steel", "stainless", "aluminum"],
+  costPerHour: 32,
+  setupMinutesDefault: 15,
+};
+
 export const demoCortenSpecs: MaterialProfileSpecs = {
   category: "corten",
   thicknessIn: 0.125,
@@ -40,6 +52,7 @@ export interface FirepitProfileIds {
   cortenMaterialId: number;
   mildSteelMaterialId: number;
   fiberLaserMachineId: number;
+  pressBrakeMachineId: number;
 }
 
 export function buildFirepitDefinition(ids: FirepitProfileIds): ProductDefinition {
@@ -222,6 +235,16 @@ export function buildFirepitDefinition(ids: FirepitProfileIds): ProductDefinitio
         labor: true,
       },
       {
+        id: "form-flange",
+        name: "Form top flange",
+        type: "bend",
+        machineProfileId: ids.pressBrakeMachineId,
+        time: { basis: "per-part", minutesPerPart: 2.5, partIds: ["side-panel"] },
+        setupMinutes: 15,
+        labor: false,
+        note: "Folds a 1\" return on each panel's top edge for rigidity.",
+      },
+      {
         id: "weld-assemble",
         name: "Weld and assemble",
         type: "weld",
@@ -254,7 +277,7 @@ export function buildFirepitDefinition(ids: FirepitProfileIds): ProductDefinitio
         kind: "cut-part",
         quantity: { mode: "per-surface" },
         dimensions: { source: "surface" },
-        note: "Customer artwork cut through",
+        note: "Customer artwork cut through; top edge folded on the brake",
       },
       {
         id: "bottom-plate",

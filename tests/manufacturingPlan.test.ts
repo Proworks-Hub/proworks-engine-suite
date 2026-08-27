@@ -13,7 +13,7 @@ import {
 import { runValidation } from "../src/core/validation/validationEngine";
 import { buildBillOfMaterials } from "../src/core/production/bom";
 import type { SurfaceElement } from "../src/core/schemas/configuration";
-import { baseConfig, definition, machine, materials, IDS } from "./helpers";
+import { baseConfig, definition, machine, machines, materials, IDS } from "./helpers";
 
 const planFor = (config = baseConfig(), extra = {}) =>
   buildManufacturingPlan({
@@ -21,6 +21,7 @@ const planFor = (config = baseConfig(), extra = {}) =>
     configuration: config,
     materials,
     machine,
+    machines,
     materialName: 'Corten Steel 1/8"',
     machineName: "Gweike M3 Ultra (fiber)",
     ...extra,
@@ -100,6 +101,7 @@ describe("ManufacturingPlan", () => {
     expect(plan.operations.map((o) => o.id)).toEqual([
       "laser-cut",
       "deburr",
+      "form-flange",
       "weld-assemble",
       "pack",
     ]);
@@ -115,15 +117,66 @@ describe("ManufacturingPlan", () => {
     expect(plan.operations[1]).toMatchObject({ machineProcess: "bench", isLabor: true });
     expect(plan.operations[1].estimatedMinutes).toBeCloseTo(27, 3);
     // per-unit: 35 min × 2
-    expect(plan.operations[2].estimatedMinutes).toBeCloseTo(70, 3);
+    expect(plan.operations[3].estimatedMinutes).toBeCloseTo(70, 3);
     expect(plan.finishing).toEqual([{ id: "fin_raw", name: "Raw / natural" }]);
   });
 
   it("derives labor from the routing so the two cannot disagree", () => {
     const plan = planFor();
-    // deburr 13.5 + weld (35 run + 10 setup) + pack 8
+    // deburr 13.5 + weld (35 run + 10 setup) + pack 8 — the flange is a
+    // machine step, so it is not labor.
     expect(plan.labor.derivedFromOperations).toBe(true);
     expect(plan.labor.estimatedMinutes).toBeCloseTo(66.5, 3);
+  });
+
+  it("routes operations across the machines they name", () => {
+    const plan = planFor();
+    const laser = plan.operations.find((o) => o.id === "laser-cut")!;
+    const flange = plan.operations.find((o) => o.id === "form-flange")!;
+
+    expect(laser).toMatchObject({
+      machineProfileId: IDS.fiberLaserMachineId,
+      machineName: "Gweike M3 Ultra (fiber)",
+      advisoryRatePerHour: 45,
+    });
+    // The bend runs on a different machine, at that machine's own rate.
+    expect(flange).toMatchObject({
+      type: "bend",
+      machineProcess: "press-brake",
+      machineProfileId: IDS.pressBrakeMachineId,
+      machineName: "Press brake",
+      advisoryRatePerHour: 32,
+      isLabor: false,
+    });
+    // per-part: 2.5 min × 4 side panels
+    expect(flange.estimatedMinutes).toBeCloseTo(10, 3);
+  });
+
+  it("lists every machine the job touches", () => {
+    const plan = planFor();
+    expect(plan.machines.map((m) => m.process)).toEqual(["fiber-laser", "press-brake"]);
+    expect(plan.machines.map((m) => m.name)).toEqual([
+      "Gweike M3 Ultra (fiber)",
+      "Press brake",
+    ]);
+    // The headline machine stays the one that cuts.
+    expect(plan.machine?.process).toBe("fiber-laser");
+  });
+
+  it("falls back to the primary machine when a named one is unavailable", () => {
+    // A host that supplies no machine map still gets a usable plan: every
+    // step routes to the product's primary machine.
+    const plan = buildManufacturingPlan({
+      definition,
+      configuration: baseConfig(),
+      materials,
+      machine,
+      machineName: "Gweike M3 Ultra (fiber)",
+    });
+    const flange = plan.operations.find((o) => o.id === "form-flange")!;
+    expect(flange.machineProcess).toBe("fiber-laser");
+    expect(flange.advisoryRatePerHour).toBe(45);
+    expect(plan.machines).toHaveLength(1);
   });
 
   it("includes a conditional operation only when its option is chosen", () => {
@@ -247,7 +300,7 @@ const mockCostIQ: CostEngine = {
     const machineRate = plan.advisoryRates.machineCostPerHour ?? 0;
     const laborRate = plan.advisoryRates.laborRatePerHour ?? 0;
     for (const op of plan.operations) {
-      const rate = op.isLabor ? laborRate : machineRate;
+      const rate = op.isLabor ? laborRate : (op.advisoryRatePerHour ?? machineRate);
       lines.push({
         code: `op-${op.id}`,
         label: `${op.type} on ${op.machineProcess}`,
@@ -292,8 +345,9 @@ describe("CostEngine seam", () => {
     expect(result.engine).toBe("mock-costiq");
 
     // 1 sheet ($176) + fasteners 6.50 + weld 4 + crate 14
-    // + laser 68 min @ $45 ($51) + bench 66.5 min @ $30 ($33.25)
-    expect(result.totalCost).toBeCloseTo(284.75, 2);
+    // + laser 68 min @ $45 ($51) + brake 25 min @ $32 ($13.33)
+    // + bench 66.5 min @ $30 ($33.25)
+    expect(result.totalCost).toBeCloseTo(298.08, 2);
     expect(result.recommendedPrice).toBeGreaterThan(result.totalCost);
     expect(result.lines.some((l) => l.category === "material")).toBe(true);
     expect(result.lines.some((l) => l.category === "machine")).toBe(true);

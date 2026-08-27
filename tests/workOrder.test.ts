@@ -3,7 +3,7 @@ import { computePrice } from "../src/core/pricing/pricingEngine";
 import { buildWorkOrder } from "../src/core/export/workOrder";
 import { buildPanelCutlineSvg } from "../src/core/export/cutlineSvg";
 import { buildManufacturingPlan } from "../src/core/manufacturing/manufacturingPlan";
-import { baseConfig, definition, machine, materials } from "./helpers";
+import { baseConfig, definition, machine, machines, materials } from "./helpers";
 
 describe("work order builder", () => {
   const config = baseConfig({
@@ -63,6 +63,7 @@ describe("work order builder", () => {
       configuration: config,
       materials,
       machine,
+      machines,
       machineName: "Gweike M3 Ultra (fiber)",
     });
     const routed = buildWorkOrder({
@@ -75,11 +76,13 @@ describe("work order builder", () => {
     });
     // Numbered steps, each naming where the work happens.
     expect(routed).toContain("ROUTING");
-    expect(routed).toContain("1. Laser cut panels — fiber-laser");
+    expect(routed).toContain("1. Laser cut panels — Gweike M3 Ultra (fiber)");
     expect(routed).toContain("2. Deburr edges — bench");
-    expect(routed).toContain("3. Weld and assemble — bench");
+    // The bend happens on a different machine, and the floor is told which.
+    expect(routed).toContain("3. Form top flange — Press brake");
+    expect(routed).toContain("4. Weld and assemble — bench");
     // Machine and bench time are reported separately, not lumped together.
-    expect(routed).toContain("machine operation(s)");
+    expect(routed).toContain("2 machine operation(s)");
     expect(routed).toContain("Bench labor:");
     expect(routed).not.toContain("No routing declared");
   });

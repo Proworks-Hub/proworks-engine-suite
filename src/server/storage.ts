@@ -25,7 +25,11 @@ export type FiqDb = NodePgDatabase<Record<string, unknown>>;
 
 export interface PricingProfiles {
   materials: Map<number, MaterialProfileSpecs>;
+  /** The product's primary machine. */
   machine: MachineProfileSpecs;
+  machineName?: string;
+  /** Every active machine in the organization, so routing can name any of them. */
+  machines: Map<number, { name?: string; specs: MachineProfileSpecs }>;
 }
 
 // Definitions are stored as jsonb and read back by cast, so rows written
@@ -207,7 +211,20 @@ export class BuilderEngineStorage {
     if (!machineRow) {
       throw new Error(`Machine profile ${machineId} not found for organization ${orgId}`);
     }
-    return { materials, machine: machineRow.specs };
+
+    // A product's routing may send steps to machines the definition never
+    // names directly, so every active machine is offered to the planner.
+    const machines = new Map<number, { name?: string; specs: MachineProfileSpecs }>();
+    for (const row of await this.listMachines(orgId)) {
+      if (row.active) machines.set(row.id, { name: row.name, specs: row.specs });
+    }
+
+    return {
+      materials,
+      machine: machineRow.specs,
+      machineName: machineRow.name,
+      machines,
+    };
   }
 
   // ── Configurations ────────────────────────────────────────────────────────

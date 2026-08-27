@@ -75,6 +75,14 @@ export const planOperationSchema = z.object({
   /** Machine process this runs on; "bench" when no machine is involved. */
   machineProcess: z.string(),
   machineName: z.string().optional(),
+  /** Which machine profile runs this step, when a machine does. */
+  machineProfileId: z.number().int().optional(),
+  /**
+   * That machine's hourly cost, carried per operation because a job may
+   * touch several machines at different rates. Advisory, like every rate on
+   * the plan — a costing engine may substitute its own.
+   */
+  advisoryRatePerHour: z.number().min(0).optional(),
   /** Run time across the whole order, excluding setup. */
   estimatedMinutes: z.number().min(0),
   /** Once-per-job setup, not multiplied by quantity. */
@@ -131,6 +139,10 @@ export const manufacturingPlanSchema = z.object({
       thicknessIn: z.number().positive(),
     })
     .nullable(),
+  /**
+   * The product's primary machine — the one that cuts. Retained as the
+   * headline machine; `machines` lists everything the job actually touches.
+   */
   machine: z
     .object({
       profileId: z.number().int().optional(),
@@ -140,6 +152,18 @@ export const manufacturingPlanSchema = z.object({
       workAreaHeightIn: z.number().positive(),
     })
     .nullable(),
+  /** Every machine this job routes through, in first-use order. */
+  machines: z
+    .array(
+      z.object({
+        profileId: z.number().int().optional(),
+        name: z.string().optional(),
+        process: z.string(),
+        workAreaWidthIn: z.number().positive(),
+        workAreaHeightIn: z.number().positive(),
+      }),
+    )
+    .default([]),
   parts: z.array(planPartSchema),
   stock: planStockSchema.nullable(),
   operations: z.array(planOperationSchema),
@@ -204,6 +228,13 @@ export interface BuildManufacturingPlanInput {
   configuration: ProductConfiguration;
   materials: Map<number, MaterialProfileSpecs>;
   machine: MachineProfileSpecs;
+  /**
+   * Every machine profile the product's operations may reference, so a job
+   * can route across several. Omit for single-machine products: operations
+   * then resolve to `machine`, which is how plans behaved before routing
+   * could name a machine.
+   */
+  machines?: Map<number, { name?: string; specs: MachineProfileSpecs }>;
   /** Identity from the host's persistence layer, when available. */
   productDefinitionId?: number;
   productVersion?: number;
@@ -290,24 +321,41 @@ export function buildManufacturingPlan(
   // derived operation the plan has always reported.
   const declared = definition.operations ?? [];
   const selectedValueIds = new Set(selected.map((v) => v.id));
+
+  // An operation runs on the machine it names, falling back to the product's
+  // primary machine. Bench work names none.
+  const resolveOperationMachine = (op: ProductOperation) => {
+    if (op.labor) return undefined;
+    if (op.machineProfileId !== undefined) {
+      const entry = input.machines?.get(op.machineProfileId);
+      if (entry) {
+        return { profileId: op.machineProfileId, name: entry.name, specs: entry.specs };
+      }
+    }
+    return { profileId: machineId, name: input.machineName, specs: machine };
+  };
+
   const operations: PlanOperation[] = declared.length
     ? declared
         .filter(
           (op) => !op.requiresOptionValueId || selectedValueIds.has(op.requiresOptionValueId),
         )
-        .map((op) => ({
-          id: op.id,
-          name: op.name,
-          type: op.type,
-          machineProcess: op.process ?? (op.labor ? "bench" : machine.process),
-          machineName: op.process === undefined && !op.labor ? input.machineName : undefined,
-          estimatedMinutes: round4(
-            operationMinutes(op, { areaSqFt, quantity, parts }),
-          ),
-          setupMinutes: op.setupMinutes,
-          isLabor: op.labor,
-          note: op.note,
-        }))
+        .map((op) => {
+          const on = resolveOperationMachine(op);
+          return {
+            id: op.id,
+            name: op.name,
+            type: op.type,
+            machineProcess: op.process ?? on?.specs.process ?? "bench",
+            machineName: on?.name,
+            machineProfileId: on?.profileId,
+            advisoryRatePerHour: on?.specs.costPerHour,
+            estimatedMinutes: round4(operationMinutes(op, { areaSqFt, quantity, parts })),
+            setupMinutes: op.setupMinutes,
+            isLabor: op.labor,
+            note: op.note,
+          };
+        })
     : [
         {
           id: "primary",
@@ -316,12 +364,38 @@ export function buildManufacturingPlan(
           ),
           machineProcess: machine.process,
           machineName: input.machineName,
+          machineProfileId: machineId,
+          advisoryRatePerHour: machine.costPerHour,
           estimatedMinutes: round4(knobs.estMachineMinutesPerSqFt * areaSqFt * quantity),
           setupMinutes: knobs.setupMinutes,
           isLabor: false,
           note: "Derived from the product's time estimate; no routing is declared.",
         },
       ];
+
+  // Every distinct machine the routing touches, in first-use order — what a
+  // scheduler needs to know before it can slot this job anywhere.
+  const machinesUsed: ManufacturingPlan["machines"] = [];
+  for (const op of operations) {
+    if (op.isLabor) continue;
+    const alreadyListed = machinesUsed.some((m) =>
+      op.machineProfileId !== undefined
+        ? m.profileId === op.machineProfileId
+        : m.process === op.machineProcess,
+    );
+    if (alreadyListed) continue;
+    const specs =
+      op.machineProfileId !== undefined
+        ? (input.machines?.get(op.machineProfileId)?.specs ?? machine)
+        : machine;
+    machinesUsed.push({
+      profileId: op.machineProfileId,
+      name: op.machineName,
+      process: op.machineProcess,
+      workAreaWidthIn: specs.workAreaWidthIn,
+      workAreaHeightIn: specs.workAreaHeightIn,
+    });
+  }
 
   // Labor follows the routing when there is any, so the two never disagree.
   const laborOperations = operations.filter((op) => op.isLabor);
@@ -362,6 +436,7 @@ export function buildManufacturingPlan(
       workAreaWidthIn: machine.workAreaWidthIn,
       workAreaHeightIn: machine.workAreaHeightIn,
     },
+    machines: machinesUsed,
     parts,
     stock,
     operations,

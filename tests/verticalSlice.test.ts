@@ -18,8 +18,10 @@ import {
   demoCortenSpecs,
   demoFiberLaserSpecs,
   demoMildSteelSpecs,
+  demoPressBrakeSpecs,
 } from "../src/demo/firepit";
 import type { MaterialProfileSpecs } from "../src/core/schemas/materialProfile";
+import type { MachineProfileSpecs } from "../src/core/schemas/machineProfile";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // The vertical slice: one real product travelling the whole intelligence path.
@@ -33,12 +35,16 @@ import type { MaterialProfileSpecs } from "../src/core/schemas/materialProfile";
 // their contracts into another TypeScript project and this test still runs.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const IDS = { cortenMaterialId: 1, mildSteelMaterialId: 2, fiberLaserMachineId: 1 };
+const IDS = { cortenMaterialId: 1, mildSteelMaterialId: 2, fiberLaserMachineId: 1, pressBrakeMachineId: 2 };
 const definition = buildFirepitDefinition(IDS);
 const machine = demoFiberLaserSpecs;
 const materials = new Map<number, MaterialProfileSpecs>([
   [IDS.cortenMaterialId, demoCortenSpecs],
   [IDS.mildSteelMaterialId, demoMildSteelSpecs],
+]);
+const machines = new Map<number, { name?: string; specs: MachineProfileSpecs }>([
+  [IDS.fiberLaserMachineId, { name: "Gweike M3 Ultra (fiber)", specs: demoFiberLaserSpecs }],
+  [IDS.pressBrakeMachineId, { name: "Press brake", specs: demoPressBrakeSpecs }],
 ]);
 
 /** A customer's 24" Corten fire pit with a name cut through the front panel. */
@@ -83,6 +89,7 @@ function runIntelligenceChain(
     configuration,
     materials,
     machine,
+    machines,
     productDefinitionId: 3,
     productVersion: 3,
     configurationId: 1001,
@@ -267,6 +274,41 @@ describe("vertical slice: review and block paths", () => {
     expect(decision.priority).toBe("expedite");
     expect(decision.actions.map((a) => a.code)).toContain("purchase-material");
     expect(decision.actions.map((a) => a.code)).toContain("consider-outsourcing");
+  });
+
+  it("flags only the constrained machine on a multi-machine job", () => {
+    const { plan, cost } = runIntelligenceChain();
+    // The job crosses two machines. The laser is free; the brake is not.
+    expect(plan.machines.map((m) => m.process)).toEqual(["fiber-laser", "press-brake"]);
+    const decision = createPrimeEngine().decide(
+      decisionContextSchema.parse({
+        contextVersion: DECISION_CONTEXT_VERSION,
+        subject: { type: "order", reference: "KS-BRAKE" },
+        manufacturing: plan,
+        cost,
+        capacity: [
+          { process: "fiber-laser", status: "available" },
+          { process: "press-brake", status: "overloaded", queuedMinutes: 600 },
+        ],
+      }),
+    );
+    expect(decision.status).toBe("review");
+    const capacityReasons = decision.reasons.filter((r) => r.code === "capacity-constrained");
+    // Exactly one machine is called out — the brake, not the laser.
+    expect(capacityReasons).toHaveLength(1);
+    expect(capacityReasons[0].message).toContain("press-brake");
+    expect(decision.actions.map((a) => a.label)).toContain("Consider outsourcing bend");
+  });
+
+  it("charges each machine at its own rate", () => {
+    const { plan, cost } = runIntelligenceChain();
+    const laser = plan.operations.find((o) => o.id === "laser-cut")!;
+    const brake = plan.operations.find((o) => o.id === "form-flange")!;
+    expect(laser.advisoryRatePerHour).toBe(45);
+    expect(brake.advisoryRatePerHour).toBe(32);
+    // The brake line reflects its cheaper rate, not the laser's.
+    const brakeLine = cost.lines.find((l) => l.code === "run-form-flange")!;
+    expect(brakeLine.amount).toBeCloseTo((brake.estimatedMinutes / 60) * 32, 2);
   });
 
   it("scales the whole chain with order quantity", () => {
