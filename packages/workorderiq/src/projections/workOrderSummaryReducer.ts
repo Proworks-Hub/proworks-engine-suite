@@ -403,6 +403,17 @@ function applyEvent(
     case "work_order.eta.recalculated":
       return summary;
 
+    // Quality outcomes and packaging progress. Deliberately not folded into
+    // the summary: what an inspection found and how many boxes were packed are
+    // facts a tracking projection reads directly, and inferring a milestone
+    // from them here would give the work order two sources of truth for where
+    // it is. Milestones still move only on milestone.advanced.
+    case "quality.inspection.passed":
+    case "quality.inspection.failed":
+    case "packaging.started":
+    case "packaging.completed":
+      return summary;
+
     default: {
       // Unknown event type — no-op so future spec growth doesn't break us.
       // Exhaustiveness check keeps this honest against the union:

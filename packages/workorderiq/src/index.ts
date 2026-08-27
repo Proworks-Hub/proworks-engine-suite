@@ -92,3 +92,7 @@ export * from "./tracking/toOrderTrackingSnapshot.js";
 // The one door into this engine's mutations: entitlement, tenancy and trace
 // enforced once instead of in ten use cases.
 export * from "./commands/workOrderCommands.js";
+
+// Quality outcomes and packaging, the four facts the audit found genuinely
+// missing from an otherwise complete vocabulary.
+export * from "./models/lifecyclePayloads.js";

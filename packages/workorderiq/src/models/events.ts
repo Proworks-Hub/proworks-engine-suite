@@ -118,6 +118,12 @@ export type WorkOrderEventType =
   | "work_order.milestone.advanced"
   | "work_order.eta.updated"
   | "work_order.eta.at_risk"
+  // Quality — what an inspection FOUND, as distinct from it having happened.
+  | "quality.inspection.passed"
+  | "quality.inspection.failed"
+  // Packaging — the real work between "steps are done" and "a parcel exists".
+  | "packaging.started"
+  | "packaging.completed"
   // Terminal
   | "work_order.completed"
   | "work_order.cancelled";
