@@ -6,7 +6,7 @@ import type { ProductDefinition } from "../schemas/productDefinition.js";
 import type { ProductConfiguration } from "../schemas/configuration.js";
 import type { PriceBreakdown } from "../pricing/pricingEngine.js";
 import type { MaterialProfileSpecs } from "../schemas/materialProfile.js";
-import type { ManufacturingPlan } from "@proworks/contracts";
+import type { ManufacturingPlan } from "@proworks-hub/contracts";
 import { buildBillOfMaterials } from "../production/bom.js";
 import {
   resolveSurfaceDims,

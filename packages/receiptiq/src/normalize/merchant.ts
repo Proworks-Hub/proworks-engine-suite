@@ -2,7 +2,7 @@
 // Proprietary and confidential. Unauthorized copying, modification, or
 // distribution of this file, via any medium, is strictly prohibited.
 
-import type { MerchantIdentity, RegionCode } from "@proworks/contracts";
+import type { MerchantIdentity, RegionCode } from "@proworks-hub/contracts";
 import { compactKey } from "./keys.js";
 
 // ─────────────────────────────────────────────────────────────────────────────

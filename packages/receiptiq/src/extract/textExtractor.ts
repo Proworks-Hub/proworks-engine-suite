@@ -2,7 +2,7 @@
 // Proprietary and confidential. Unauthorized copying, modification, or
 // distribution of this file, via any medium, is strictly prohibited.
 
-import type { ExtractedReceipt, RawReceiptInput, ReceiptExtractor } from "@proworks/contracts";
+import type { ExtractedReceipt, RawReceiptInput, ReceiptExtractor } from "@proworks-hub/contracts";
 import { parseReceiptLines } from "../normalize/parseReceiptLines.js";
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { runValidation } from "../src/core/validation/validationEngine";
-import { manufacturingPlanSchema } from "@proworks/contracts";
+import { manufacturingPlanSchema } from "@proworks-hub/contracts";
 import { buildManufacturingPlan } from "../src/manufacturing/buildManufacturingPlan";
-import { costResultSchema } from "@proworks/contracts";
+import { costResultSchema } from "@proworks-hub/contracts";
 import {
   decisionContextSchema,
   decisionResultSchema,
   DECISION_CONTEXT_VERSION,
-} from "@proworks/contracts";
-import { createCostIqEngine } from "@proworks/costiq";
-import { createPrimeEngine } from "@proworks/prime";
+} from "@proworks-hub/contracts";
+import { createCostIqEngine } from "@proworks-hub/costiq";
+import { createPrimeEngine } from "@proworks-hub/prime";
 import { productConfigurationSchema } from "../src/core/schemas/configuration";
 import {
   buildFirepitDefinition,

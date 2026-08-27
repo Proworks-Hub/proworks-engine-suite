@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ManufacturingPlan } from "@proworks/contracts";
+import type { ManufacturingPlan } from "@proworks-hub/contracts";
 import { createCostIqEngine } from "../src/costiqEngine";
 import { manufacturingPlanToJobCostInput } from "../src/adapters/manufacturingPlanAdapter";
 import { calculateJobCost } from "../src/core/costCalculator";

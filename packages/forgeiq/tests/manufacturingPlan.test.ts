@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { manufacturingPlanSchema, PLAN_VERSION, type ManufacturingPlan } from "@proworks/contracts";
+import { manufacturingPlanSchema, PLAN_VERSION, type ManufacturingPlan } from "@proworks-hub/contracts";
 import { buildManufacturingPlan } from "../src/manufacturing/buildManufacturingPlan";
 import {
   costResultSchema,
   type CostEngine,
   type CostLine,
-} from "@proworks/contracts";
+} from "@proworks-hub/contracts";
 import { runValidation } from "../src/core/validation/validationEngine";
 import { buildBillOfMaterials } from "../src/core/production/bom";
 import type { SurfaceElement } from "../src/core/schemas/configuration";

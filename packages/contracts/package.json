@@ -1,5 +1,5 @@
 {
-  "name": "@proworks/contracts",
+  "name": "@proworks-hub/contracts",
   "version": "0.1.0",
   "type": "module",
   "description": "Normalized contracts exchanged between the portable engines. Depends on nothing but zod.",
@@ -7,7 +7,7 @@
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/proworks/proworks-engine-suite.git",
+    "url": "git+https://github.com/Proworks-Hub/proworks-engine-suite.git",
     "directory": "packages/contracts"
   },
   "publishConfig": {

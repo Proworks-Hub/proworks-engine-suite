@@ -2,7 +2,7 @@
 // Proprietary and confidential. Unauthorized copying, modification, or
 // distribution of this file, via any medium, is strictly prohibited.
 
-import type { PriceObservation } from "@proworks/contracts";
+import type { PriceObservation } from "@proworks-hub/contracts";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Observed prices as a cost basis.
@@ -14,7 +14,7 @@ import type { PriceObservation } from "@proworks/contracts";
 //
 // The adapter lives in CostIQ, not ReceiptIQ, for the same reason
 // manufacturingPlanAdapter does: the consumer owns the translation. CostIQ
-// imports only `@proworks/contracts`, so it has no dependency on ReceiptIQ at
+// imports only `@proworks-hub/contracts`, so it has no dependency on ReceiptIQ at
 // all — any system that can produce valid PriceObservations can feed it.
 //
 // The honesty rules are the point of the file:

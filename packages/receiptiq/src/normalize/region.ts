@@ -2,7 +2,7 @@
 // Proprietary and confidential. Unauthorized copying, modification, or
 // distribution of this file, via any medium, is strictly prohibited.
 
-import type { RegionCode } from "@proworks/contracts";
+import type { RegionCode } from "@proworks-hub/contracts";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Region normalization.

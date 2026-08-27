@@ -11,11 +11,11 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
-      "@proworks/contracts": ["./packages/contracts/src/index.ts"],
-      "@proworks/forgeiq": ["./packages/forgeiq/src/core/index.ts"],
-      "@proworks/forgeiq/*": ["./packages/forgeiq/src/*"],
-      "@proworks/costiq": ["./packages/costiq/src/index.ts"],
-      "@proworks/prime": ["./packages/prime/src/index.ts"]
+      "@proworks-hub/contracts": ["./packages/contracts/src/index.ts"],
+      "@proworks-hub/forgeiq": ["./packages/forgeiq/src/core/index.ts"],
+      "@proworks-hub/forgeiq/*": ["./packages/forgeiq/src/*"],
+      "@proworks-hub/costiq": ["./packages/costiq/src/index.ts"],
+      "@proworks-hub/prime": ["./packages/prime/src/index.ts"]
     }
   }
 }

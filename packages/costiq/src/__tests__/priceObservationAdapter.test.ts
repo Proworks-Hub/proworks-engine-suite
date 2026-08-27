@@ -3,7 +3,7 @@
 // distribution of this file, via any medium, is strictly prohibited.
 
 import { describe, expect, it } from "vitest";
-import type { PriceObservation } from "@proworks/contracts";
+import type { PriceObservation } from "@proworks-hub/contracts";
 import {
   costBasisToMaterialRate,
   priceObservationsToCostBasis,

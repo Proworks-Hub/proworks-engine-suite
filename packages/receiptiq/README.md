@@ -1,4 +1,4 @@
-# @proworks/receiptiq
+# @proworks-hub/receiptiq
 
 **ReceiptIQ Engine** — read it, normalize it, learn from it.
 
@@ -27,7 +27,7 @@ never sees the shop's customers, jobs, or finances.
 ## Using it
 
 ```ts
-import { createReceiptIqEngine } from "@proworks/receiptiq";
+import { createReceiptIqEngine } from "@proworks-hub/receiptiq";
 
 const receiptiq = createReceiptIqEngine();
 

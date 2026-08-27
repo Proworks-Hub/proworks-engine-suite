@@ -26,6 +26,6 @@ export * from "./ai/mockProvider.js";
 
 // The shared contracts, re-exported so a host that already depends on ForgeIQ
 // does not need a second import for the types it produces.
-export * from "@proworks/contracts";
+export * from "@proworks-hub/contracts";
 // ForgeIQ's producer for the ManufacturingPlan contract.
 export * from "../manufacturing/buildManufacturingPlan.js";

@@ -7,7 +7,7 @@ import type {
   CostLine,
   CostResult,
   ManufacturingPlan,
-} from "@proworks/contracts";
+} from "@proworks-hub/contracts";
 import { calculateJobCost } from "./core/costCalculator.js";
 import type { OverheadModel } from "./models/jobCostInputModel.js";
 import {

@@ -1,5 +1,5 @@
 {
-  "name": "@proworks/forgeiq",
+  "name": "@proworks-hub/forgeiq",
   "version": "0.1.0",
   "type": "module",
   "description": "ForgeIQ — configure it, validate it, manufacture it. Produces the ManufacturingPlan.",
@@ -7,7 +7,7 @@
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/proworks/proworks-engine-suite.git",
+    "url": "git+https://github.com/Proworks-Hub/proworks-engine-suite.git",
     "directory": "packages/forgeiq"
   },
   "publishConfig": {
@@ -46,7 +46,7 @@
     }
   },
   "dependencies": {
-    "@proworks/contracts": "*",
+    "@proworks-hub/contracts": "*",
     "zod": "^3.23.0"
   },
   "devDependencies": {

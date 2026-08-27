@@ -1,5 +1,5 @@
 {
-  "name": "@proworks/prime",
+  "name": "@proworks-hub/prime",
   "version": "0.1.0",
   "type": "module",
   "description": "Prime — evaluate it, route it, decide what happens next. Consumes normalized engine output.",
@@ -7,7 +7,7 @@
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/proworks/proworks-engine-suite.git",
+    "url": "git+https://github.com/Proworks-Hub/proworks-engine-suite.git",
     "directory": "packages/prime"
   },
   "publishConfig": {
@@ -22,7 +22,7 @@
     }
   },
   "dependencies": {
-    "@proworks/contracts": "*",
+    "@proworks-hub/contracts": "*",
     "zod": "^3.23.0"
   },
   "devDependencies": {

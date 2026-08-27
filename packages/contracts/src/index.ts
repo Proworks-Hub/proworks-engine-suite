@@ -2,7 +2,7 @@
 // Proprietary and confidential. Unauthorized copying, modification, or
 // distribution of this file, via any medium, is strictly prohibited.
 
-// @proworks/contracts — the normalized contracts the engines exchange.
+// @proworks-hub/contracts — the normalized contracts the engines exchange.
 //
 // This package depends on nothing but zod. ForgeIQ produces a
 // ManufacturingPlan; CostIQ consumes it and produces a CostResult; Prime

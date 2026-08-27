@@ -2,8 +2,8 @@
 // Proprietary and confidential. Unauthorized copying, modification, or
 // distribution of this file, via any medium, is strictly prohibited.
 
-import type { NormalizedReceipt, PriceObservation, ReceiptLine } from "@proworks/contracts";
-import { assertNoIdentityFields, priceObservationSchema } from "@proworks/contracts";
+import type { NormalizedReceipt, PriceObservation, ReceiptLine } from "@proworks-hub/contracts";
+import { assertNoIdentityFields, priceObservationSchema } from "@proworks-hub/contracts";
 import { observationFingerprint } from "../normalize/fingerprint.js";
 
 // ─────────────────────────────────────────────────────────────────────────────

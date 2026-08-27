@@ -2,8 +2,8 @@
 // Proprietary and confidential. Unauthorized copying, modification, or
 // distribution of this file, via any medium, is strictly prohibited.
 
-import type { Money, PriceObservation, RegionCode } from "@proworks/contracts";
-import { money } from "@proworks/contracts";
+import type { Money, PriceObservation, RegionCode } from "@proworks-hub/contracts";
+import { money } from "@proworks-hub/contracts";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Price estimation.

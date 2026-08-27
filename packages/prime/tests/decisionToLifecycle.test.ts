@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { CostResult, ManufacturingPlan } from "@proworks/contracts";
-import { decisionContextSchema, DECISION_CONTEXT_VERSION } from "@proworks/contracts";
+import type { CostResult, ManufacturingPlan } from "@proworks-hub/contracts";
+import { decisionContextSchema, DECISION_CONTEXT_VERSION } from "@proworks-hub/contracts";
 import {
   createPrimeEngine,
   createInMemoryEventLog,

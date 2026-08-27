@@ -1,5 +1,5 @@
 {
-  "name": "@proworks/costiq",
+  "name": "@proworks-hub/costiq",
   "version": "0.1.0",
   "type": "module",
   "description": "CostIQ — cost it, margin it, price it. Consumes a ManufacturingPlan; owns the economics.",
@@ -7,7 +7,7 @@
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/proworks/proworks-engine-suite.git",
+    "url": "git+https://github.com/Proworks-Hub/proworks-engine-suite.git",
     "directory": "packages/costiq"
   },
   "publishConfig": {
@@ -22,7 +22,7 @@
     }
   },
   "dependencies": {
-    "@proworks/contracts": "*",
+    "@proworks-hub/contracts": "*",
     "zod": "^3.23.0"
   },
   "devDependencies": {

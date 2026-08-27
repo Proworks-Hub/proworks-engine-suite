@@ -3,12 +3,12 @@ import { runValidation } from "../src/core/validation/validationEngine";
 import { buildManufacturingPlan } from "../src/manufacturing/buildManufacturingPlan";
 import { productConfigurationSchema } from "../src/core/schemas/configuration";
 import { productDefinitionSchema } from "../src/core/schemas/productDefinition";
-import { createCostIqEngine } from "@proworks/costiq";
-import { createPrimeEngine } from "@proworks/prime";
+import { createCostIqEngine } from "@proworks-hub/costiq";
+import { createPrimeEngine } from "@proworks-hub/prime";
 import {
   decisionContextSchema,
   DECISION_CONTEXT_VERSION,
-} from "@proworks/contracts";
+} from "@proworks-hub/contracts";
 import { buildMetalSignDefinition, demoAluminumSpecs } from "../src/demo/metalSign";
 import { demoCortenSpecs, demoFiberLaserSpecs } from "../src/demo/firepit";
 import type { MaterialProfileSpecs } from "../src/core/schemas/materialProfile";

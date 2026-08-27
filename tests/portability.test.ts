@@ -24,7 +24,7 @@ const ROOT = join(fileURLToPath(new URL(".", import.meta.url)), "..");
 const PACKAGES = join(ROOT, "packages");
 
 /** Published entry points the engines may import from one another. */
-const SUITE_PACKAGES = /^@proworks\/(contracts|forgeiq|costiq|prime|receiptiq)(\/|$)/;
+const SUITE_PACKAGES = /^@proworks-hub\/(contracts|forgeiq|costiq|prime|receiptiq)(\/|$)/;
 
 /** Host applications. Nothing here may import from them, ever. */
 const HOST_IMPORTS = [
@@ -119,12 +119,12 @@ describe("engine suite portability", () => {
         f.relative.startsWith("receiptiq/"),
     )) {
       for (const spec of importSpecifiers(file.text)) {
-        if (spec.startsWith("@proworks/forgeiq")) offenders.push(`${file.relative} → ${spec}`);
+        if (spec.startsWith("@proworks-hub/forgeiq")) offenders.push(`${file.relative} → ${spec}`);
       }
     }
     expect(offenders).toEqual([]);
     for (const name of ["costiq", "prime", "receiptiq"]) {
-      expect(Object.keys(pkgJson(name).dependencies ?? {})).not.toContain("@proworks/forgeiq");
+      expect(Object.keys(pkgJson(name).dependencies ?? {})).not.toContain("@proworks-hub/forgeiq");
     }
   });
 

@@ -136,10 +136,10 @@ export const bomComponentSchema = z.object({
 // every definition behaved before this existed.
 
 // The operation vocabulary is a shared contract — declared once in
-// @proworks/contracts and re-exported here so product definitions and
+// @proworks-hub/contracts and re-exported here so product definitions and
 // manufacturing plans can never drift apart.
-export { operationTypeSchema } from "@proworks/contracts";
-import { operationTypeSchema } from "@proworks/contracts";
+export { operationTypeSchema } from "@proworks-hub/contracts";
+import { operationTypeSchema } from "@proworks-hub/contracts";
 
 /** How long an operation takes, expressed against something real. */
 export const operationTimeSchema = z.discriminatedUnion("basis", [
@@ -222,7 +222,7 @@ export type DimensionPreset = z.infer<typeof dimensionPresetSchema>;
 export type ProductSurface = z.infer<typeof surfaceSchema>;
 export type PricingRules = z.infer<typeof pricingRulesSchema>;
 export type BomComponent = z.infer<typeof bomComponentSchema>;
-export type { OperationType } from "@proworks/contracts";
+export type { OperationType } from "@proworks-hub/contracts";
 export type OperationTime = z.infer<typeof operationTimeSchema>;
 export type ProductOperation = z.infer<typeof productOperationSchema>;
 export type ManufacturingConstraints = z.infer<typeof manufacturingConstraintsSchema>;

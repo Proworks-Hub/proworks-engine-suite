@@ -8,7 +8,7 @@ import type {
   DecisionEngine,
   DecisionReason,
   DecisionResult,
-} from "@proworks/contracts";
+} from "@proworks-hub/contracts";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Prime — evaluate it, route it, decide what happens next.

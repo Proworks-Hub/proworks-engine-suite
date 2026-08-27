@@ -2,7 +2,7 @@
 // Proprietary and confidential. Unauthorized copying, modification, or
 // distribution of this file, via any medium, is strictly prohibited.
 
-import type { CostLine, ManufacturingPlan } from "@proworks/contracts";
+import type { CostLine, ManufacturingPlan } from "@proworks-hub/contracts";
 import type {
   JobCostInput,
   LaborTime,

@@ -3,7 +3,7 @@
 // distribution of this file, via any medium, is strictly prohibited.
 
 import { describe, expect, it } from "vitest";
-import { assertNoIdentityFields, type NormalizedReceipt } from "@proworks/contracts";
+import { assertNoIdentityFields, type NormalizedReceipt } from "@proworks-hub/contracts";
 import { contributeObservations } from "../boundary/contribute.js";
 import { normalizeReceipt } from "../normalizeReceipt.js";
 

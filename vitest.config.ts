@@ -9,10 +9,10 @@ const pkg = (name: string, entry: string) =>
 export default defineConfig({
   resolve: {
     alias: {
-      "@proworks/contracts": pkg("contracts", "src/index.ts"),
-      "@proworks/forgeiq": pkg("forgeiq", "src/core/index.ts"),
-      "@proworks/costiq": pkg("costiq", "src/index.ts"),
-      "@proworks/prime": pkg("prime", "src/index.ts"),
+      "@proworks-hub/contracts": pkg("contracts", "src/index.ts"),
+      "@proworks-hub/forgeiq": pkg("forgeiq", "src/core/index.ts"),
+      "@proworks-hub/costiq": pkg("costiq", "src/index.ts"),
+      "@proworks-hub/prime": pkg("prime", "src/index.ts"),
     },
   },
   test: {

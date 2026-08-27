@@ -2,7 +2,7 @@
 // Proprietary and confidential. Unauthorized copying, modification, or
 // distribution of this file, via any medium, is strictly prohibited.
 
-import { CONFIDENCE } from "@proworks/contracts";
+import { CONFIDENCE } from "@proworks-hub/contracts";
 import { normalizeName } from "../normalize/keys.js";
 
 // ─────────────────────────────────────────────────────────────────────────────

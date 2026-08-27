@@ -7,7 +7,7 @@ import type {
   PriceObservation,
   RawReceiptInput,
   ReceiptExtractor,
-} from "@proworks/contracts";
+} from "@proworks-hub/contracts";
 import { textExtractor } from "./extract/textExtractor.js";
 import { normalizeReceipt, type NormalizeOptions } from "./normalizeReceipt.js";
 import { contributeObservations, type ContributionOptions, type ContributionResult } from "./boundary/contribute.js";

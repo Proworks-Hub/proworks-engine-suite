@@ -22,10 +22,10 @@ import {
   type PlanOperation,
   type PlanPart,
   type PlanStock,
-} from "@proworks/contracts";
+} from "@proworks-hub/contracts";
 
 // ForgeIQ's producer for the shared ManufacturingPlan contract. The contract
-// itself lives in @proworks/contracts so CostIQ, Prime, and hosts can consume
+// itself lives in @proworks-hub/contracts so CostIQ, Prime, and hosts can consume
 // a plan without depending on the engine that built it.
 
 const round4 = (n: number) => Math.round(n * 10000) / 10000;

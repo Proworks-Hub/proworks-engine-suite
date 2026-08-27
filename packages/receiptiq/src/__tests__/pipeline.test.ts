@@ -3,7 +3,7 @@
 // distribution of this file, via any medium, is strictly prohibited.
 
 import { describe, expect, it } from "vitest";
-import type { PriceObservation } from "@proworks/contracts";
+import type { PriceObservation } from "@proworks-hub/contracts";
 import { createReceiptIqEngine } from "../receiptiqEngine.js";
 import { estimatePrice, summarizeByMerchant } from "../pricing/estimator.js";
 import { classifyItem } from "../knowledge/classifier.js";

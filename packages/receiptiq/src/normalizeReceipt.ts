@@ -8,8 +8,8 @@ import type {
   NormalizedReceipt,
   OwnershipClass,
   ReceiptLine,
-} from "@proworks/contracts";
-import { CONFIDENCE, money, moneyFromDecimal, normalizedReceiptSchema } from "@proworks/contracts";
+} from "@proworks-hub/contracts";
+import { CONFIDENCE, money, moneyFromDecimal, normalizedReceiptSchema } from "@proworks-hub/contracts";
 import { normalizeName } from "./normalize/keys.js";
 import { normalizeMerchant, type MerchantNormalizationOptions } from "./normalize/merchant.js";
 import { parseRegion } from "./normalize/region.js";

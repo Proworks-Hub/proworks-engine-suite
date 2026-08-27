@@ -3,7 +3,7 @@ import {
   costResultSchema,
   type CostEngine,
   type CostResult,
-} from "@proworks/contracts";
+} from "@proworks-hub/contracts";
 import {
   decisionContextSchema,
   decisionResultSchema,
@@ -11,8 +11,8 @@ import {
   type DecisionContext,
   type DecisionEngine,
   type DecisionResult,
-} from "@proworks/contracts";
-import { manufacturingPlanSchema, PLAN_VERSION, type ManufacturingPlan } from "@proworks/contracts";
+} from "@proworks-hub/contracts";
+import { manufacturingPlanSchema, PLAN_VERSION, type ManufacturingPlan } from "@proworks-hub/contracts";
 import { buildManufacturingPlan } from "../src/manufacturing/buildManufacturingPlan";
 import { baseConfig, definition, machine, materials } from "./helpers";
 
