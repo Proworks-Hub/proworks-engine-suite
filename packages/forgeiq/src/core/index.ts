@@ -29,3 +29,12 @@ export * from "./ai/mockProvider.js";
 export * from "@proworks-hub/contracts";
 // ForgeIQ's producer for the ManufacturingPlan contract.
 export * from "../manufacturing/buildManufacturingPlan.js";
+
+// Calculated values, without handing a merchant a JavaScript interpreter:
+// a closed grammar with no property access, no assignment and no way to name
+// anything the evaluator was not given.
+export * from "./formula/expression.js";
+
+// The merchant's logic, evaluated in the engine rather than promised to the
+// UI. Rules are data; effects are a closed set of named operations.
+export * from "./rules/ruleEngine.js";
