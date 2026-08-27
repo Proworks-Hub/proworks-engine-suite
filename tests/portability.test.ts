@@ -163,6 +163,105 @@ describe("engine suite portability", () => {
     expect(reactOffenders).toEqual([]);
   });
 
+  it("keeps the pure engines free of I/O and host frameworks", () => {
+    // Prime, CostIQ and ReceiptIQ hold no state and open no connections. That
+    // is what lets them be consumed as libraries today and deployed as
+    // services later without touching their domain code.
+    //
+    // Until now it was true by discipline rather than by any check, which made
+    // it the property most likely to be lost by accident — and the hardest to
+    // recover once a database call is three layers deep. The hardening
+    // directive asks for durable workflow state in Prime; this guard is what
+    // makes sure that arrives as a PORT with the host supplying storage,
+    // rather than as a connection inside the engine.
+    //
+    // ForgeIQ is deliberately absent: it ships optional `server` and `react`
+    // layers, and its `core` purity is covered by its own test above.
+    const PURE_PACKAGES = ["prime", "costiq", "receiptiq", "contracts"];
+
+    const bannedExact = [
+      "express",
+      "drizzle-orm",
+      "react",
+      "react-dom",
+      "pg",
+      "postgres",
+      "mysql2",
+      "sqlite3",
+      "better-sqlite3",
+      "mongodb",
+      "redis",
+      "ioredis",
+      "idb",
+      "@supabase/supabase-js",
+      "@tanstack/react-query",
+      "axios",
+      "node-fetch",
+    ];
+    // Node builtins, with or without the `node:` prefix.
+    const bannedBuiltins = [
+      "fs", "path", "os", "http", "https", "net", "dns", "child_process",
+      "worker_threads", "cluster", "crypto", "stream", "zlib", "tls",
+    ];
+
+    const offenders: string[] = [];
+    for (const file of sourceFiles) {
+      const pkg = file.relative.split("/")[0]!;
+      if (!PURE_PACKAGES.includes(pkg)) continue;
+      // Tests may reach for timers and fixtures; the shipped code may not.
+      if (file.relative.includes("__tests__/") || file.relative.includes("/tests/")) continue;
+
+      for (const spec of importSpecifiers(file.text)) {
+        const bare = spec.startsWith("node:") ? spec.slice("node:".length) : spec;
+        const root = bare.split("/")[0]!;
+        if (bannedExact.some((b) => spec === b || spec.startsWith(`${b}/`))) {
+          offenders.push(`${file.relative} → ${spec}`);
+        } else if (spec.startsWith("node:") || bannedBuiltins.includes(root)) {
+          offenders.push(`${file.relative} → ${spec}`);
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps global state and ambient I/O out of the pure engines", () => {
+    // A package can stay import-clean and still reach for a browser or Node
+    // global. These are the ones that would quietly tie an engine to one
+    // runtime, or give it hidden state that does not survive being moved.
+    const PURE_PACKAGES = ["prime", "costiq", "receiptiq", "contracts"];
+    const bannedGlobals = [
+      /\blocalStorage\b/,
+      /\bsessionStorage\b/,
+      /\bindexedDB\b/,
+      // Require an identifier after the dot. "window." also occurs in prose —
+      // "beyond the 90-day window." — and a guard that fires on English is a
+      // guard somebody switches off.
+      /\bdocument\.[A-Za-z_$]/,
+      /\bwindow\.[A-Za-z_$]/,
+      /\bprocess\.env\b/,
+      // `globalThis.crypto` is allowed, and only that. Prime feature-detects it
+      // for default id generation, with a Math.random fallback and an
+      // `IdGenerator` port for callers who need determinism — a defaulted
+      // dependency, not a hidden one. Any OTHER reach into globalThis is
+      // ambient state and is refused.
+      /\bglobalThis\.(?!crypto\b)[A-Za-z_$]/,
+    ];
+
+    const offenders: string[] = [];
+    for (const file of sourceFiles) {
+      const pkg = file.relative.split("/")[0]!;
+      if (!PURE_PACKAGES.includes(pkg)) continue;
+      if (file.relative.includes("__tests__/") || file.relative.includes("/tests/")) continue;
+
+      for (const pattern of bannedGlobals) {
+        // Ignore prose: these files carry long explanatory headers.
+        const code = file.text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+        if (pattern.test(code)) offenders.push(`${file.relative} → ${pattern.source}`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
   it("declares only suite packages and zod as runtime dependencies", () => {
     // A host framework appearing here would make the engine un-liftable; the
     // host-facing layers declare theirs as optional peers instead.
