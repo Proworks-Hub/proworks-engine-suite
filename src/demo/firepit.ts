@@ -200,5 +200,52 @@ export function buildFirepitDefinition(ids: FirepitProfileIds): ProductDefinitio
       maxPanelWidthIn: 24,
       maxPanelHeightIn: 24,
     },
+    bom: [
+      {
+        id: "side-panel",
+        name: "Side panel",
+        kind: "cut-part",
+        quantity: { mode: "per-surface" },
+        dimensions: { source: "surface" },
+        note: "Customer artwork cut through",
+      },
+      {
+        id: "bottom-plate",
+        name: "Bottom plate",
+        kind: "cut-part",
+        quantity: { mode: "fixed", count: 1 },
+        dimensions: { source: "footprint" },
+        note: "Drain holes per template",
+      },
+      {
+        id: "leg",
+        name: "Leg",
+        kind: "cut-part",
+        quantity: { mode: "fixed", count: 4 },
+        dimensions: { source: "fixed", widthIn: 3, heightIn: 8 },
+      },
+      {
+        id: "fasteners",
+        name: "Stainless fastener set",
+        kind: "hardware",
+        quantity: { mode: "fixed", count: 1 },
+        unitCost: 6.5,
+        note: "16× M6 bolts, nuts, washers",
+      },
+      {
+        id: "weld-consumables",
+        name: "Weld wire / gas",
+        kind: "consumable",
+        quantity: { mode: "fixed", count: 1 },
+        unitCost: 4,
+      },
+      {
+        id: "packaging",
+        name: "Crate + padding",
+        kind: "packaging",
+        quantity: { mode: "fixed", count: 1 },
+        unitCost: 14,
+      },
+    ],
   };
 }

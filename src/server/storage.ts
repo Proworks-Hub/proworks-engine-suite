@@ -10,6 +10,7 @@ import {
   resolveMachineProfileId,
   resolveMaterialProfileId,
 } from "../core/resolve";
+import { productDefinitionSchema } from "../core/schemas/productDefinition";
 import {
   fiqMachineProfiles,
   fiqMaterialProfiles,
@@ -25,6 +26,15 @@ export type FiqDb = NodePgDatabase<Record<string, unknown>>;
 export interface PricingProfiles {
   materials: Map<number, MaterialProfileSpecs>;
   machine: MachineProfileSpecs;
+}
+
+// Definitions are stored as jsonb and read back by cast, so rows written
+// before a schema field existed come back missing it. Re-parsing on read
+// applies the schema's defaults; a definition too old to parse is returned
+// as-is rather than failing the order it belongs to.
+function withSchemaDefaults<T extends { definition: ProductDefinition }>(row: T): T {
+  const parsed = productDefinitionSchema.safeParse(row.definition);
+  return parsed.success ? { ...row, definition: parsed.data } : row;
 }
 
 export class BuilderEngineStorage {
@@ -137,7 +147,7 @@ export class BuilderEngineStorage {
           eq(fiqProductDefinitions.status, "active"),
         ),
       );
-    return rows[0];
+    return rows[0] ? withSchemaDefaults(rows[0]) : rows[0];
   }
 
   async getProductById(orgId: number, id: number) {
@@ -145,7 +155,7 @@ export class BuilderEngineStorage {
       .select()
       .from(fiqProductDefinitions)
       .where(and(eq(fiqProductDefinitions.id, id), eq(fiqProductDefinitions.orgId, orgId)));
-    return rows[0];
+    return rows[0] ? withSchemaDefaults(rows[0]) : rows[0];
   }
 
   // Insert a new version and retire the previously active one.

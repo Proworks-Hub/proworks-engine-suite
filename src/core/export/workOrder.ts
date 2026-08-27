@@ -1,6 +1,8 @@
 import type { ProductDefinition } from "../schemas/productDefinition";
 import type { ProductConfiguration } from "../schemas/configuration";
 import type { PriceBreakdown } from "../pricing/pricingEngine";
+import type { MaterialProfileSpecs } from "../schemas/materialProfile";
+import { buildBillOfMaterials } from "../production/bom";
 import {
   resolveSurfaceDims,
   selectedOptionValues,
@@ -19,6 +21,8 @@ export interface WorkOrderInput {
   price?: PriceBreakdown | null;
   machineName?: string;
   materialName?: string;
+  /** Needed to nest cut parts onto real stock for the BOM section. */
+  materials?: Map<number, MaterialProfileSpecs>;
 }
 
 const line = "─".repeat(58);
@@ -70,6 +74,38 @@ export function buildWorkOrder(input: WorkOrderInput): string {
     }
   }
 
+  // ── Bill of materials + stock requirement ─────────────────────────────
+  const bom = buildBillOfMaterials({
+    definition: def,
+    configuration: config,
+    materials: input.materials ?? new Map(),
+    materialName: input.materialName,
+  });
+  if (bom.items.length > 0) {
+    out.push("", "BILL OF MATERIALS", line);
+    for (const item of bom.items) {
+      const dims = item.dimensionsIn
+        ? ` — ${item.dimensionsIn.widthIn}" × ${item.dimensionsIn.heightIn}"`
+        : "";
+      const cost = item.totalCost !== undefined ? ` — $${item.totalCost.toFixed(2)}` : "";
+      out.push(`${String(item.quantity).padStart(3)} × ${item.name}${dims}${cost}`);
+      if (item.note) out.push(`      ${item.note}`);
+    }
+    if (bom.stock) {
+      out.push(
+        "",
+        "STOCK REQUIRED",
+        line,
+        `Sheets:          ${bom.stock.sheetsNeeded} × ${bom.stock.materialName ?? "stock"} @ $${bom.stock.sheetCost.toFixed(2)}`,
+        `Part area:       ${bom.stock.partAreaSqFt.toFixed(2)} sq ft of ${bom.stock.sheetAreaSqFt.toFixed(2)} sq ft purchased`,
+        `Utilization:     ${Math.round(bom.stock.utilizationPct * 100)}%`,
+      );
+      if (bom.stock.oversizedPartIds.length > 0) {
+        out.push(`⚠ Too large for stock: ${bom.stock.oversizedPartIds.join(", ")}`);
+      }
+    }
+  }
+
   const areaSqFt = totalSurfaceAreaSqFt(def, config);
   const knobs = def.pricing.internalCost;
   const estMachineMinutes = knobs.estMachineMinutesPerSqFt * areaSqFt * config.quantity;
@@ -88,6 +124,7 @@ export function buildWorkOrder(input: WorkOrderInput): string {
       "COSTING (INTERNAL — DO NOT SHIP)",
       line,
       `Material cost:   $${price.internal.materialCost.toFixed(2)}`,
+      `Hardware/pkg:    $${(price.internal.hardwareCost ?? 0).toFixed(2)}`,
       `Machine time:    $${price.internal.machineTimeCost.toFixed(2)}`,
       `Setup:           $${price.internal.setupCost.toFixed(2)}`,
       `Labor:           $${price.internal.laborCost.toFixed(2)}`,

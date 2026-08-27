@@ -79,13 +79,18 @@ describe("pricing engine", () => {
     const b = price();
     const areaSqFt = totalSurfaceAreaSqFt(definition, baseConfig());
     expect(areaSqFt).toBeCloseTo(12, 5);
-    expect(b.internal.materialCost).toBeCloseTo(12 * 5.5, 2); // 66
+    // Material follows the bill of materials: one 48×96 corten sheet at
+    // $5.50/sq ft = $176, not raw panel area.
+    expect(b.internal.sheetsNeeded).toBe(1);
+    expect(b.internal.materialCost).toBeCloseTo(176, 2);
+    expect(b.internal.hardwareCost).toBeCloseTo(24.5, 2); // fasteners + weld + crate
     expect(b.internal.machineTimeCost).toBeCloseTo(((4 * 12) / 60) * 45, 2); // 36
     expect(b.internal.setupCost).toBeCloseTo((20 / 60) * 45, 2); // 15
     expect(b.internal.laborCost).toBeCloseTo((45 / 60) * 30, 2); // 22.5
-    expect(b.internal.totalCost).toBeCloseTo(139.5, 2);
-    expect(b.internal.margin).toBeCloseTo(b.customerPrice - 139.5, 2);
-    expect(b.internal.marginPct).toBeGreaterThan(0.5);
+    const expectedTotal = 176 + 24.5 + 36 + 15 + 22.5; // 274
+    expect(b.internal.totalCost).toBeCloseTo(expectedTotal, 2);
+    expect(b.internal.margin).toBeCloseTo(b.customerPrice - expectedTotal, 2);
+    expect(b.internal.marginPct).toBeGreaterThan(0.3);
   });
 
   it("toPublicBreakdown strips internal cost", () => {

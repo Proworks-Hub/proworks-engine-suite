@@ -12,3 +12,5 @@ export * from "./export/cutlineSvg";
 export * from "./export/bridges";
 export * from "./export/workOrder";
 export * from "./repair/designRepair";
+export * from "./production/bom";
+export * from "./production/nesting";

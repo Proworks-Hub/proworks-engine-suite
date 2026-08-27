@@ -91,6 +91,40 @@ export const pricingRulesSchema = z.object({
   }),
 });
 
+// ── Bill of materials ───────────────────────────────────────────────────────
+// What the shop actually consumes to build one unit. Cut parts are nested on
+// stock sheets to derive the real material requirement; hardware and
+// consumables are counted and costed per unit.
+export const bomComponentSchema = z.object({
+  id: z.string(), // "side-panel", "bottom-plate", "leg", "fasteners"
+  name: z.string(),
+  kind: z.enum(["cut-part", "hardware", "consumable", "packaging"]),
+  // How many per unit: a fixed count, or one per customizable surface (so a
+  // 4-panel product yields 4 side panels without hardcoding the number).
+  quantity: z.discriminatedUnion("mode", [
+    z.object({ mode: z.literal("fixed"), count: z.number().int().min(1) }),
+    z.object({ mode: z.literal("per-surface") }),
+  ]),
+  // Cut parts need dimensions to nest. "surface" takes the resolved panel
+  // size; "footprint" takes the selected preset's width/depth; "fixed" is
+  // literal inches.
+  dimensions: z
+    .discriminatedUnion("source", [
+      z.object({ source: z.literal("surface") }),
+      z.object({ source: z.literal("footprint") }),
+      z.object({
+        source: z.literal("fixed"),
+        widthIn: z.number().positive(),
+        heightIn: z.number().positive(),
+      }),
+    ])
+    .optional(),
+  // Hardware/consumables carry their own cost; cut parts inherit the
+  // selected material's sheet cost through nesting.
+  unitCost: z.number().min(0).optional(),
+  note: z.string().optional(),
+});
+
 // ── Manufacturing constraints ───────────────────────────────────────────────
 export const manufacturingConstraintsSchema = z.object({
   minFeatureIn: z.number().positive().default(0.05),
@@ -118,6 +152,8 @@ export const productDefinitionSchema = z.object({
   defaultMachineProfileId: z.number().int(),
   pricing: pricingRulesSchema,
   constraints: manufacturingConstraintsSchema,
+  // Optional: products without a BOM fall back to area-based material costing.
+  bom: z.array(bomComponentSchema).default([]),
 });
 
 export type PriceModifier = z.infer<typeof priceModifierSchema>;
@@ -126,5 +162,6 @@ export type OptionGroup = z.infer<typeof optionGroupSchema>;
 export type DimensionPreset = z.infer<typeof dimensionPresetSchema>;
 export type ProductSurface = z.infer<typeof surfaceSchema>;
 export type PricingRules = z.infer<typeof pricingRulesSchema>;
+export type BomComponent = z.infer<typeof bomComponentSchema>;
 export type ManufacturingConstraints = z.infer<typeof manufacturingConstraintsSchema>;
 export type ProductDefinition = z.infer<typeof productDefinitionSchema>;

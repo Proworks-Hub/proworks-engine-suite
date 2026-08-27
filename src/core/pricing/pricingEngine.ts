@@ -2,11 +2,8 @@ import type { ProductDefinition } from "../schemas/productDefinition";
 import type { ProductConfiguration } from "../schemas/configuration";
 import type { MachineProfileSpecs } from "../schemas/machineProfile";
 import type { MaterialProfileSpecs } from "../schemas/materialProfile";
-import {
-  resolveMaterialProfileId,
-  selectedOptionValues,
-  totalSurfaceAreaSqFt,
-} from "../resolve";
+import { selectedOptionValues, totalSurfaceAreaSqFt } from "../resolve";
+import { buildBillOfMaterials } from "../production/bom";
 import { resolveQuantityTier } from "./quantity";
 
 export interface PricingInput {
@@ -28,9 +25,13 @@ export interface InternalCost {
   machineTimeCost: number;
   setupCost: number;
   laborCost: number;
+  /** Hardware, consumables, and packaging from the bill of materials. */
+  hardwareCost: number;
   totalCost: number;
   margin: number; // customerPrice - totalCost
   marginPct: number;
+  /** Stock sheets the cut parts consume, when a BOM is defined. */
+  sheetsNeeded?: number;
 }
 
 export interface PriceBreakdown {
@@ -125,17 +126,19 @@ export function computePrice(input: PricingInput): PriceBreakdown {
   }
 
   // ── Internal cost estimate (admin-only) ──────────────────────────────────
-  const materialId = resolveMaterialProfileId(definition, configuration);
-  const material = materialId !== undefined ? materials.get(materialId) : undefined;
   const knobs = pricing.internalCost;
-  const perUnitMaterial = material ? areaSqFt * material.costPerSqFt : 0;
+  // Material and hardware come from the bill of materials, which nests cut
+  // parts onto real stock sheets. Products without a BOM fall back to a raw
+  // area estimate inside buildBillOfMaterials.
+  const bom = buildBillOfMaterials({ definition, configuration, materials });
   const perUnitMachine =
     ((knobs.estMachineMinutesPerSqFt * areaSqFt) / 60) * machine.costPerHour;
-  const materialCost = roundMoney(perUnitMaterial * quantity);
   const machineTimeCost = roundMoney(perUnitMachine * quantity);
   const setupCost = roundMoney((knobs.setupMinutes / 60) * machine.costPerHour);
   const laborCost = roundMoney((knobs.laborMinutes / 60) * knobs.laborRatePerHour * quantity);
-  const totalCost = roundMoney(materialCost + machineTimeCost + setupCost + laborCost);
+  const totalCost = roundMoney(
+    bom.materialCost + bom.hardwareCost + machineTimeCost + setupCost + laborCost,
+  );
   const margin = roundMoney(customerPrice - totalCost);
 
   return {
@@ -144,13 +147,15 @@ export function computePrice(input: PricingInput): PriceBreakdown {
     customerPrice,
     lines,
     internal: {
-      materialCost,
+      materialCost: bom.materialCost,
       machineTimeCost,
       setupCost,
       laborCost,
+      hardwareCost: bom.hardwareCost,
       totalCost,
       margin,
       marginPct: customerPrice > 0 ? roundMoney(margin / customerPrice) : 0,
+      sheetsNeeded: bom.stock?.sheetsNeeded,
     },
   };
 }
