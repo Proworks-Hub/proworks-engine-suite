@@ -59,7 +59,7 @@
 import type {
   WorkOrderId,
   WorkOrderStepId,
-} from "../../models/events";
+} from "../../models/events.js";
 
 // ---------- State ----------
 

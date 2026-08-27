@@ -29,12 +29,12 @@ import type {
   EtaRiskReason,
   Milestone,
   TrackedStep,
-} from "./trackingTypes";
+} from "./trackingTypes.js";
 import {
   MILESTONE_ORDER,
   OVERDUE_RATIO,
   PACE_SLIPPAGE_RATIO,
-} from "./trackingTypes";
+} from "./trackingTypes.js";
 
 const MS_PER_MINUTE = 60_000;
 const QC_CLASS = "quality_check";

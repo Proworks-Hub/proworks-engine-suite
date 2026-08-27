@@ -37,11 +37,11 @@
 import type {
   EventActor,
   WorkOrderEventType,
-} from "../../models/events";
+} from "../../models/events.js";
 import type {
   Clock,
   EventLog,
-} from "../logging/eventLog";
+} from "../logging/eventLog.js";
 import type {
   ApproveChangeOrderInput,
   ChangeError,
@@ -51,7 +51,7 @@ import type {
   ChangeOrderRejectedPayload,
   CreateChangeOrderInput,
   RejectChangeOrderInput,
-} from "./changeOrderTypes";
+} from "./changeOrderTypes.js";
 
 // ---------- Public surface ----------
 

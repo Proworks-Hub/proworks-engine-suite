@@ -50,7 +50,7 @@ import type {
   StationId,
   WorkOrderId,
   WorkOrderStepId,
-} from "../../models/events";
+} from "../../models/events.js";
 
 // ---------- Change orders ----------
 

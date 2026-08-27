@@ -20,18 +20,18 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { createInMemoryEventLog } from "../inMemoryEventLog";
+import { createInMemoryEventLog } from "../inMemoryEventLog.js";
 import {
   replayEventLog,
   hydrateAndSubscribe,
   type ProjectionReducer,
-} from "../replay";
-import type { WorkOrderEvent } from "../../../models/events";
+} from "../replay.js";
+import type { WorkOrderEvent } from "../../../models/events.js";
 import type {
   EventLog,
   SubscribableEventLog,
   EventLogListener,
-} from "../eventLog";
+} from "../eventLog.js";
 
 /** Minimal counter projection: tally how many events per workOrderId. */
 interface CounterState {

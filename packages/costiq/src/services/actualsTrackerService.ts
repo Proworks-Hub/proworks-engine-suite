@@ -64,7 +64,7 @@ import type {
   ActualCostLayerBreakdown,
   ActualCostSnapshot,
   VarianceSummary,
-} from "../models/actualCostSnapshotModel";
+} from "../models/actualCostSnapshotModel.js";
 
 // ---------- Public service interface ----------
 

@@ -35,7 +35,7 @@
  * Stability:    CANONICAL (Phase 1)
  */
 
-import type { WorkstationCostProfile } from "./workstationCostModel";
+import type { WorkstationCostProfile } from "./workstationCostModel.js";
 
 // ---------- Material usage (Layer 1) ----------
 

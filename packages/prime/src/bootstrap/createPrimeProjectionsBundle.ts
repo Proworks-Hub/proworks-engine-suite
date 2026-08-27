@@ -46,18 +46,18 @@
  *   );
  */
 
-import type { EventLog } from "../core/logging/eventLog";
-import type { WorkOrderSummaryProjection } from "../projections/createWorkOrderSummaryProjection";
-import type { StationKioskProjection } from "../projections/stationKioskProjection";
-import type { MasterTabletProjection } from "../projections/masterTabletProjection";
-import type { PreProductionProjection } from "../projections/preProductionProjection";
-import type { CustomerProjection } from "../projections/customerProjection";
+import type { EventLog } from "../core/logging/eventLog.js";
+import type { WorkOrderSummaryProjection } from "../projections/createWorkOrderSummaryProjection.js";
+import type { StationKioskProjection } from "../projections/stationKioskProjection.js";
+import type { MasterTabletProjection } from "../projections/masterTabletProjection.js";
+import type { PreProductionProjection } from "../projections/preProductionProjection.js";
+import type { CustomerProjection } from "../projections/customerProjection.js";
 
-import { createWorkOrderSummaryProjection } from "../projections/createWorkOrderSummaryProjection";
-import { createStationKioskProjection } from "../projections/stationKioskProjection";
-import { createMasterTabletProjection } from "../projections/masterTabletProjection";
-import { createPreProductionProjection } from "../projections/preProductionProjection";
-import { createCustomerProjection } from "../projections/customerProjection";
+import { createWorkOrderSummaryProjection } from "../projections/createWorkOrderSummaryProjection.js";
+import { createStationKioskProjection } from "../projections/stationKioskProjection.js";
+import { createMasterTabletProjection } from "../projections/masterTabletProjection.js";
+import { createPreProductionProjection } from "../projections/preProductionProjection.js";
+import { createCustomerProjection } from "../projections/customerProjection.js";
 
 /**
  * The five projections a host renders together. Declared here rather than in

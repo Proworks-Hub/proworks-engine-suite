@@ -1,4 +1,4 @@
-import type { Point } from "../../core/export/cutlineSvg";
+import type { Point } from "../../core/export/cutlineSvg.js";
 
 // Browser-only contour tracing for uploaded artwork: alpha-channel mask →
 // dilation → marching-squares → RDP simplify → Chaikin smoothing. Ported from

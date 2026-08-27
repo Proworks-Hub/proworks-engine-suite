@@ -1,6 +1,6 @@
-import type { ProductDefinition } from "../core/schemas/productDefinition";
-import type { MachineProfileSpecs } from "../core/schemas/machineProfile";
-import type { MaterialProfileSpecs } from "../core/schemas/materialProfile";
+import type { ProductDefinition } from "../core/schemas/productDefinition.js";
+import type { MachineProfileSpecs } from "../core/schemas/machineProfile.js";
+import type { MaterialProfileSpecs } from "../core/schemas/materialProfile.js";
 
 // Demo/example product: a customizable square metal fire pit. Hosts seed this
 // with their own real profile row ids; tests use stable fake ids. This file is

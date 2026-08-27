@@ -1,8 +1,8 @@
 import { useState } from "react";
-import type { ProductConfiguration } from "../../core/schemas/configuration";
-import type { ProductDefinition } from "../../core/schemas/productDefinition";
-import type { ConceptBrief } from "../../core/ai/types";
-import { postConcepts, type ConceptResponse } from "../engineClient";
+import type { ProductConfiguration } from "../../core/schemas/configuration.js";
+import type { ProductDefinition } from "../../core/schemas/productDefinition.js";
+import type { ConceptBrief } from "../../core/ai/types.js";
+import { postConcepts, type ConceptResponse } from "../engineClient.js";
 
 // "Make it for me": five plain questions, three manufacturable concepts, and
 // a one-click hand-off into the full builder.

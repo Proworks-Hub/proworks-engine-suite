@@ -20,60 +20,60 @@
 // ships an in-memory implementation, and a host binds whatever storage it has.
 
 // ── The decision boundary ────────────────────────────────────────────────
-export * from "./primeEngine";
+export * from "./primeEngine.js";
 
 // ── The event vocabulary every module speaks ─────────────────────────────
-export * from "./models/events";
+export * from "./models/events.js";
 
 // ── Lifecycle: intake through terminal ───────────────────────────────────
-export * from "./core/intake/intakeTypes";
-export * from "./core/intake/intakeValidator";
-export * from "./core/intake/createWorkOrderUseCase";
+export * from "./core/intake/intakeTypes.js";
+export * from "./core/intake/intakeValidator.js";
+export * from "./core/intake/createWorkOrderUseCase.js";
 
-export * from "./core/template/templateTypes";
-export * from "./core/template/resolveTemplateUseCase";
-export * from "./core/template/inMemoryTemplateLibrary";
+export * from "./core/template/templateTypes.js";
+export * from "./core/template/resolveTemplateUseCase.js";
+export * from "./core/template/inMemoryTemplateLibrary.js";
 
-export * from "./core/routing/routingTypes";
-export * from "./core/routing/routeStepsUseCase";
-export * from "./core/routing/inMemoryStationRegistry";
+export * from "./core/routing/routingTypes.js";
+export * from "./core/routing/routeStepsUseCase.js";
+export * from "./core/routing/inMemoryStationRegistry.js";
 
-export * from "./core/priority/priorityTypes";
-export * from "./core/priority/priorityScore";
-export * from "./core/priority/assignPriorityUseCase";
+export * from "./core/priority/priorityTypes.js";
+export * from "./core/priority/priorityScore.js";
+export * from "./core/priority/assignPriorityUseCase.js";
 
-export * from "./core/taskflow/taskFlowTypes";
-export * from "./core/taskflow/taskFlowRules";
-export * from "./core/taskflow/advanceStepUseCase";
+export * from "./core/taskflow/taskFlowTypes.js";
+export * from "./core/taskflow/taskFlowRules.js";
+export * from "./core/taskflow/advanceStepUseCase.js";
 
-export * from "./core/tracking/trackingTypes";
-export * from "./core/tracking/milestoneRules";
-export * from "./core/tracking/advanceMilestoneUseCase";
+export * from "./core/tracking/trackingTypes.js";
+export * from "./core/tracking/milestoneRules.js";
+export * from "./core/tracking/advanceMilestoneUseCase.js";
 
-export * from "./core/terminal/terminalTypes";
-export * from "./core/terminal/terminalRules";
-export * from "./core/terminal/terminalUseCase";
+export * from "./core/terminal/terminalTypes.js";
+export * from "./core/terminal/terminalRules.js";
+export * from "./core/terminal/terminalUseCase.js";
 
 // ── Change, rework, and their downstream consequences ────────────────────
-export * from "./core/change/changeOrderTypes";
-export * from "./core/change/changeOrderUseCase";
-export * from "./core/change/rerouteApprovalTypes";
-export * from "./core/change/rerouteApprovalUseCase";
-export * from "./core/change/executeRerouteUseCase";
-export * from "./core/change-consequence/changeConsequenceEngine";
+export * from "./core/change/changeOrderTypes.js";
+export * from "./core/change/changeOrderUseCase.js";
+export * from "./core/change/rerouteApprovalTypes.js";
+export * from "./core/change/rerouteApprovalUseCase.js";
+export * from "./core/change/executeRerouteUseCase.js";
+export * from "./core/change-consequence/changeConsequenceEngine.js";
 
 // ── Event log: the contract plus an in-memory binding ────────────────────
-export * from "./core/logging/eventLog";
-export * from "./core/logging/inMemoryEventLog";
-export * from "./core/logging/migrations";
-export * from "./core/logging/replay";
+export * from "./core/logging/eventLog.js";
+export * from "./core/logging/inMemoryEventLog.js";
+export * from "./core/logging/migrations.js";
+export * from "./core/logging/replay.js";
 
 // ── Projections: an event stream becomes the views a floor reads ─────────
-export * from "./projections/workOrderSummaryTypes";
-export * from "./projections/workOrderSummaryReducer";
-export * from "./projections/createWorkOrderSummaryProjection";
-export * from "./projections/customerProjection";
-export * from "./projections/masterTabletProjection";
-export * from "./projections/preProductionProjection";
-export * from "./projections/stationKioskProjection";
-export * from "./bootstrap/createPrimeProjectionsBundle";
+export * from "./projections/workOrderSummaryTypes.js";
+export * from "./projections/workOrderSummaryReducer.js";
+export * from "./projections/createWorkOrderSummaryProjection.js";
+export * from "./projections/customerProjection.js";
+export * from "./projections/masterTabletProjection.js";
+export * from "./projections/preProductionProjection.js";
+export * from "./projections/stationKioskProjection.js";
+export * from "./bootstrap/createPrimeProjectionsBundle.js";

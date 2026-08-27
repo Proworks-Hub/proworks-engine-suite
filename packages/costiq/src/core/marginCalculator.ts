@@ -59,7 +59,7 @@
 import type {
   MarginAppliedResult,
   MarginMode,
-} from "../models/pricingResultModel";
+} from "../models/pricingResultModel.js";
 
 export interface MarginInput {
   readonly mode: MarginMode;

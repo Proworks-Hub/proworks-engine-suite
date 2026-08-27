@@ -1,5 +1,5 @@
-import type { ProductConfiguration } from "../core/schemas/configuration";
-import type { ProductDefinition } from "../core/schemas/productDefinition";
+import type { ProductConfiguration } from "../core/schemas/configuration.js";
+import type { ProductDefinition } from "../core/schemas/productDefinition.js";
 
 // Engine-neutral cart payload — the host maps this into its own cart shape.
 export interface AddToCartPayload {

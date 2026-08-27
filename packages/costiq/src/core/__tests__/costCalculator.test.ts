@@ -29,7 +29,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { calculateJobCost } from "../costCalculator";
+import { calculateJobCost } from "../costCalculator.js";
 import type {
   ConsumableUsage,
   JobCostInput,
@@ -37,11 +37,11 @@ import type {
   MaterialUsage,
   OverheadModel,
   WorkstationUsage,
-} from "../../models/jobCostInputModel";
+} from "../../models/jobCostInputModel.js";
 import type {
   WorkstationConsumable,
   WorkstationCostProfile,
-} from "../../models/workstationCostModel";
+} from "../../models/workstationCostModel.js";
 
 // ---------- Fixture helpers ----------
 

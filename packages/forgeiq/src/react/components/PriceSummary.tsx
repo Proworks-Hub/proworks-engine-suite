@@ -1,4 +1,4 @@
-import type { PublicPriceBreakdown } from "../../core/pricing/pricingEngine";
+import type { PublicPriceBreakdown } from "../../core/pricing/pricingEngine.js";
 
 export function PriceSummary(props: {
   price: PublicPriceBreakdown | undefined;

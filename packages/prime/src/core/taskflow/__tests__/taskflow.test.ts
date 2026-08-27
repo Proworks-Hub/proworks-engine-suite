@@ -13,9 +13,9 @@
  */
 
 import { beforeEach, describe, expect, it } from "vitest";
-import type { EventActor } from "../../../models/events";
-import { createInMemoryEventLog } from "../../logging/inMemoryEventLog";
-import type { EventLog } from "../../logging/eventLog";
+import type { EventActor } from "../../../models/events.js";
+import { createInMemoryEventLog } from "../../logging/inMemoryEventLog.js";
+import type { EventLog } from "../../logging/eventLog.js";
 import type {
   AdvanceStepCommand,
   StepBlockedPayload,
@@ -24,15 +24,15 @@ import type {
   StepPausedPayload,
   StepReworkLoggedPayload,
   StepSnapshot,
-} from "../taskFlowTypes";
+} from "../taskFlowTypes.js";
 import {
   applyTransition,
   areDependenciesSatisfied,
   buildInitialSnapshot,
   computeNewlyReadyStepIds,
   validateTransition,
-} from "../taskFlowRules";
-import { createAdvanceStepUseCase } from "../advanceStepUseCase";
+} from "../taskFlowRules.js";
+import { createAdvanceStepUseCase } from "../advanceStepUseCase.js";
 
 // ---------- Fixtures ----------
 

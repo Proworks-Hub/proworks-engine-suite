@@ -1,5 +1,5 @@
-import type { ProductDefinition } from "../core/schemas/productDefinition";
-import type { MaterialProfileSpecs } from "../core/schemas/materialProfile";
+import type { ProductDefinition } from "../core/schemas/productDefinition.js";
+import type { MaterialProfileSpecs } from "../core/schemas/materialProfile.js";
 
 // A second example product, deliberately unlike the fire pit: one flat face
 // instead of four panels, an optional engraving pass, no welding, and

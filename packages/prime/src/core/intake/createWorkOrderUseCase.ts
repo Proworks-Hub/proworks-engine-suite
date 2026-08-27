@@ -38,21 +38,21 @@
 import type {
   EventActor,
   WorkOrderId,
-} from "../../models/events";
+} from "../../models/events.js";
 import type {
   Clock,
   EventLog,
   IdGenerator,
-} from "../logging/eventLog";
-import { validateIntakeInput } from "./intakeValidator";
+} from "../logging/eventLog.js";
+import { validateIntakeInput } from "./intakeValidator.js";
 import type {
   IntakeCreatedPayload,
   IntakeInput,
   IntakeValidationError,
   IntakeValidationFailedPayload,
   PrimeWorkOrderDraft,
-} from "./intakeTypes";
-import { DEFAULT_INTAKE_PRIORITY } from "./intakeTypes";
+} from "./intakeTypes.js";
+import { DEFAULT_INTAKE_PRIORITY } from "./intakeTypes.js";
 
 // ---------- Public surface ----------
 

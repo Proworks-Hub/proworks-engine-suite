@@ -80,18 +80,18 @@
  *   intake layer's responsibility.
  */
 
-import type { CostBreakdown } from "../models/costBreakdownModel";
+import type { CostBreakdown } from "../models/costBreakdownModel.js";
 import type {
   JobCostInput,
   LaborTime,
   MaterialUsage,
   OverheadModel,
   WorkstationUsage,
-} from "../models/jobCostInputModel";
+} from "../models/jobCostInputModel.js";
 import type {
   TimedCostRule,
   WorkstationConsumable,
-} from "../models/workstationCostModel";
+} from "../models/workstationCostModel.js";
 
 // ---------- Public entry ----------
 

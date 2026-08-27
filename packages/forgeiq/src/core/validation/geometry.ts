@@ -1,4 +1,4 @@
-import type { SurfaceElement } from "../schemas/configuration";
+import type { SurfaceElement } from "../schemas/configuration.js";
 
 export interface Bounds {
   minX: number;

@@ -1,5 +1,5 @@
-import type { ValidationResult } from "../../core/validation/types";
-import type { RepairSuggestion } from "../../core/repair/designRepair";
+import type { ValidationResult } from "../../core/validation/types.js";
+import type { RepairSuggestion } from "../../core/repair/designRepair.js";
 
 export function ValidationPanel(props: {
   validation: ValidationResult | undefined;

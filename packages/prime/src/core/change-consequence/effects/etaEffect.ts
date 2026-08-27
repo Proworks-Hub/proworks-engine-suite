@@ -25,8 +25,8 @@
  * Pure function — the engine composes and appends.
  */
 
-import type { ChangeOrder } from "../../change/changeOrderTypes";
-import type { ChangeConsequenceHints } from "./routingEffect";
+import type { ChangeOrder } from "../../change/changeOrderTypes.js";
+import type { ChangeConsequenceHints } from "./routingEffect.js";
 
 export interface EtaRecalculatedPayload {
   readonly changeOrderId: string;

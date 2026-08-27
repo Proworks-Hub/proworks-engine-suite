@@ -39,11 +39,11 @@
 import type {
   EventActor,
   WorkOrderEventType,
-} from "../../models/events";
+} from "../../models/events.js";
 import type {
   Clock,
   EventLog,
-} from "../logging/eventLog";
+} from "../logging/eventLog.js";
 import type {
   EtaAtRiskPayload,
   EtaConfidence,
@@ -52,15 +52,15 @@ import type {
   TrackedStep,
   TrackingError,
   WorkOrderProjection,
-} from "./trackingTypes";
-import { ETA_DRIFT_THRESHOLD_MINUTES } from "./trackingTypes";
+} from "./trackingTypes.js";
+import { ETA_DRIFT_THRESHOLD_MINUTES } from "./trackingTypes.js";
 import {
   assessEtaRisk,
   computeProgress,
   deriveMilestone,
   estimateCompletionAt,
   isForwardTransition,
-} from "./milestoneRules";
+} from "./milestoneRules.js";
 
 // ---------- Public surface ----------
 

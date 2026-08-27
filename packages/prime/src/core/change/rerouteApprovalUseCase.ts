@@ -33,11 +33,11 @@ import type {
   Clock,
   EventLog,
   IdGenerator,
-} from "../logging/eventLog";
+} from "../logging/eventLog.js";
 import type {
   EventActor,
   UserId,
-} from "../../models/events";
+} from "../../models/events.js";
 import type {
   ApproveRerouteInput,
   RejectRerouteInput,
@@ -48,7 +48,7 @@ import type {
   RerouteApprovalRejectedPayload,
   RerouteApprovalRequest,
   RerouteApprovalRequestedPayload,
-} from "./rerouteApprovalTypes";
+} from "./rerouteApprovalTypes.js";
 
 // ---------- Public surface ----------
 

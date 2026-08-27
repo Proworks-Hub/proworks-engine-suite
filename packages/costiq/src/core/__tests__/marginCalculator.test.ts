@@ -28,7 +28,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { applyMargin } from "../marginCalculator";
+import { applyMargin } from "../marginCalculator.js";
 
 describe("applyMargin — markup mode", () => {
   it("adds the markup percentage on top of cost", () => {

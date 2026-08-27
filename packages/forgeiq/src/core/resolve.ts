@@ -2,8 +2,8 @@ import type {
   DimensionPreset,
   OptionValue,
   ProductDefinition,
-} from "./schemas/productDefinition";
-import type { ProductConfiguration } from "./schemas/configuration";
+} from "./schemas/productDefinition.js";
+import type { ProductConfiguration } from "./schemas/configuration.js";
 
 // Shared resolution helpers used by both the pricing and validation engines so
 // they always agree on which preset, material, machine, and surface sizes a

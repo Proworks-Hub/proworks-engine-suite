@@ -31,7 +31,7 @@ import type {
   StepSnapshot,
   StepState,
   TaskFlowError,
-} from "./taskFlowTypes";
+} from "./taskFlowTypes.js";
 
 // ---------- Constants ----------
 

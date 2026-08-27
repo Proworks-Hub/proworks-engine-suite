@@ -33,8 +33,8 @@
  * priority — unless the caller passes `hints.forceRoutingRecompute = true`.
  */
 
-import type { ChangeOrder } from "../../change/changeOrderTypes";
-import type { WorkOrderStepId } from "../../../models/events";
+import type { ChangeOrder } from "../../change/changeOrderTypes.js";
+import type { WorkOrderStepId } from "../../../models/events.js";
 
 export interface ChangeConsequenceHints {
   /** If true, routing is always treated as invalidated regardless of kind. */

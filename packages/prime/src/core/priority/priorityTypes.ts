@@ -35,8 +35,8 @@
  * - Customer-tier bumps, upstream-delay inputs — deferred.
  */
 
-import type { WorkOrderId } from "../../models/events";
-import type { RoutedStep } from "../routing/routingTypes";
+import type { WorkOrderId } from "../../models/events.js";
+import type { RoutedStep } from "../routing/routingTypes.js";
 
 // ---------- Priority primitives ----------
 

@@ -30,11 +30,11 @@
  *   the resolve use case.
  */
 
-import type { IntakeLineItem } from "../intake/intakeTypes";
+import type { IntakeLineItem } from "../intake/intakeTypes.js";
 import type {
   ProcessTemplate,
   TemplateLibrary,
-} from "./templateTypes";
+} from "./templateTypes.js";
 
 export type TemplateMatcher = (
   lineItem: IntakeLineItem,

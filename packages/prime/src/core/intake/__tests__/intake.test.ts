@@ -13,16 +13,16 @@
  */
 
 import { beforeEach, describe, expect, it } from "vitest";
-import type { EventActor } from "../../../models/events";
-import { createInMemoryEventLog } from "../../logging/inMemoryEventLog";
-import type { EventLog } from "../../logging/eventLog";
-import { validateIntakeInput } from "../intakeValidator";
+import type { EventActor } from "../../../models/events.js";
+import { createInMemoryEventLog } from "../../logging/inMemoryEventLog.js";
+import type { EventLog } from "../../logging/eventLog.js";
+import { validateIntakeInput } from "../intakeValidator.js";
 import type {
   IntakeCreatedPayload,
   IntakeInput,
   IntakeValidationFailedPayload,
-} from "../intakeTypes";
-import { createCreateWorkOrderUseCase } from "../createWorkOrderUseCase";
+} from "../intakeTypes.js";
+import { createCreateWorkOrderUseCase } from "../createWorkOrderUseCase.js";
 
 // ---------- Fixtures ----------
 

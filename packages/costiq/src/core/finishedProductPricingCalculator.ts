@@ -74,13 +74,13 @@
  *   a price yet, so there's nothing to honor.
  */
 
-import { calculateJobPricing } from "./pricingEngine";
+import { calculateJobPricing } from "./pricingEngine.js";
 import type {
   JobCostInput,
   LaborTime,
   MaterialUsage,
   WorkstationUsage,
-} from "../models/jobCostInputModel";
+} from "../models/jobCostInputModel.js";
 import {
   DEFAULT_PRICE_STATUS_THRESHOLDS,
   type FinishedProductPricingRecord,
@@ -89,8 +89,8 @@ import {
   type PriceStatusThresholds,
   type RecipeMaterial,
   type RecipeStation,
-} from "../models/finishedProductPricingModel";
-import type { MarginMode, PricingResult } from "../models/pricingResultModel";
+} from "../models/finishedProductPricingModel.js";
+import type { MarginMode, PricingResult } from "../models/pricingResultModel.js";
 
 export interface RecalculateFinishedProductPricingDeps {
   readonly now?: () => Date;

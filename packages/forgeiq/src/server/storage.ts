@@ -1,16 +1,16 @@
 import { and, eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
-import type { ProductDefinition } from "../core/schemas/productDefinition";
-import type { ProductConfiguration } from "../core/schemas/configuration";
-import type { MachineProfileSpecs } from "../core/schemas/machineProfile";
-import type { MaterialProfileSpecs } from "../core/schemas/materialProfile";
-import type { PriceBreakdown } from "../core/pricing/pricingEngine";
-import type { ValidationResult } from "../core/validation/types";
+import type { ProductDefinition } from "../core/schemas/productDefinition.js";
+import type { ProductConfiguration } from "../core/schemas/configuration.js";
+import type { MachineProfileSpecs } from "../core/schemas/machineProfile.js";
+import type { MaterialProfileSpecs } from "../core/schemas/materialProfile.js";
+import type { PriceBreakdown } from "../core/pricing/pricingEngine.js";
+import type { ValidationResult } from "../core/validation/types.js";
 import {
   resolveMachineProfileId,
   resolveMaterialProfileId,
-} from "../core/resolve";
-import { productDefinitionSchema } from "../core/schemas/productDefinition";
+} from "../core/resolve.js";
+import { productDefinitionSchema } from "../core/schemas/productDefinition.js";
 import {
   fiqMachineProfiles,
   fiqMaterialProfiles,
@@ -18,7 +18,7 @@ import {
   fiqProductConfigurations,
   fiqProductDefinitions,
   type FiqProductDefinition,
-} from "./schema";
+} from "./schema.js";
 
 // Any drizzle node-postgres database (host may have its own schema generics).
 export type FiqDb = NodePgDatabase<Record<string, unknown>>;

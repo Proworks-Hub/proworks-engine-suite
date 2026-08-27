@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
-import type { SurfaceElement } from "../../core/schemas/configuration";
-import type { UploadFn } from "../types";
-import { traceImageCutContour } from "../export/contour";
+import type { SurfaceElement } from "../../core/schemas/configuration.js";
+import type { UploadFn } from "../types.js";
+import { traceImageCutContour } from "../export/contour.js";
 
 const btn: React.CSSProperties = {
   padding: "6px 12px",

@@ -1,8 +1,8 @@
 import { useRef, useState } from "react";
-import type { SurfaceElement } from "../../core/schemas/configuration";
-import type { ProductDefinition } from "../../core/schemas/productDefinition";
-import type { SurfaceDims } from "../../core/resolve";
-import { CUT_TEXT_COLOR, CUT_TEXT_SHADOW, panelBackground } from "./panelStyle";
+import type { SurfaceElement } from "../../core/schemas/configuration.js";
+import type { ProductDefinition } from "../../core/schemas/productDefinition.js";
+import type { SurfaceDims } from "../../core/resolve.js";
+import { CUT_TEXT_COLOR, CUT_TEXT_SHADOW, panelBackground } from "./panelStyle.js";
 
 // CSS-3D assembled view: the four customized panels arranged as an open box
 // the customer can drag to spin. Pure CSS transforms — no 3D library.

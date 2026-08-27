@@ -24,8 +24,8 @@ import {
   EventMigrationRegistry,
   createEventMigrationRegistry,
   type EventMigration,
-} from "../migrations";
-import type { WorkOrderEvent } from "../../../models/events";
+} from "../migrations.js";
+import type { WorkOrderEvent } from "../../../models/events.js";
 
 /** Build a synthetic event for a given type + payload, with fixed metadata. */
 function makeEvent(

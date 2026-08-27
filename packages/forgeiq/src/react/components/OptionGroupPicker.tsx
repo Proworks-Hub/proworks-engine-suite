@@ -1,4 +1,4 @@
-import type { OptionGroup } from "../../core/schemas/productDefinition";
+import type { OptionGroup } from "../../core/schemas/productDefinition.js";
 
 const chip = (active: boolean): React.CSSProperties => ({
   padding: "6px 12px",

@@ -13,16 +13,16 @@
  */
 
 import { beforeEach, describe, expect, it } from "vitest";
-import type { EventActor } from "../../../models/events";
-import { createInMemoryEventLog } from "../../logging/inMemoryEventLog";
-import type { EventLog } from "../../logging/eventLog";
-import type { TentativeStep } from "../../template/templateTypes";
+import type { EventActor } from "../../../models/events.js";
+import { createInMemoryEventLog } from "../../logging/inMemoryEventLog.js";
+import type { EventLog } from "../../logging/eventLog.js";
+import type { TentativeStep } from "../../template/templateTypes.js";
 import type {
   RoutingAssignedPayload,
   Station,
-} from "../routingTypes";
-import { createInMemoryStationRegistry } from "../inMemoryStationRegistry";
-import { createRouteStepsUseCase } from "../routeStepsUseCase";
+} from "../routingTypes.js";
+import { createInMemoryStationRegistry } from "../inMemoryStationRegistry.js";
+import { createRouteStepsUseCase } from "../routeStepsUseCase.js";
 
 // ---------- Fixtures ----------
 

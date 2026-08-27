@@ -79,18 +79,18 @@
  *   events should NOT silently lose actuals.
  */
 
-import { calculateJobCost } from "../core/costCalculator";
-import type { CostBreakdown } from "../models/costBreakdownModel";
+import { calculateJobCost } from "../core/costCalculator.js";
+import type { CostBreakdown } from "../models/costBreakdownModel.js";
 import type {
   ActualCostLayerBreakdown,
   ActualCostSnapshot,
-} from "../models/actualCostSnapshotModel";
+} from "../models/actualCostSnapshotModel.js";
 import {
   buildJobCostInputFromWorkOrder,
   type JobCostInputBuilderDefaults,
   type WorkOrderLike,
-} from "./jobCostInputBuilder";
-import type { ActualsTracker } from "./actualsTrackerService";
+} from "./jobCostInputBuilder.js";
+import type { ActualsTracker } from "./actualsTrackerService.js";
 
 // ---------- Public types ----------
 

@@ -1,4 +1,4 @@
-import type { AIProvider } from "./types";
+import type { AIProvider } from "./types.js";
 
 // Deterministic stand-in for a real model. It exists so the concept flow can
 // be developed, demoed, and tested without credentials — and so tests assert

@@ -27,7 +27,7 @@ import {
   createInMemoryEventLog,
   createInMemoryStationRegistry,
   createInMemoryTemplateLibrary,
-} from "../index";
+} from "../index.js";
 import type {
   Clock,
   EventActor,
@@ -39,7 +39,7 @@ import type {
   StationRegistry,
   StepSnapshot,
   TemplateLibrary,
-} from "../index";
+} from "../index.js";
 
 // ---------- Time ----------
 

@@ -1,30 +1,30 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { resolveSurfaceDims } from "../core/resolve";
+import { resolveSurfaceDims } from "../core/resolve.js";
 import {
   buildPanelCutlineSvg,
   cutlineFilename,
   type ElementCutContours,
-} from "../core/export/cutlineSvg";
-import { traceImageCutContour } from "./export/contour";
+} from "../core/export/cutlineSvg.js";
+import { traceImageCutContour } from "./export/contour.js";
 import {
   applyRepairs,
   suggestRepairs,
   type RepairSuggestion,
-} from "../core/repair/designRepair";
-import type { SurfaceElement } from "../core/schemas/configuration";
-import { fetchProduct, postConfiguration } from "./engineClient";
-import { useBuilderState } from "./useBuilderState";
-import { usePriceAndValidation } from "./usePriceAndValidation";
-import { OptionGroupPicker } from "./components/OptionGroupPicker";
-import { AssembledPreview } from "./components/AssembledPreview";
-import { SurfaceTabs } from "./components/SurfaceTabs";
-import { SurfaceEditor } from "./components/SurfaceEditor";
-import { ElementControls } from "./components/ElementControls";
-import { ValidationPanel } from "./components/ValidationPanel";
-import { PriceSummary } from "./components/PriceSummary";
-import { ConceptStudio } from "./components/ConceptStudio";
-import type { BuilderEngineProps, ProductResponse } from "./types";
+} from "../core/repair/designRepair.js";
+import type { SurfaceElement } from "../core/schemas/configuration.js";
+import { fetchProduct, postConfiguration } from "./engineClient.js";
+import { useBuilderState } from "./useBuilderState.js";
+import { usePriceAndValidation } from "./usePriceAndValidation.js";
+import { OptionGroupPicker } from "./components/OptionGroupPicker.js";
+import { AssembledPreview } from "./components/AssembledPreview.js";
+import { SurfaceTabs } from "./components/SurfaceTabs.js";
+import { SurfaceEditor } from "./components/SurfaceEditor.js";
+import { ElementControls } from "./components/ElementControls.js";
+import { ValidationPanel } from "./components/ValidationPanel.js";
+import { PriceSummary } from "./components/PriceSummary.js";
+import { ConceptStudio } from "./components/ConceptStudio.js";
+import type { BuilderEngineProps, ProductResponse } from "./types.js";
 
 export function BuilderEngine(props: BuilderEngineProps) {
   const apiBase = props.apiBase ?? "/api/forgeiq";

@@ -45,8 +45,8 @@ import type {
   UserId,
   WorkOrderId,
   WorkOrderStepId,
-} from "../../models/events";
-import type { RerouteableStepState } from "./changeOrderTypes";
+} from "../../models/events.js";
+import type { RerouteableStepState } from "./changeOrderTypes.js";
 
 // ---------- Mode & policy ----------
 

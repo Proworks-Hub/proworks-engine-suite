@@ -21,17 +21,17 @@
  */
 
 import { beforeEach, describe, expect, it } from "vitest";
-import { createInMemoryEventLog } from "../../logging/inMemoryEventLog";
-import type { EventLog } from "../../logging/eventLog";
-import type { EventActor } from "../../../models/events";
+import { createInMemoryEventLog } from "../../logging/inMemoryEventLog.js";
+import type { EventLog } from "../../logging/eventLog.js";
+import type { EventActor } from "../../../models/events.js";
 import {
   createRerouteApprovalUseCase,
   type RerouteApprovalUseCase,
-} from "../rerouteApprovalUseCase";
+} from "../rerouteApprovalUseCase.js";
 import {
   createStaticRerouteApprovalPolicy,
   type RequestRerouteApprovalInput,
-} from "../rerouteApprovalTypes";
+} from "../rerouteApprovalTypes.js";
 
 const OPERATOR: EventActor = { kind: "user", userId: "u-op", role: "operator" };
 const SUPERVISOR: EventActor = { kind: "user", userId: "u-sup", role: "supervisor" };

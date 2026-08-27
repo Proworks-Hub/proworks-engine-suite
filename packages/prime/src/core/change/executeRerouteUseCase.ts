@@ -42,18 +42,18 @@
 import type {
   EventActor,
   WorkOrderStepId,
-} from "../../models/events";
-import type { EventLog } from "../logging/eventLog";
+} from "../../models/events.js";
+import type { EventLog } from "../logging/eventLog.js";
 import type {
   StationId,
   StationRegistry,
-} from "../routing/routingTypes";
+} from "../routing/routingTypes.js";
 import type {
   ChangeError,
   ExecuteRerouteInput,
   RerouteableStepState,
   RerouteExecutedPayload,
-} from "./changeOrderTypes";
+} from "./changeOrderTypes.js";
 
 // ---------- Public surface ----------
 

@@ -33,8 +33,8 @@ import {
   buildJobCostInputFromWorkOrder,
   DEFAULT_BUILDER_DEFAULTS,
   type WorkOrderLike,
-} from "../jobCostInputBuilder";
-import { calculateJobCost } from "../../core/costCalculator";
+} from "../jobCostInputBuilder.js";
+import { calculateJobCost } from "../../core/costCalculator.js";
 
 function makeWO(overrides: Partial<WorkOrderLike> = {}): WorkOrderLike {
   return {

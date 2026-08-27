@@ -60,13 +60,13 @@
  * the wall clock. The function is otherwise pure.
  */
 
-import { calculateJobCost } from "./costCalculator";
+import { calculateJobCost } from "./costCalculator.js";
 import {
   applyMargin,
   type MarginInput,
-} from "./marginCalculator";
-import type { JobCostInput } from "../models/jobCostInputModel";
-import type { PricingResult } from "../models/pricingResultModel";
+} from "./marginCalculator.js";
+import type { JobCostInput } from "../models/jobCostInputModel.js";
+import type { PricingResult } from "../models/pricingResultModel.js";
 
 export interface CalculateJobPricingDeps {
   /** Clock override for deterministic tests. Defaults to wall clock. */

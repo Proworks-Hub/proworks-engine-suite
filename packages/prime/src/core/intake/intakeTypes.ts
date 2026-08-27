@@ -32,7 +32,7 @@
  *   Template Resolver (§3.2). It is always in `status: "draft"`.
  */
 
-import type { CustomerId, WorkOrderId } from "../../models/events";
+import type { CustomerId, WorkOrderId } from "../../models/events.js";
 
 // ---------- Priority ----------
 

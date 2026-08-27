@@ -1,7 +1,7 @@
-import type { ProductConfiguration } from "../core/schemas/configuration";
-import type { PublicPriceBreakdown } from "../core/pricing/pricingEngine";
-import type { ValidationResult } from "../core/validation/types";
-import type { ProductResponse } from "./types";
+import type { ProductConfiguration } from "../core/schemas/configuration.js";
+import type { PublicPriceBreakdown } from "../core/pricing/pricingEngine.js";
+import type { ValidationResult } from "../core/validation/types.js";
+import type { ProductResponse } from "./types.js";
 
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {

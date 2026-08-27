@@ -51,8 +51,8 @@
  * enough that a learner can reconstruct ground-truth deltas from events alone.
  */
 
-import type { WorkOrderId, WorkOrderStepId } from "../../models/events";
-import type { StepState } from "../taskflow/taskFlowTypes";
+import type { WorkOrderId, WorkOrderStepId } from "../../models/events.js";
+import type { StepState } from "../taskflow/taskFlowTypes.js";
 
 // ---------- Milestones ----------
 

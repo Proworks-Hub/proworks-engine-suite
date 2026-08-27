@@ -42,19 +42,19 @@
 
 import type {
   EventActor,
-} from "../../models/events";
+} from "../../models/events.js";
 import type {
   Clock,
   EventLog,
   IdGenerator,
-} from "../logging/eventLog";
-import type { PrimeWorkOrderDraft } from "../intake/intakeTypes";
+} from "../logging/eventLog.js";
+import type { PrimeWorkOrderDraft } from "../intake/intakeTypes.js";
 import type {
   TemplateLibrary,
   TemplateResolutionError,
   TemplateResolvedPayload,
   TentativeStep,
-} from "./templateTypes";
+} from "./templateTypes.js";
 
 // ---------- Public surface ----------
 

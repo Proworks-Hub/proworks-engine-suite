@@ -1,7 +1,7 @@
-import type { ProductDefinition } from "../schemas/productDefinition";
-import type { MaterialProfileSpecs } from "../schemas/materialProfile";
-import type { MachineProfileSpecs } from "../schemas/machineProfile";
-import type { ConceptBrief } from "./types";
+import type { ProductDefinition } from "../schemas/productDefinition.js";
+import type { MaterialProfileSpecs } from "../schemas/materialProfile.js";
+import type { MachineProfileSpecs } from "../schemas/machineProfile.js";
+import type { ConceptBrief } from "./types.js";
 
 // Manufacturing-aware prompting: the model is told what the shop can actually
 // make — panel sizes, minimum cuttable text, the material, the machine — so

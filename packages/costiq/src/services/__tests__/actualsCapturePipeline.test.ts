@@ -34,12 +34,12 @@ import {
   captureActualsForCompletedWorkOrder,
   costBreakdownToLayerBreakdown,
   sumLayerBreakdown,
-} from "../actualsCapturePipeline";
-import { createActualsTracker } from "../actualsTrackerService";
-import { calculateJobCost } from "../../core/costCalculator";
-import { buildJobCostInputFromWorkOrder } from "../jobCostInputBuilder";
-import type { ActualCostLayerBreakdown } from "../../models/actualCostSnapshotModel";
-import type { WorkOrderLike } from "../jobCostInputBuilder";
+} from "../actualsCapturePipeline.js";
+import { createActualsTracker } from "../actualsTrackerService.js";
+import { calculateJobCost } from "../../core/costCalculator.js";
+import { buildJobCostInputFromWorkOrder } from "../jobCostInputBuilder.js";
+import type { ActualCostLayerBreakdown } from "../../models/actualCostSnapshotModel.js";
+import type { WorkOrderLike } from "../jobCostInputBuilder.js";
 
 // ---------- Fixtures ----------
 

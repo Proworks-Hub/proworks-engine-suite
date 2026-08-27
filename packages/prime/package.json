@@ -3,9 +3,25 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Prime — evaluate it, route it, decide what happens next. Consumes normalized engine output.",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
-  "exports": { ".": "./src/index.ts" },
-  "dependencies": { "@proworks/contracts": "*", "zod": "^3.23.0" }
+  "description": "Prime \u2014 evaluate it, route it, decide what happens next. Consumes normalized engine output.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@proworks/contracts": "*",
+    "zod": "^3.23.0"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "prepare": "tsc -b"
+  }
 }

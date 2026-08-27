@@ -47,19 +47,19 @@
  * Spec: PRIME-ENGINE-SPEC.md §8 (Role Views).
  */
 
-import type { WorkOrderId } from "../models/events";
-import type { IntakePriority } from "../core/intake/intakeTypes";
+import type { WorkOrderId } from "../models/events.js";
+import type { IntakePriority } from "../core/intake/intakeTypes.js";
 import type {
   PriorityColor,
   PriorityLevel,
-} from "../core/priority/priorityTypes";
+} from "../core/priority/priorityTypes.js";
 import type {
   EtaRiskReason,
   Milestone,
-} from "../core/tracking/trackingTypes";
+} from "../core/tracking/trackingTypes.js";
 
-import type { WorkOrderSummary } from "./workOrderSummaryTypes";
-import type { WorkOrderSummaryProjection } from "./createWorkOrderSummaryProjection";
+import type { WorkOrderSummary } from "./workOrderSummaryTypes.js";
+import type { WorkOrderSummaryProjection } from "./createWorkOrderSummaryProjection.js";
 
 // ---------- View shape ----------
 

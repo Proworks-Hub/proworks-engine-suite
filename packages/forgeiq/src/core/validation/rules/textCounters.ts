@@ -1,4 +1,4 @@
-import type { ValidationIssue, ValidationRule } from "../types";
+import type { ValidationIssue, ValidationRule } from "../types.js";
 
 // Letters with enclosed counters (the middle of an O, the loops of a B) lose
 // those centers when text is cut through solid material — the classic reason

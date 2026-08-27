@@ -37,11 +37,11 @@
 import type {
   EventActor,
   WorkOrderEventType,
-} from "../../models/events";
+} from "../../models/events.js";
 import type {
   Clock,
   EventLog,
-} from "../logging/eventLog";
+} from "../logging/eventLog.js";
 import type {
   AdvanceStepCommand,
   StepBlockedPayload,
@@ -54,12 +54,12 @@ import type {
   StepSnapshot,
   StepStartedPayload,
   TaskFlowError,
-} from "./taskFlowTypes";
+} from "./taskFlowTypes.js";
 import {
   applyTransition,
   areDependenciesSatisfied,
   validateTransition,
-} from "./taskFlowRules";
+} from "./taskFlowRules.js";
 
 // ---------- Public surface ----------
 

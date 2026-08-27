@@ -16,9 +16,9 @@ import { beforeEach, describe, expect, it } from "vitest";
 import type {
   AppendEventInput,
   EventActor,
-} from "../../../models/events";
-import { createInMemoryEventLog } from "../inMemoryEventLog";
-import type { EventLog } from "../eventLog";
+} from "../../../models/events.js";
+import { createInMemoryEventLog } from "../inMemoryEventLog.js";
+import type { EventLog } from "../eventLog.js";
 
 const SUPERVISOR: EventActor = {
   kind: "user",

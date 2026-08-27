@@ -13,22 +13,22 @@
  */
 
 import { beforeEach, describe, expect, it } from "vitest";
-import type { EventActor } from "../../../models/events";
-import { createInMemoryEventLog } from "../../logging/inMemoryEventLog";
-import type { EventLog } from "../../logging/eventLog";
-import type { RoutedStep } from "../../routing/routingTypes";
+import type { EventActor } from "../../../models/events.js";
+import { createInMemoryEventLog } from "../../logging/inMemoryEventLog.js";
+import type { EventLog } from "../../logging/eventLog.js";
+import type { RoutedStep } from "../../routing/routingTypes.js";
 import type {
   PriorityAssignedPayload,
   PrioritizedStep,
   PriorityLevel,
-} from "../priorityTypes";
+} from "../priorityTypes.js";
 import {
   calculatePriorityColor,
   calculatePriorityScore,
   orderStepsByPriority,
   pickScoreTotal,
-} from "../priorityScore";
-import { createAssignPriorityUseCase } from "../assignPriorityUseCase";
+} from "../priorityScore.js";
+import { createAssignPriorityUseCase } from "../assignPriorityUseCase.js";
 
 // ---------- Fixtures ----------
 

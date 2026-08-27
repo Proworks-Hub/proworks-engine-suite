@@ -36,14 +36,14 @@
 
 import type {
   OverheadModel,
-} from "./jobCostInputModel";
+} from "./jobCostInputModel.js";
 import type {
   MarginMode,
   PricingResult,
-} from "./pricingResultModel";
+} from "./pricingResultModel.js";
 import type {
   WorkstationCostProfile,
-} from "./workstationCostModel";
+} from "./workstationCostModel.js";
 
 // ---------- Recipe pieces ----------
 

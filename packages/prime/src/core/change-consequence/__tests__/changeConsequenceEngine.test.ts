@@ -29,24 +29,24 @@
  */
 
 import { beforeEach, describe, expect, it } from "vitest";
-import { createInMemoryEventLog } from "../../logging/inMemoryEventLog";
-import type { EventLog } from "../../logging/eventLog";
-import type { EventActor } from "../../../models/events";
+import { createInMemoryEventLog } from "../../logging/inMemoryEventLog.js";
+import type { EventLog } from "../../logging/eventLog.js";
+import type { EventActor } from "../../../models/events.js";
 import type {
   ChangeOrder,
   ChangeOrderKind,
   ChangeOrderStatus,
-} from "../../change/changeOrderTypes";
+} from "../../change/changeOrderTypes.js";
 import {
   createChangeConsequenceEngine,
   type ChangeConsequenceEngine,
   type ChangeAppliedPayload,
   type ChangeConsequenceHintsExt,
   type PriorityEscalatedByChangePayload,
-} from "../changeConsequenceEngine";
-import type { RoutingRecomputedPayload } from "../effects/routingEffect";
-import type { TasksRegeneratedPayload } from "../effects/tasksEffect";
-import type { EtaRecalculatedPayload } from "../effects/etaEffect";
+} from "../changeConsequenceEngine.js";
+import type { RoutingRecomputedPayload } from "../effects/routingEffect.js";
+import type { TasksRegeneratedPayload } from "../effects/tasksEffect.js";
+import type { EtaRecalculatedPayload } from "../effects/etaEffect.js";
 
 const SUPERVISOR: EventActor = { kind: "user", userId: "u-sup", role: "supervisor" };
 

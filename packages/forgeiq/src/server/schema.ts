@@ -9,12 +9,12 @@ import {
   uniqueIndex,
   varchar,
 } from "drizzle-orm/pg-core";
-import type { ProductDefinition } from "../core/schemas/productDefinition";
-import type { ProductConfiguration } from "../core/schemas/configuration";
-import type { MachineProfileSpecs } from "../core/schemas/machineProfile";
-import type { MaterialProfileSpecs } from "../core/schemas/materialProfile";
-import type { PriceBreakdown } from "../core/pricing/pricingEngine";
-import type { ValidationResult } from "../core/validation/types";
+import type { ProductDefinition } from "../core/schemas/productDefinition.js";
+import type { ProductConfiguration } from "../core/schemas/configuration.js";
+import type { MachineProfileSpecs } from "../core/schemas/machineProfile.js";
+import type { MaterialProfileSpecs } from "../core/schemas/materialProfile.js";
+import type { PriceBreakdown } from "../core/pricing/pricingEngine.js";
+import type { ValidationResult } from "../core/validation/types.js";
 
 // ForgeIQ Engine tables. All rows belong to an organization (tenant); the
 // host app is one org. Identity/filter fields are real columns; everything

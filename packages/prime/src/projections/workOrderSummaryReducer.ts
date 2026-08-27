@@ -38,27 +38,27 @@
 import type {
   WorkOrderEvent,
   WorkOrderEventType,
-} from "../models/events";
+} from "../models/events.js";
 import type {
   IntakeCreatedPayload,
-} from "../core/intake/intakeTypes";
-import type { PriorityAssignedPayload } from "../core/priority/priorityTypes";
-import type { RoutingAssignedPayload } from "../core/routing/routingTypes";
-import type { StepState } from "../core/taskflow/taskFlowTypes";
+} from "../core/intake/intakeTypes.js";
+import type { PriorityAssignedPayload } from "../core/priority/priorityTypes.js";
+import type { RoutingAssignedPayload } from "../core/routing/routingTypes.js";
+import type { StepState } from "../core/taskflow/taskFlowTypes.js";
 import type {
   ChangeOrderApprovedPayload,
   ChangeOrderCreatedPayload,
   ChangeOrderRejectedPayload,
-} from "../core/change/changeOrderTypes";
+} from "../core/change/changeOrderTypes.js";
 import type {
   EtaAtRiskPayload,
   EtaUpdatedPayload,
   MilestoneAdvancedPayload,
-} from "../core/tracking/trackingTypes";
+} from "../core/tracking/trackingTypes.js";
 import type {
   WorkOrderCancelledPayload,
   WorkOrderCompletedPayload,
-} from "../core/terminal/terminalTypes";
+} from "../core/terminal/terminalTypes.js";
 
 import type {
   SummaryReducerError,
@@ -66,7 +66,7 @@ import type {
   WorkOrderSummaryEta,
   WorkOrderSummaryStepStates,
   WorkOrderSummaryStepStations,
-} from "./workOrderSummaryTypes";
+} from "./workOrderSummaryTypes.js";
 
 // ---------- Public API ----------
 

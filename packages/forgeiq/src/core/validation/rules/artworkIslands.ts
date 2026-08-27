@@ -1,4 +1,4 @@
-import type { ValidationIssue, ValidationRule } from "../types";
+import type { ValidationIssue, ValidationRule } from "../types.js";
 
 // When a design is cut through the panel, panel material enclosed by an
 // interior hole of the silhouette has nothing holding it — it falls out.

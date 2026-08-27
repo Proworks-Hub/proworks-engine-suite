@@ -33,8 +33,8 @@
  *   never need to look back at the template.
  */
 
-import type { WorkOrderId } from "../../models/events";
-import type { IntakeLineItem } from "../intake/intakeTypes";
+import type { WorkOrderId } from "../../models/events.js";
+import type { IntakeLineItem } from "../intake/intakeTypes.js";
 
 // ---------- Workstation & skill primitives ----------
 

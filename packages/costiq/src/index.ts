@@ -11,24 +11,24 @@
 // host with its own job data can use them without ForgeIQ in the picture.
 
 // The boundary.
-export * from "./costiqEngine";
-export * from "./adapters/manufacturingPlanAdapter";
+export * from "./costiqEngine.js";
+export * from "./adapters/manufacturingPlanAdapter.js";
 
 // The depth.
-export * from "./core/costCalculator";
-export * from "./core/pricingEngine";
-export * from "./core/marginCalculator";
-export * from "./core/finishedProductPricingCalculator";
+export * from "./core/costCalculator.js";
+export * from "./core/pricingEngine.js";
+export * from "./core/marginCalculator.js";
+export * from "./core/finishedProductPricingCalculator.js";
 
 // The vocabulary those calculators speak.
-export * from "./models/jobCostInputModel";
-export * from "./models/costBreakdownModel";
-export * from "./models/pricingResultModel";
-export * from "./models/workstationCostModel";
-export * from "./models/finishedProductPricingModel";
-export * from "./models/actualCostSnapshotModel";
+export * from "./models/jobCostInputModel.js";
+export * from "./models/costBreakdownModel.js";
+export * from "./models/pricingResultModel.js";
+export * from "./models/workstationCostModel.js";
+export * from "./models/finishedProductPricingModel.js";
+export * from "./models/actualCostSnapshotModel.js";
 
 // Estimate-versus-actual tracking.
-export * from "./services/actualsTrackerService";
-export * from "./services/actualsCapturePipeline";
-export * from "./services/jobCostInputBuilder";
+export * from "./services/actualsTrackerService.js";
+export * from "./services/actualsCapturePipeline.js";
+export * from "./services/jobCostInputBuilder.js";

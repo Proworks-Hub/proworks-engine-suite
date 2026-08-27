@@ -1,4 +1,4 @@
-import type { Point } from "./cutlineSvg";
+import type { Point } from "./cutlineSvg.js";
 
 // Bridge (tab) generation for cut-through geometry.
 //

@@ -1,6 +1,6 @@
-import type { MachineProfileSpecs } from "../../schemas/machineProfile";
-import type { ProductOperation } from "../../schemas/productDefinition";
-import type { ValidationContext, ValidationIssue, ValidationRule } from "../types";
+import type { MachineProfileSpecs } from "../../schemas/machineProfile.js";
+import type { ProductOperation } from "../../schemas/productDefinition.js";
+import type { ValidationContext, ValidationIssue, ValidationRule } from "../types.js";
 
 // Every part must fit the machine that actually processes it — and on a job
 // that crosses machines, that is not always the machine that cut it. A panel

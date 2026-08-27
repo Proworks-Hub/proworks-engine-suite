@@ -33,7 +33,7 @@ import type {
   PriorityScore,
   PriorityScoreBreakdown,
   PrioritizedStep,
-} from "./priorityTypes";
+} from "./priorityTypes.js";
 
 // ---------- Constants ----------
 

@@ -4,12 +4,12 @@ import type {
   CostResult,
   ManufacturingPlan,
 } from "@proworks/contracts";
-import { calculateJobCost } from "./core/costCalculator";
-import type { OverheadModel } from "./models/jobCostInputModel";
+import { calculateJobCost } from "./core/costCalculator.js";
+import type { OverheadModel } from "./models/jobCostInputModel.js";
 import {
   manufacturingPlanToJobCostInput,
   type PlanToJobCostOptions,
-} from "./adapters/manufacturingPlanAdapter";
+} from "./adapters/manufacturingPlanAdapter.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CostIQ — cost it, margin it, price it.

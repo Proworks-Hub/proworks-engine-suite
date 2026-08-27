@@ -13,22 +13,22 @@
  */
 
 import { beforeEach, describe, expect, it } from "vitest";
-import type { EventActor } from "../../../models/events";
-import { createInMemoryEventLog } from "../../logging/inMemoryEventLog";
-import type { EventLog } from "../../logging/eventLog";
-import type { StepState } from "../../taskflow/taskFlowTypes";
-import type { TrackedStep } from "../../tracking/trackingTypes";
+import type { EventActor } from "../../../models/events.js";
+import { createInMemoryEventLog } from "../../logging/inMemoryEventLog.js";
+import type { EventLog } from "../../logging/eventLog.js";
+import type { StepState } from "../../taskflow/taskFlowTypes.js";
+import type { TrackedStep } from "../../tracking/trackingTypes.js";
 import type {
   CancellationReasonCode,
   WorkOrderCancelledPayload,
   WorkOrderCompletedPayload,
-} from "../terminalTypes";
+} from "../terminalTypes.js";
 import {
   canCancel,
   canComplete,
   summarizeSteps,
-} from "../terminalRules";
-import { createTerminalUseCase } from "../terminalUseCase";
+} from "../terminalRules.js";
+import { createTerminalUseCase } from "../terminalUseCase.js";
 
 // ---------- Fixtures ----------
 

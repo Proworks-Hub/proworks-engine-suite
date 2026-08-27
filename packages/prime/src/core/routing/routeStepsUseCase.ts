@@ -41,9 +41,9 @@
 import type {
   EventActor,
   WorkOrderId,
-} from "../../models/events";
-import type { EventLog } from "../logging/eventLog";
-import type { TentativeStep } from "../template/templateTypes";
+} from "../../models/events.js";
+import type { EventLog } from "../logging/eventLog.js";
+import type { TentativeStep } from "../template/templateTypes.js";
 import type {
   RoutedStep,
   RoutingAssignedPayload,
@@ -52,7 +52,7 @@ import type {
   Station,
   StationId,
   StationRegistry,
-} from "./routingTypes";
+} from "./routingTypes.js";
 
 // ---------- Public surface ----------
 

@@ -37,7 +37,7 @@
  *   version graphs, or downgrading; that would invite accidents.
  */
 
-import type { WorkOrderEvent, WorkOrderEventType } from "../../models/events";
+import type { WorkOrderEvent, WorkOrderEventType } from "../../models/events.js";
 
 /** Version numbers are plain positive integers. `1` is the implicit baseline. */
 export type SchemaVersion = number;

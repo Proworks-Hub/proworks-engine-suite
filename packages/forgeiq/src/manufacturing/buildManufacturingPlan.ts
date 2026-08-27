@@ -1,16 +1,16 @@
-import type { ProductDefinition, ProductOperation } from "../core/schemas/productDefinition";
-import { operationTypeSchema } from "../core/schemas/productDefinition";
-import type { ProductConfiguration } from "../core/schemas/configuration";
-import type { MaterialProfileSpecs } from "../core/schemas/materialProfile";
-import type { MachineProfileSpecs } from "../core/schemas/machineProfile";
-import type { ValidationResult } from "../core/validation/types";
+import type { ProductDefinition, ProductOperation } from "../core/schemas/productDefinition.js";
+import { operationTypeSchema } from "../core/schemas/productDefinition.js";
+import type { ProductConfiguration } from "../core/schemas/configuration.js";
+import type { MaterialProfileSpecs } from "../core/schemas/materialProfile.js";
+import type { MachineProfileSpecs } from "../core/schemas/machineProfile.js";
+import type { ValidationResult } from "../core/validation/types.js";
 import {
   resolveMachineProfileId,
   resolveMaterialProfileId,
   selectedOptionValues,
   totalSurfaceAreaSqFt,
-} from "../core/resolve";
-import { buildBillOfMaterials } from "../core/production/bom";
+} from "../core/resolve.js";
+import { buildBillOfMaterials } from "../core/production/bom.js";
 import {
   manufacturingPlanSchema,
   PLAN_VERSION,

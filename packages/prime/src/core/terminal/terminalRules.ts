@@ -28,9 +28,9 @@
  * (Tracking §3.7).
  */
 
-import type { TrackedStep } from "../tracking/trackingTypes";
-import type { Milestone } from "../tracking/trackingTypes";
-import type { StepSummary } from "./terminalTypes";
+import type { TrackedStep } from "../tracking/trackingTypes.js";
+import type { Milestone } from "../tracking/trackingTypes.js";
+import type { StepSummary } from "./terminalTypes.js";
 
 // ---------- canComplete ----------
 

@@ -34,12 +34,12 @@ import type {
   WorkOrderEvent,
   WorkOrderEventType,
   WorkOrderId,
-} from "../../models/events";
+} from "../../models/events.js";
 import type {
   Clock,
   EventLog,
   IdGenerator,
-} from "./eventLog";
+} from "./eventLog.js";
 
 export interface InMemoryEventLogOptions {
   /** Override for deterministic ids in tests. Defaults to crypto.randomUUID(). */

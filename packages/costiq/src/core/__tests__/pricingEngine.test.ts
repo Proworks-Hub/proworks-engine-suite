@@ -29,8 +29,8 @@
 
 import { describe, expect, it } from "vitest";
 
-import { calculateJobPricing } from "../pricingEngine";
-import type { JobCostInput } from "../../models/jobCostInputModel";
+import { calculateJobPricing } from "../pricingEngine.js";
+import type { JobCostInput } from "../../models/jobCostInputModel.js";
 
 const FROZEN_CLOCK = () => new Date("2026-04-25T08:30:00.000Z");
 

@@ -1,21 +1,21 @@
-import { resolveSurfaceDims } from "../resolve";
-import { buildBillOfMaterials } from "../production/bom";
-import type { ValidationContext, ValidationResult, ValidationRule } from "./types";
-import { surfaceBoundsRule } from "./rules/surfaceBounds";
-import { textMinHeightRule } from "./rules/textMinHeight";
-import { imageResolutionRule } from "./rules/imageResolution";
-import { materialAllowedRule } from "./rules/materialAllowed";
-import { machineMaterialCompatRule } from "./rules/machineMaterialCompat";
-import { machineWorkAreaRule } from "./rules/machineWorkArea";
-import { artworkIslandsRule } from "./rules/artworkIslands";
-import { textCountersRule } from "./rules/textCounters";
+import { resolveSurfaceDims } from "../resolve.js";
+import { buildBillOfMaterials } from "../production/bom.js";
+import type { ValidationContext, ValidationResult, ValidationRule } from "./types.js";
+import { surfaceBoundsRule } from "./rules/surfaceBounds.js";
+import { textMinHeightRule } from "./rules/textMinHeight.js";
+import { imageResolutionRule } from "./rules/imageResolution.js";
+import { materialAllowedRule } from "./rules/materialAllowed.js";
+import { machineMaterialCompatRule } from "./rules/machineMaterialCompat.js";
+import { machineWorkAreaRule } from "./rules/machineWorkArea.js";
+import { artworkIslandsRule } from "./rules/artworkIslands.js";
+import { textCountersRule } from "./rules/textCounters.js";
 
 export type {
   ValidationContext,
   ValidationIssue,
   ValidationResult,
   ValidationRule,
-} from "./types";
+} from "./types.js";
 
 // Append-only registry: later phases add rules (island detection, stroke
 // widths, bridge requirements) without touching the runner.

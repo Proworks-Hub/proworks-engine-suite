@@ -35,7 +35,7 @@ import type {
   IntakeInput,
   IntakeValidationError,
   IntakeValidationResult,
-} from "./intakeTypes";
+} from "./intakeTypes.js";
 
 export function validateIntakeInput(
   input: IntakeInput,

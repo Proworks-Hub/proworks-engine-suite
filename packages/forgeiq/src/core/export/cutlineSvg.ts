@@ -1,5 +1,5 @@
-import type { SurfaceElement } from "../schemas/configuration";
-import { bridgeClosedPath } from "./bridges";
+import type { SurfaceElement } from "../schemas/configuration.js";
+import { bridgeClosedPath } from "./bridges.js";
 
 // Per-panel production cutline SVG, in real inches, following the LightBurn
 // color convention used across the shop:

@@ -66,7 +66,7 @@ import type {
   LaborTime,
   MaterialUsage,
   WorkstationUsage,
-} from "../models/jobCostInputModel";
+} from "../models/jobCostInputModel.js";
 
 // ---------- Public types ----------
 

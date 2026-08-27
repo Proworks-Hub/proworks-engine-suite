@@ -1,4 +1,4 @@
-import type { ValidationIssue, ValidationRule } from "../types";
+import type { ValidationIssue, ValidationRule } from "../types.js";
 
 export const imageResolutionRule: ValidationRule = {
   id: "image-resolution",

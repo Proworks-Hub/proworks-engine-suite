@@ -33,11 +33,11 @@ import {
   computeVarianceSummary,
   createActualsTracker,
   type ActualsTracker,
-} from "../actualsTrackerService";
+} from "../actualsTrackerService.js";
 import type {
   ActualCostLayerBreakdown,
   ActualCostSnapshot,
-} from "../../models/actualCostSnapshotModel";
+} from "../../models/actualCostSnapshotModel.js";
 
 // ---------- Fixtures ----------
 

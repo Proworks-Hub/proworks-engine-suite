@@ -1,4 +1,4 @@
-import type { ProductSurface } from "../../core/schemas/productDefinition";
+import type { ProductSurface } from "../../core/schemas/productDefinition.js";
 
 export function SurfaceTabs(props: {
   surfaces: ProductSurface[];

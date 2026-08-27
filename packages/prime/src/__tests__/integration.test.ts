@@ -48,7 +48,7 @@ import {
   createResolveTemplateUseCase,
   createRouteStepsUseCase,
   createTerminalUseCase,
-} from "../index";
+} from "../index.js";
 import type {
   PrioritizedStep,
   RoutedStep,
@@ -56,7 +56,7 @@ import type {
   TrackedStep,
   WorkOrderEvent,
   WorkOrderEventType,
-} from "../index";
+} from "../index.js";
 
 import {
   OPERATOR,
@@ -67,7 +67,7 @@ import {
   fixedClock,
   pendingSnapshot,
   sequentialIdGenerator,
-} from "./_integrationHelpers";
+} from "./_integrationHelpers.js";
 
 // ===========================================================================
 // Happy path — full lifecycle

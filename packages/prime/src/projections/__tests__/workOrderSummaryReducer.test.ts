@@ -26,14 +26,14 @@ import type {
   EventActor,
   WorkOrderEvent,
   WorkOrderEventType,
-} from "../../models/events";
-import type { IntakeCreatedPayload } from "../../core/intake/intakeTypes";
+} from "../../models/events.js";
+import type { IntakeCreatedPayload } from "../../core/intake/intakeTypes.js";
 
 import {
   foldEvents,
   reduceWorkOrderSummary,
-} from "../workOrderSummaryReducer";
-import type { WorkOrderSummary } from "../workOrderSummaryTypes";
+} from "../workOrderSummaryReducer.js";
+import type { WorkOrderSummary } from "../workOrderSummaryTypes.js";
 
 // ---------- Fixture helpers ----------
 

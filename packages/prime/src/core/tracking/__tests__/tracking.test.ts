@@ -13,18 +13,18 @@
  */
 
 import { beforeEach, describe, expect, it } from "vitest";
-import type { EventActor } from "../../../models/events";
-import { createInMemoryEventLog } from "../../logging/inMemoryEventLog";
-import type { EventLog } from "../../logging/eventLog";
-import type { StepState } from "../../taskflow/taskFlowTypes";
+import type { EventActor } from "../../../models/events.js";
+import { createInMemoryEventLog } from "../../logging/inMemoryEventLog.js";
+import type { EventLog } from "../../logging/eventLog.js";
+import type { StepState } from "../../taskflow/taskFlowTypes.js";
 import type {
   EtaAtRiskPayload,
   EtaUpdatedPayload,
   MilestoneAdvancedPayload,
   TrackedStep,
   WorkOrderProjection,
-} from "../trackingTypes";
-import { MILESTONE_ORDER } from "../trackingTypes";
+} from "../trackingTypes.js";
+import { MILESTONE_ORDER } from "../trackingTypes.js";
 import {
   assessEtaRisk,
   computeProgress,
@@ -32,8 +32,8 @@ import {
   estimateCompletionAt,
   isForwardTransition,
   milestoneIndex,
-} from "../milestoneRules";
-import { createAdvanceMilestoneUseCase } from "../advanceMilestoneUseCase";
+} from "../milestoneRules.js";
+import { createAdvanceMilestoneUseCase } from "../advanceMilestoneUseCase.js";
 
 // ---------- Fixtures ----------
 

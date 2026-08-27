@@ -45,25 +45,25 @@ import type {
   Clock,
   EventLog,
   IdGenerator,
-} from "../logging/eventLog";
+} from "../logging/eventLog.js";
 import type {
   EventActor,
   WorkOrderEvent,
-} from "../../models/events";
-import type { ChangeOrder } from "../change/changeOrderTypes";
+} from "../../models/events.js";
+import type { ChangeOrder } from "../change/changeOrderTypes.js";
 import {
   evaluateRoutingEffect,
   type ChangeConsequenceHints,
   type RoutingRecomputedPayload,
-} from "./effects/routingEffect";
+} from "./effects/routingEffect.js";
 import {
   evaluateTasksEffect,
   type TasksRegeneratedPayload,
-} from "./effects/tasksEffect";
+} from "./effects/tasksEffect.js";
 import {
   evaluateEtaEffect,
   type EtaRecalculatedPayload,
-} from "./effects/etaEffect";
+} from "./effects/etaEffect.js";
 
 // ---------- Public payloads ----------
 

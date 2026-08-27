@@ -5,7 +5,7 @@ import type {
   MaterialUsage,
   OverheadModel,
   WorkstationUsage,
-} from "../models/jobCostInputModel";
+} from "../models/jobCostInputModel.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // The join between the two CostIQ layers.

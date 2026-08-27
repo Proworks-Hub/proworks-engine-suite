@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import type { ProductConfiguration } from "../core/schemas/configuration";
-import { postPrice, postValidate } from "./engineClient";
+import type { ProductConfiguration } from "../core/schemas/configuration.js";
+import { postPrice, postValidate } from "./engineClient.js";
 
 // Debounced server-side price + validation. The queries share the debounced
 // config as their key, so both refresh together and stale results never mix.

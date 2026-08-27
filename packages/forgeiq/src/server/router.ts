@@ -1,15 +1,15 @@
 import { Router, type Request, type RequestHandler } from "express";
 import { z } from "zod";
-import { productConfigurationSchema } from "../core/schemas/configuration";
-import { productDefinitionSchema } from "../core/schemas/productDefinition";
-import { machineProfileSpecsSchema } from "../core/schemas/machineProfile";
-import { materialProfileSpecsSchema } from "../core/schemas/materialProfile";
-import { computePrice, toPublicBreakdown } from "../core/pricing/pricingEngine";
-import { runValidation } from "../core/validation/validationEngine";
-import { generateConcepts } from "../core/ai/conceptService";
-import { conceptBriefSchema, type AIProvider } from "../core/ai/types";
-import { resolveMaterialProfileId } from "../core/resolve";
-import { BuilderEngineStorage, type FiqDb } from "./storage";
+import { productConfigurationSchema } from "../core/schemas/configuration.js";
+import { productDefinitionSchema } from "../core/schemas/productDefinition.js";
+import { machineProfileSpecsSchema } from "../core/schemas/machineProfile.js";
+import { materialProfileSpecsSchema } from "../core/schemas/materialProfile.js";
+import { computePrice, toPublicBreakdown } from "../core/pricing/pricingEngine.js";
+import { runValidation } from "../core/validation/validationEngine.js";
+import { generateConcepts } from "../core/ai/conceptService.js";
+import { conceptBriefSchema, type AIProvider } from "../core/ai/types.js";
+import { resolveMaterialProfileId } from "../core/resolve.js";
+import { BuilderEngineStorage, type FiqDb } from "./storage.js";
 
 export interface BuilderEngineRouterDeps {
   db: FiqDb;

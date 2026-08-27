@@ -34,17 +34,17 @@
  * advertises.
  */
 
-import type { WorkOrderId } from "../../models/events";
+import type { WorkOrderId } from "../../models/events.js";
 import type {
   SkillTag,
   WorkstationClass,
-} from "../template/templateTypes";
+} from "../template/templateTypes.js";
 
 // ---------- Stations ----------
 
 // StationId is part of the shared event vocabulary; re-exported here so
 // routing consumers keep importing it from this module.
-import type { StationId } from "../../models/events";
+import type { StationId } from "../../models/events.js";
 export type { StationId };
 
 /**

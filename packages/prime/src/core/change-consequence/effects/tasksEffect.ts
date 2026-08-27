@@ -27,12 +27,12 @@
  * Pure function — emits no events itself; the engine composes and appends.
  */
 
-import type { ChangeOrder } from "../../change/changeOrderTypes";
-import type { WorkOrderStepId } from "../../../models/events";
+import type { ChangeOrder } from "../../change/changeOrderTypes.js";
+import type { WorkOrderStepId } from "../../../models/events.js";
 import type {
   ChangeConsequenceHints,
   RoutingEffectDecision,
-} from "./routingEffect";
+} from "./routingEffect.js";
 
 export interface TasksRegeneratedPayload {
   readonly changeOrderId: string;

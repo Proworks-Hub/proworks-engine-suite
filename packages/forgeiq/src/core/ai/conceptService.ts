@@ -1,19 +1,19 @@
-import type { ProductDefinition } from "../schemas/productDefinition";
-import type { MaterialProfileSpecs } from "../schemas/materialProfile";
-import type { MachineProfileSpecs } from "../schemas/machineProfile";
-import type { ProductConfiguration, SurfaceElement } from "../schemas/configuration";
-import { productConfigurationSchema } from "../schemas/configuration";
-import { computePrice, type PriceBreakdown } from "../pricing/pricingEngine";
-import { runValidation } from "../validation/validationEngine";
-import type { ValidationResult } from "../validation/types";
-import { applyRepairs, suggestRepairs } from "../repair/designRepair";
-import { buildConceptSystemPrompt, buildConceptUserPrompt } from "./conceptPrompt";
+import type { ProductDefinition } from "../schemas/productDefinition.js";
+import type { MaterialProfileSpecs } from "../schemas/materialProfile.js";
+import type { MachineProfileSpecs } from "../schemas/machineProfile.js";
+import type { ProductConfiguration, SurfaceElement } from "../schemas/configuration.js";
+import { productConfigurationSchema } from "../schemas/configuration.js";
+import { computePrice, type PriceBreakdown } from "../pricing/pricingEngine.js";
+import { runValidation } from "../validation/validationEngine.js";
+import type { ValidationResult } from "../validation/types.js";
+import { applyRepairs, suggestRepairs } from "../repair/designRepair.js";
+import { buildConceptSystemPrompt, buildConceptUserPrompt } from "./conceptPrompt.js";
 import {
   conceptResponseSchema,
   type AIProvider,
   type ConceptBrief,
   type ConceptDraft,
-} from "./types";
+} from "./types.js";
 
 export interface Concept {
   id: string;

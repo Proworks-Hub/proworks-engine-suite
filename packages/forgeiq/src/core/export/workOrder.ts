@@ -1,14 +1,14 @@
-import type { ProductDefinition } from "../schemas/productDefinition";
-import type { ProductConfiguration } from "../schemas/configuration";
-import type { PriceBreakdown } from "../pricing/pricingEngine";
-import type { MaterialProfileSpecs } from "../schemas/materialProfile";
+import type { ProductDefinition } from "../schemas/productDefinition.js";
+import type { ProductConfiguration } from "../schemas/configuration.js";
+import type { PriceBreakdown } from "../pricing/pricingEngine.js";
+import type { MaterialProfileSpecs } from "../schemas/materialProfile.js";
 import type { ManufacturingPlan } from "@proworks/contracts";
-import { buildBillOfMaterials } from "../production/bom";
+import { buildBillOfMaterials } from "../production/bom.js";
 import {
   resolveSurfaceDims,
   selectedOptionValues,
   totalSurfaceAreaSqFt,
-} from "../resolve";
+} from "../resolve.js";
 
 // Internal production work order (plain text, printable). Contains internal
 // cost data — route it to shop-facing surfaces only, never to customers.

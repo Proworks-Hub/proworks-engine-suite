@@ -8,6 +8,6 @@
 //
 // Each contract carries an explicit version marker so it can evolve
 // deliberately: planVersion, resultVersion, contextVersion.
-export * from "./manufacturingPlan";
-export * from "./cost";
-export * from "./decision";
+export * from "./manufacturingPlan.js";
+export * from "./cost.js";
+export * from "./decision.js";

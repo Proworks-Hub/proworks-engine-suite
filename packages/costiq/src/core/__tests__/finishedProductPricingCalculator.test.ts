@@ -29,14 +29,14 @@
 
 import { describe, expect, it } from "vitest";
 
-import { recalculateFinishedProductPricing } from "../finishedProductPricingCalculator";
+import { recalculateFinishedProductPricing } from "../finishedProductPricingCalculator.js";
 import type {
   FinishedProductPricingRecord,
   FinishedProductRecipe,
   RecipeMaterial,
   RecipeStation,
-} from "../../models/finishedProductPricingModel";
-import type { WorkstationCostProfile } from "../../models/workstationCostModel";
+} from "../../models/finishedProductPricingModel.js";
+import type { WorkstationCostProfile } from "../../models/workstationCostModel.js";
 
 // ---------- Fixtures ----------
 

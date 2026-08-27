@@ -43,20 +43,20 @@
  * Pure use case — all I/O goes through the injected `EventLog` and `Clock`.
  */
 
-import type { EventActor } from "../../models/events";
+import type { EventActor } from "../../models/events.js";
 import type {
   Clock,
   EventLog,
-} from "../logging/eventLog";
+} from "../logging/eventLog.js";
 import type {
   AssignPriorityInput,
   PriorityAssignedPayload,
   PrioritizedStep,
-} from "./priorityTypes";
+} from "./priorityTypes.js";
 import {
   calculatePriorityColor,
   calculatePriorityScore,
-} from "./priorityScore";
+} from "./priorityScore.js";
 
 // ---------- Public surface ----------
 

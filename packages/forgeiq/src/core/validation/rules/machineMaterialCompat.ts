@@ -1,5 +1,5 @@
-import type { ValidationIssue, ValidationRule } from "../types";
-import { resolveMaterialProfileId } from "../../resolve";
+import type { ValidationIssue, ValidationRule } from "../types.js";
+import { resolveMaterialProfileId } from "../../resolve.js";
 
 export const machineMaterialCompatRule: ValidationRule = {
   id: "machine-material-compat",

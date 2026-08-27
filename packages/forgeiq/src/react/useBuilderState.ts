@@ -1,6 +1,6 @@
 import { useMemo, useReducer } from "react";
-import type { ProductConfiguration, SurfaceElement } from "../core/schemas/configuration";
-import type { ProductDefinition } from "../core/schemas/productDefinition";
+import type { ProductConfiguration, SurfaceElement } from "../core/schemas/configuration.js";
+import type { ProductDefinition } from "../core/schemas/productDefinition.js";
 
 export interface BuilderState {
   selections: Record<string, string>;

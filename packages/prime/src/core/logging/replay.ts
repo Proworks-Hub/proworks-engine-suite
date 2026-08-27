@@ -35,8 +35,8 @@ import type {
   EventLog,
   SubscribableEventLog,
   EventLogListener,
-} from "./eventLog";
-import type { WorkOrderEvent } from "../../models/events";
+} from "./eventLog.js";
+import type { WorkOrderEvent } from "../../models/events.js";
 
 /** Pure reducer: folds one event into the running projection state. */
 export interface ProjectionReducer<TState> {

@@ -1,8 +1,8 @@
-import type { ProductConfiguration, SurfaceElement } from "../schemas/configuration";
-import type { ProductDefinition } from "../schemas/productDefinition";
-import type { ValidationContext, ValidationIssue } from "../validation/types";
-import { elementBounds } from "../validation/geometry";
-import { resolveSurfaceDims } from "../resolve";
+import type { ProductConfiguration, SurfaceElement } from "../schemas/configuration.js";
+import type { ProductDefinition } from "../schemas/productDefinition.js";
+import type { ValidationContext, ValidationIssue } from "../validation/types.js";
+import { elementBounds } from "../validation/geometry.js";
+import { resolveSurfaceDims } from "../resolve.js";
 
 // DesignRepairService — turns a validation issue into a concrete, applyable
 // change to the configuration ("Fix automatically"). Repairs are pure

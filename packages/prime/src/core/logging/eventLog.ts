@@ -36,7 +36,7 @@ import type {
   WorkOrderEvent,
   WorkOrderEventType,
   WorkOrderId,
-} from "../../models/events";
+} from "../../models/events.js";
 
 export interface EventLog {
   /**

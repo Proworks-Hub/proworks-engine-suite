@@ -1,4 +1,4 @@
-import type { PricingRules } from "../schemas/productDefinition";
+import type { PricingRules } from "../schemas/productDefinition.js";
 
 // Highest tier whose minQty <= quantity wins; tiers may arrive unsorted.
 export function resolveQuantityTier(

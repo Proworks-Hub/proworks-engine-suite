@@ -35,7 +35,7 @@ import type {
   StationEligibilityQuery,
   StationId,
   StationRegistry,
-} from "./routingTypes";
+} from "./routingTypes.js";
 
 export interface InMemoryStationRegistryOptions {
   readonly stations?: ReadonlyArray<Station>;

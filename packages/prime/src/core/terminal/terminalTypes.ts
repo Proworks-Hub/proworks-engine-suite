@@ -42,8 +42,8 @@
 import type {
   WorkOrderEvent,
   WorkOrderId,
-} from "../../models/events";
-import type { Milestone } from "../tracking/trackingTypes";
+} from "../../models/events.js";
+import type { Milestone } from "../tracking/trackingTypes.js";
 
 // ---------- Terminal state ----------
 
@@ -111,7 +111,7 @@ export interface CompleteWorkOrderInput {
   readonly workOrderId: WorkOrderId;
   readonly completedBy: string;
   readonly trackedSteps: ReadonlyArray<import(
-    "../tracking/trackingTypes.ts"
+    "../tracking/trackingTypes.js"
   ).TrackedStep>;
   /**
    * Current milestone from the caller's projection. Recorded in the
@@ -131,7 +131,7 @@ export interface CancelWorkOrderInput {
   readonly workOrderId: WorkOrderId;
   readonly cancelledBy: string;
   readonly trackedSteps: ReadonlyArray<import(
-    "../tracking/trackingTypes.ts"
+    "../tracking/trackingTypes.js"
   ).TrackedStep>;
   readonly currentMilestone: Milestone;
   readonly reasonCode: CancellationReasonCode;

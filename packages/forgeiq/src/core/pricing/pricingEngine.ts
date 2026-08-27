@@ -1,10 +1,10 @@
-import type { ProductDefinition } from "../schemas/productDefinition";
-import type { ProductConfiguration } from "../schemas/configuration";
-import type { MachineProfileSpecs } from "../schemas/machineProfile";
-import type { MaterialProfileSpecs } from "../schemas/materialProfile";
-import { selectedOptionValues, totalSurfaceAreaSqFt } from "../resolve";
-import { buildBillOfMaterials } from "../production/bom";
-import { resolveQuantityTier } from "./quantity";
+import type { ProductDefinition } from "../schemas/productDefinition.js";
+import type { ProductConfiguration } from "../schemas/configuration.js";
+import type { MachineProfileSpecs } from "../schemas/machineProfile.js";
+import type { MaterialProfileSpecs } from "../schemas/materialProfile.js";
+import { selectedOptionValues, totalSurfaceAreaSqFt } from "../resolve.js";
+import { buildBillOfMaterials } from "../production/bom.js";
+import { resolveQuantityTier } from "./quantity.js";
 
 // NOTE ON ARCHITECTURE: this engine computes the customer price and a rough
 // internal cost estimate. The internal-cost half is the piece a dedicated

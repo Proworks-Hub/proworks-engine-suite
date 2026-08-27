@@ -1,5 +1,5 @@
-import type { ValidationIssue, ValidationRule } from "../types";
-import { elementBounds } from "../geometry";
+import type { ValidationIssue, ValidationRule } from "../types.js";
+import { elementBounds } from "../geometry.js";
 
 // Elements must stay on the surface (error) and ideally inside the safe area
 // (warning when they cross the safe-area inset but remain on the surface).

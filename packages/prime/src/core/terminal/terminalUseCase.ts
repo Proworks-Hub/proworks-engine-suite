@@ -38,11 +38,11 @@
 import type {
   EventActor,
   WorkOrderEventType,
-} from "../../models/events";
+} from "../../models/events.js";
 import type {
   Clock,
   EventLog,
-} from "../logging/eventLog";
+} from "../logging/eventLog.js";
 import type {
   CancelWorkOrderInput,
   CompleteWorkOrderInput,
@@ -50,12 +50,12 @@ import type {
   WorkOrderCancelledPayload,
   WorkOrderCompletedPayload,
   WorkOrderTerminalSnapshot,
-} from "./terminalTypes";
+} from "./terminalTypes.js";
 import {
   canCancel,
   canComplete,
   summarizeSteps,
-} from "./terminalRules";
+} from "./terminalRules.js";
 
 // ---------- Public surface ----------
 

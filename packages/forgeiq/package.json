@@ -3,18 +3,43 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "ForgeIQ — configure it, validate it, manufacture it. Produces the ManufacturingPlan.",
-  "main": "./src/core/index.ts",
-  "types": "./src/core/index.ts",
+  "description": "ForgeIQ \u2014 configure it, validate it, manufacture it. Produces the ManufacturingPlan.",
+  "main": "./dist/core/index.js",
+  "types": "./dist/core/index.d.ts",
   "exports": {
-    ".": "./src/core/index.ts",
-    "./core": "./src/core/index.ts",
-    "./server": "./src/server/index.ts",
-    "./react": "./src/react/index.ts",
-    "./demo/firepit": "./src/demo/firepit.ts",
-    "./demo/metalSign": "./src/demo/metalSign.ts"
+    ".": {
+      "types": "./dist/core/index.d.ts",
+      "default": "./dist/core/index.js"
+    },
+    "./core": {
+      "types": "./dist/core/index.d.ts",
+      "default": "./dist/core/index.js"
+    },
+    "./server": {
+      "types": "./dist/server/index.d.ts",
+      "default": "./dist/server/index.js"
+    },
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "default": "./dist/react/index.js"
+    },
+    "./manufacturing": {
+      "types": "./dist/manufacturing/buildManufacturingPlan.d.ts",
+      "default": "./dist/manufacturing/buildManufacturingPlan.js"
+    },
+    "./demo/firepit": {
+      "types": "./dist/demo/firepit.d.ts",
+      "default": "./dist/demo/firepit.js"
+    },
+    "./demo/metalSign": {
+      "types": "./dist/demo/metalSign.d.ts",
+      "default": "./dist/demo/metalSign.js"
+    }
   },
-  "dependencies": { "@proworks/contracts": "*", "zod": "^3.23.0" },
+  "dependencies": {
+    "@proworks/contracts": "*",
+    "zod": "^3.23.0"
+  },
   "peerDependencies": {
     "@tanstack/react-query": "^5.0.0",
     "drizzle-orm": "^0.39.0",
@@ -22,9 +47,25 @@
     "react": "^18.0.0"
   },
   "peerDependenciesMeta": {
-    "@tanstack/react-query": { "optional": true },
-    "drizzle-orm": { "optional": true },
-    "express": { "optional": true },
-    "react": { "optional": true }
+    "@tanstack/react-query": {
+      "optional": true
+    },
+    "drizzle-orm": {
+      "optional": true
+    },
+    "express": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "prepare": "tsc -b"
   }
 }

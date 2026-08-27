@@ -46,22 +46,22 @@ import type {
   CustomerId,
   WorkOrderId,
   WorkOrderStepId,
-} from "../models/events";
-import type { IntakePriority } from "../core/intake/intakeTypes";
+} from "../models/events.js";
+import type { IntakePriority } from "../core/intake/intakeTypes.js";
 import type {
   PriorityColor,
   PriorityLevel,
   PriorityScore,
-} from "../core/priority/priorityTypes";
-import type { StepState } from "../core/taskflow/taskFlowTypes";
-import type { ChangeOrderId } from "../core/change/changeOrderTypes";
-import type { StationId } from "../core/routing/routingTypes";
+} from "../core/priority/priorityTypes.js";
+import type { StepState } from "../core/taskflow/taskFlowTypes.js";
+import type { ChangeOrderId } from "../core/change/changeOrderTypes.js";
+import type { StationId } from "../core/routing/routingTypes.js";
 import type {
   EtaConfidence,
   EtaRiskReason,
   Milestone,
-} from "../core/tracking/trackingTypes";
-import type { WorkOrderTerminalState } from "../core/terminal/terminalTypes";
+} from "../core/tracking/trackingTypes.js";
+import type { WorkOrderTerminalState } from "../core/terminal/terminalTypes.js";
 
 // ---------- ETA block ----------
 

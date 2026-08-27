@@ -13,19 +13,19 @@
  */
 
 import { beforeEach, describe, expect, it } from "vitest";
-import type { EventActor } from "../../../models/events";
-import { createInMemoryEventLog } from "../../logging/inMemoryEventLog";
-import type { EventLog } from "../../logging/eventLog";
+import type { EventActor } from "../../../models/events.js";
+import { createInMemoryEventLog } from "../../logging/inMemoryEventLog.js";
+import type { EventLog } from "../../logging/eventLog.js";
 import type {
   IntakeLineItem,
   PrimeWorkOrderDraft,
-} from "../../intake/intakeTypes";
+} from "../../intake/intakeTypes.js";
 import type {
   ProcessTemplate,
   TemplateResolvedPayload,
-} from "../templateTypes";
-import { createInMemoryTemplateLibrary } from "../inMemoryTemplateLibrary";
-import { createResolveTemplateUseCase } from "../resolveTemplateUseCase";
+} from "../templateTypes.js";
+import { createInMemoryTemplateLibrary } from "../inMemoryTemplateLibrary.js";
+import { createResolveTemplateUseCase } from "../resolveTemplateUseCase.js";
 
 // ---------- Fixtures ----------
 

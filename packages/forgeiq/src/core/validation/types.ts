@@ -1,8 +1,8 @@
-import type { ProductDefinition } from "../schemas/productDefinition";
-import type { ProductConfiguration } from "../schemas/configuration";
-import type { MachineProfileSpecs } from "../schemas/machineProfile";
-import type { MaterialProfileSpecs } from "../schemas/materialProfile";
-import type { SurfaceDims } from "../resolve";
+import type { ProductDefinition } from "../schemas/productDefinition.js";
+import type { ProductConfiguration } from "../schemas/configuration.js";
+import type { MachineProfileSpecs } from "../schemas/machineProfile.js";
+import type { MaterialProfileSpecs } from "../schemas/materialProfile.js";
+import type { SurfaceDims } from "../resolve.js";
 
 export interface ValidationIssue {
   severity: "error" | "warning";

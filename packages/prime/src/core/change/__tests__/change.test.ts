@@ -13,11 +13,11 @@
  */
 
 import { beforeEach, describe, expect, it } from "vitest";
-import type { EventActor } from "../../../models/events";
-import { createInMemoryEventLog } from "../../logging/inMemoryEventLog";
-import type { EventLog } from "../../logging/eventLog";
-import { createInMemoryStationRegistry } from "../../routing/inMemoryStationRegistry";
-import type { Station } from "../../routing/routingTypes";
+import type { EventActor } from "../../../models/events.js";
+import { createInMemoryEventLog } from "../../logging/inMemoryEventLog.js";
+import type { EventLog } from "../../logging/eventLog.js";
+import { createInMemoryStationRegistry } from "../../routing/inMemoryStationRegistry.js";
+import type { Station } from "../../routing/routingTypes.js";
 import type {
   ChangeOrder,
   ChangeOrderApprovedPayload,
@@ -25,9 +25,9 @@ import type {
   ChangeOrderRejectedPayload,
   ExecuteRerouteInput,
   RerouteExecutedPayload,
-} from "../changeOrderTypes";
-import { createChangeOrderUseCase } from "../changeOrderUseCase";
-import { createExecuteRerouteUseCase } from "../executeRerouteUseCase";
+} from "../changeOrderTypes.js";
+import { createChangeOrderUseCase } from "../changeOrderUseCase.js";
+import { createExecuteRerouteUseCase } from "../executeRerouteUseCase.js";
 
 // ---------- Fixtures ----------
 

@@ -1,8 +1,8 @@
-import type { BomComponent, ProductDefinition } from "../schemas/productDefinition";
-import type { ProductConfiguration } from "../schemas/configuration";
-import type { MaterialProfileSpecs } from "../schemas/materialProfile";
-import { resolveDimensionPreset, resolveMaterialProfileId, resolveSurfaceDims } from "../resolve";
-import { estimateSheets, type NestPart, type NestResult } from "./nesting";
+import type { BomComponent, ProductDefinition } from "../schemas/productDefinition.js";
+import type { ProductConfiguration } from "../schemas/configuration.js";
+import type { MaterialProfileSpecs } from "../schemas/materialProfile.js";
+import { resolveDimensionPreset, resolveMaterialProfileId, resolveSurfaceDims } from "../resolve.js";
+import { estimateSheets, type NestPart, type NestResult } from "./nesting.js";
 
 // Bill of materials for one order line: what gets consumed, how much of it,
 // and what the stock actually costs once parts are nested onto sheets.

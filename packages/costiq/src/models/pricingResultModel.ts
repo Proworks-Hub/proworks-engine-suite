@@ -36,7 +36,7 @@
  * Stability:    CANONICAL (Phase 1)
  */
 
-import type { CostBreakdown } from "./costBreakdownModel";
+import type { CostBreakdown } from "./costBreakdownModel.js";
 
 /**
  * Profit calculation mode per §7 of the spec. Many shops confuse

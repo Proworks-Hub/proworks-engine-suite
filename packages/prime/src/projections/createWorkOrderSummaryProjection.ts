@@ -33,17 +33,17 @@
  * without changing callers.
  */
 
-import type { EventLog } from "../core/logging/eventLog";
+import type { EventLog } from "../core/logging/eventLog.js";
 import type {
   WorkOrderEvent,
   WorkOrderId,
-} from "../models/events";
+} from "../models/events.js";
 
-import type { WorkOrderSummary } from "./workOrderSummaryTypes";
+import type { WorkOrderSummary } from "./workOrderSummaryTypes.js";
 import {
   foldEvents,
   reduceWorkOrderSummary,
-} from "./workOrderSummaryReducer";
+} from "./workOrderSummaryReducer.js";
 
 // ---------- Port ----------
 

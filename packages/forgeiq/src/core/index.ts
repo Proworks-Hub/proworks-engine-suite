@@ -1,27 +1,27 @@
 // ForgeIQ Engine core — portable and host-independent.
 // Pure and isomorphic: imports only zod and the shared contracts.
-export * from "./schemas/productDefinition";
-export * from "./schemas/configuration";
-export * from "./schemas/machineProfile";
-export * from "./schemas/materialProfile";
-export * from "./resolve";
-export * from "./pricing/pricingEngine";
-export * from "./pricing/quantity";
-export * from "./validation/validationEngine";
-export { elementBounds } from "./validation/geometry";
-export * from "./export/cutlineSvg";
-export * from "./export/bridges";
-export * from "./export/workOrder";
-export * from "./repair/designRepair";
-export * from "./production/bom";
-export * from "./production/nesting";
-export * from "./ai/types";
-export * from "./ai/conceptPrompt";
-export * from "./ai/conceptService";
-export * from "./ai/mockProvider";
+export * from "./schemas/productDefinition.js";
+export * from "./schemas/configuration.js";
+export * from "./schemas/machineProfile.js";
+export * from "./schemas/materialProfile.js";
+export * from "./resolve.js";
+export * from "./pricing/pricingEngine.js";
+export * from "./pricing/quantity.js";
+export * from "./validation/validationEngine.js";
+export { elementBounds } from "./validation/geometry.js";
+export * from "./export/cutlineSvg.js";
+export * from "./export/bridges.js";
+export * from "./export/workOrder.js";
+export * from "./repair/designRepair.js";
+export * from "./production/bom.js";
+export * from "./production/nesting.js";
+export * from "./ai/types.js";
+export * from "./ai/conceptPrompt.js";
+export * from "./ai/conceptService.js";
+export * from "./ai/mockProvider.js";
 
 // The shared contracts, re-exported so a host that already depends on ForgeIQ
 // does not need a second import for the types it produces.
 export * from "@proworks/contracts";
 // ForgeIQ's producer for the ManufacturingPlan contract.
-export * from "../manufacturing/buildManufacturingPlan";
+export * from "../manufacturing/buildManufacturingPlan.js";

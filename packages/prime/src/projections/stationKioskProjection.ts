@@ -46,17 +46,17 @@
  * Projection).
  */
 
-import type { WorkOrderId } from "../models/events";
+import type { WorkOrderId } from "../models/events.js";
 import type {
   PriorityColor,
   PriorityLevel,
-} from "../core/priority/priorityTypes";
-import type { StationId } from "../core/routing/routingTypes";
-import type { StepState } from "../core/taskflow/taskFlowTypes";
-import type { Milestone } from "../core/tracking/trackingTypes";
+} from "../core/priority/priorityTypes.js";
+import type { StationId } from "../core/routing/routingTypes.js";
+import type { StepState } from "../core/taskflow/taskFlowTypes.js";
+import type { Milestone } from "../core/tracking/trackingTypes.js";
 
-import type { WorkOrderSummary } from "./workOrderSummaryTypes";
-import type { WorkOrderSummaryProjection } from "./createWorkOrderSummaryProjection";
+import type { WorkOrderSummary } from "./workOrderSummaryTypes.js";
+import type { WorkOrderSummaryProjection } from "./createWorkOrderSummaryProjection.js";
 
 // ---------- View shape ----------
 

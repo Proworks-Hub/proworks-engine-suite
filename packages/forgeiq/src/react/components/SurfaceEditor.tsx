@@ -1,9 +1,9 @@
 import { useRef } from "react";
-import type { SurfaceElement } from "../../core/schemas/configuration";
-import type { ProductSurface } from "../../core/schemas/productDefinition";
-import type { SurfaceDims } from "../../core/resolve";
-import type { ValidationIssue } from "../../core/validation/types";
-import { CUT_TEXT_COLOR, CUT_TEXT_SHADOW, panelBackground } from "./panelStyle";
+import type { SurfaceElement } from "../../core/schemas/configuration.js";
+import type { ProductSurface } from "../../core/schemas/productDefinition.js";
+import type { SurfaceDims } from "../../core/resolve.js";
+import type { ValidationIssue } from "../../core/validation/types.js";
+import { CUT_TEXT_COLOR, CUT_TEXT_SHADOW, panelBackground } from "./panelStyle.js";
 
 const EDITOR_WIDTH_PX = 560;
 
