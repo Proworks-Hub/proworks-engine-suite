@@ -3,208 +3,167 @@
 Owner: Steven Kreutzer · 2026-08-27
 **Audit only. No code written, nothing moved, nothing deleted** — per §49 and addendum §1.
 
----
-
-## Headline: two findings change the plan
-
-**1. Prep Studio's implementation is not in any repository I can reach.**
-
-ProWorks `src/App.tsx` carries:
-
-```
-// [reconcile] Studio-addon stub — KSixPrepStudioModule ships with the KSix Prep Studio add-on.
-const KSixPrepStudioModule = ((() => null) as unknown as ...);
-```
-
-Two routes (`prep-studio`, `ksix-prep-studio`) resolve to that stub. There is no Prep Studio source,
-no Fabric.js anywhere, and no MakerOps repository on this machine. **The addendum's central task —
-extract Prep Studio intelligence — cannot be performed on code I can see.** See §10 for what I need.
-
-**2. ProWorks already defines the integration contract, and it is further along than expected.**
-
-`src/modules/work-orders/types/PrepResult.ts` is at **schema version 2** and already carries
-`dpi`, `colorProfile`, `machinePreset`, `readinessScore`, `issues[]`, `recommendations[]` — and
-`recipeUsed`, `recipeRequested`, `recipeMigrationFrom`.
-
-**Recipes already exist as a first-class concept and have already been through one migration.** The
-addendum §12 asks for them to be promoted into VisionIQ; the vocabulary is already in the host.
-Fourteen `prep-bridge` components consume this contract today, one of which is commented "bridges to
-Prep Studio without duplicating it."
-
-**VisionIQ's output contract should be derived from `PrepResult`, not invented beside it.**
+> **Revision.** My first pass concluded Prep Studio was unreachable and that KSix held all the
+> preparation intelligence. Both were wrong. Steven pointed me at
+> `C:\Users\ksixd\InvoFlowHub\src\modules\ksix-prep-studio` — **330 files, 58,535 lines** — and the
+> conclusion inverts. It is recorded here rather than quietly replaced, because the corrected
+> finding changes what VisionIQ *is*.
 
 ---
 
-## 1–3. Existing features that belong in VisionIQ
+## Headline: VisionIQ substantially exists
 
-### KSix — the real, working preparation intelligence
+Prep Studio is not a UI with some helpers behind it. It is a mature engine with a UI on top, and it
+already contains most of what the directive describes as VisionIQ:
 
-| File | Lines | What it does | Verdict |
+| Already built | Where | Lines |
+|---|---|---|
+| Recipe engine + **recipe operating system** | `core/recipeEngine.ts`, `core/recipeOperatingSystem.ts` | 851 |
+| Profile engine | `core/profileEngine.ts` | 321 |
+| Shared prep engine (+ tests) | `core/sharedPrepEngine.ts` | 247 |
+| Preflight engine | `core/preflightEngine.ts` | 159 |
+| Issue taxonomy + quick-fix registry | `core/intelligence/` | 658 |
+| **Process capabilities, already decomposed** | `modules/laser-prep` (35 files), `dtf-prep` (20), `sublimation-prep` (14) | — |
+| AI abstraction with governance + sanitizers | `ai/` | 1,768 |
+| **Photoshop gateway** | `photoshop-tools/` | 1,962 |
+| Inbound adapter + migration tests | `adapters/` | 888 |
+| Halftone, vector prep, spot channels, machine presets | `lib/` | 9,641 |
+
+**The task is extraction and portability, not construction.**
+
+Two things sharpen that further.
+
+**The intended decomposition is already sketched — and empty.** `artwork-analysis/`,
+`color-separations/`, `image-prep/`, `output-engineering/`, `recipes/`, `studio-session/` are all
+two-line placeholders: *"Scaffolding entrypoint for the X bounded context."* Someone had precisely
+VisionIQ's structure in mind and never filled it, so the real code sits undecomposed in `lib/`.
+
+**The core is already portable.** Measured, not assumed:
+
+| Area | Files touching DOM or React |
+|---|---|
+| `core/` | **0 / 16** |
+| `adapters/` | **0 / 2** |
+| `lib/` | 8 / 36 |
+| `modules/laser-prep` | 11 / 35 |
+| `modules/dtf-prep` | 5 / 20 |
+| `modules/sublimation-prep` | 4 / 14 |
+| `ai/` | 5 / 18 |
+
+The engine kernel — recipes, profiles, preflight, intelligence — has **no browser dependency at
+all.** In every other area the DOM-touching files are the minority. And the host imports are
+overwhelmingly UI: `@/components/ui/button` (58), `badge` (37), `select` (28), `card` (27), plus
+`useTenantWorkspace`, `use-auth`, `use-toast`. Those are the UI layer, which is exactly what the
+addendum says stays in the host.
+
+---
+
+## The two versions
+
+| | Files | Lines | What it is |
 |---|---|---|---|
-| `client/src/lib/laserExport.ts` | 253 | `engraveProcessCanvas` (luminance grayscale, auto-levels, **material-driven inversion**), `prepareEngraveImage`, `recommendLaser`, `buildLaserManifest` | **MOVE TO VISIONIQ** — core + laser capability |
-| `client/src/lib/printExport.ts` | 339 | `setPngDpi` (pHYs chunk), `fitExportScale`, `traceAlphaContour`, `contourToSvgCutFile`, `canvasToPrintBlob` | **MOVE TO VISIONIQ** — core + print capability |
-| `client/src/lib/smartBgRemoval.ts` | 165 | `smartRemoveBackground` | **MOVE TO VISIONIQ CORE** |
-| `client/src/components/PhotoEditorModal.tsx` | 1652 | The editing surface — KSix's Prep Studio analogue | **KEEP AS HOST UI**; intelligence inside it needs a line-by-line split |
-| `client/src/lib/autoBuild.ts` | 142 | `multiSheetPack` — gang-sheet nesting | **DO NOT TOUCH** — nesting is ForgeIQ's, not asset prep |
-| `client/src/lib/rosterArt.ts` | 373 | Roster name/number art generation | **KEEP IN KSIX** — product-specific content generation |
-| `server/productionZip.ts` | — | `classifyFile` regex cascade over filenames | **REPLACE WITH MANIFEST** (already contracted) |
+| `src/modules/ksix-prep-studio` | 330 | 58,535 | **The engine + its application** |
+| `src/modules/prep-studio` | 26 | 1,447 | **The integration layer** — adapters, zod contracts, migrations, workflow resolution, launch cards, `PrepResult` |
 
-`engraveProcessCanvas` is worth calling out: it already implements §12's photo→slate-vs-anodized
-distinction via `ENGRAVES_LIGHT`, and `recommendLaser` already returns a machine **with a reason**.
-This is genuine VisionIQ intelligence that exists and works.
+They are not competing implementations. `prep-studio` is the *host bridge* — and it already holds
+`lib/contracts/{zod,migrations,audit,dualDelivery}.ts` plus `types/PrepResult.ts`, the same contract
+ProWorks consumes through fourteen `prep-bridge` components.
 
-### ProWorks — integration surface, no duplicate intelligence
+**`PrepResult` is at schema version 2 and carries `recipeUsed`, `recipeRequested`,
+`recipeMigrationFrom`.** Recipes are already first-class *and have already survived one migration*.
+VisionIQ's output must reconcile with this contract, not replace it.
 
-Searched for canvas, ImageData, DPI, dither, grayscale, background removal, upscaling,
-vectorisation. **ProWorks contains no image-processing implementation.** What it has:
+Other copies exist (`InvoFlowHub-ExactParity`, two under `Downloads`). **Treat
+`C:\Users\ksixd\InvoFlowHub` as authoritative** unless told otherwise; the others need a diff before
+anyone reads them.
 
-| Location | What | Verdict |
+---
+
+## Migration matrix
+
+| Capability | Current location | Target |
 |---|---|---|
-| `types/PrepResult.ts` | The prep output contract, v2, with recipes | **MOVE TO CONTRACTS** — align VisionIQ's output with it |
-| `components/prep-bridge/` (14) | Launch/resume/readiness/recommendation UI | **KEEP AS HOST UI** |
-| `utils/buildPrepRecommendationReasons.ts` | Turns prep issues into operator-readable reasons | **INSPECT** — likely VisionIQ explainability (§36) |
-| `lib/prepReleasePolicy.ts` | Whether prep is complete enough to release work | **KEEP IN PROWORKS** — a release decision, not asset intelligence |
-
-ProWorks is a clean consumer. Nothing to deprecate.
-
-### MakerOps
-
-**Does not exist on this machine.** No repository, no `makerops/` directory.
-
----
-
-## 4. Where each thing goes
-
-**VisionIQ core** — effective-DPI calculation · grayscale/luminance · auto-levels · background
-removal · alpha-contour tracing · crop detection · pHYs DPI stamping · export scale fitting.
-
-**VisionIQ process capability** — laser/engraving (material inversion, tonal prep, machine-class
-recommendation) · print/DTF (contour, cut file, print-size validation).
-
-**Host UI** — `PhotoEditorModal`, all fourteen `prep-bridge` components, machine/material pickers.
-
-**Host adapter** — canvas ⇄ pixel buffer, blob upload, file storage.
-
-**Contracts** — `PrepResult` promoted and reconciled with `ProductionAssetManifest`.
+| Recipe engine, recipe OS | `ksix-prep-studio/core` | **VisionIQ core** — already portable |
+| Profile engine | `ksix-prep-studio/core` | **VisionIQ core** — already portable |
+| Preflight, issue taxonomy, quick-fix registry | `ksix-prep-studio/core/intelligence` | **VisionIQ core** — already portable |
+| Halftone, vector prep, spot channel, accent layer | `ksix-prep-studio/lib` | **VisionIQ core**, after the DOM split |
+| Machine presets / template engine | `lib/machinePresets.ts` **and** `lib/canvas-ops/machinePresets.ts` | **VisionIQ profiles** — consolidate, they are duplicated |
+| Laser / DTF / sublimation prep | `ksix-prep-studio/modules/*` | **VisionIQ process capabilities** |
+| AI decision tree, governance, sanitizers | `ksix-prep-studio/ai` | **VisionIQ**, behind the provider port (§35). `ai/legacy/` duplicates the current tree — resolve first |
+| Photoshop gateway, pack executor | `ksix-prep-studio/photoshop-tools` | **VisionIQ adapter** — optional, never a dependency |
+| `PrepResult`, zod contracts, migrations | `prep-studio/lib/contracts` | **Contracts package** |
+| Inbound adapter, prep result sink | `ksix-prep-studio/adapters` | **Host adapter** |
+| Canvas ops, `canvasProcessing`, `dualDelivery` | `lib/canvas-ops` | **Split**: algorithm → core, canvas → adapter |
+| Components, pages, shell, studio, tabs | `ksix-prep-studio/{components,pages,shell,studio,tabs}` | **Keep as host UI** (~28k lines) |
+| KSix `laserExport`/`printExport`/`smartBgRemoval` | KSix `client/src/lib` | **Compare against `modules/laser-prep` first** — likely superseded |
+| ProWorks `prep-bridge` (14 components) | ProWorks | **Do not touch** |
+| ForgeIQ `imageResolutionRule` | Suite | **Do not move** — extract the DPI primitive only |
 
 ---
 
-## 5. ForgeIQ overlap — real, and narrower than it looks
+## Duplication found
 
-| ForgeIQ file | Overlaps | Recommendation |
-|---|---|---|
-| `validation/rules/imageResolution.ts` | Effective DPI — computes `naturalWidthPx / widthIn` | **Extract the primitive, keep the rule** |
-| `validation/rules/artworkIslands.ts` | Interior-island detection (§9 vector) | **Keep in ForgeIQ** — manufacturability |
-| `validation/geometry.ts` | Minimum feature, bounds | **Keep in ForgeIQ** |
-| `export/cutlineSvg.ts` | Cutline generation | **Inspect** — generation may be VisionIQ, constraint is ForgeIQ |
-| `repair/designRepair.ts` | Geometry repair | **Inspect** — repair is preparation |
-
-The clean line, and the one the directive itself draws:
-
-- **"Is this below this product's minimum DPI?"** → ForgeIQ. It is a product-definition constraint.
-- **"What is this image's effective DPI?"** → a shared primitive, computed once.
-- **"Make it good enough for this process."** → VisionIQ.
-
-So the fix is **not** to move `imageResolutionRule`. It is to stop two engines each computing
-`px / inches` from first principles. One primitive, two consumers.
+1. **`machinePresets.ts` exists twice** inside Prep Studio — `lib/` and `lib/canvas-ops/`.
+2. **`ai/legacy/`** duplicates `fallbackDecisionTree` and `runAiPrepFlow`.
+3. **KSix `laserExport.ts` vs `modules/laser-prep` (35 files)** — near-certain overlap. KSix's is
+   253 lines; Prep Studio's is an order of magnitude larger. The directive says compare
+   capability-by-capability rather than taking the newest, and this is the pair that needs it.
+4. **ForgeIQ `imageResolutionRule` vs any Prep Studio DPI check** — the shared primitive.
 
 ---
 
-## 6. Duplication across hosts
+## Missing everywhere
 
-**Almost none, and that is the surprise.** The expected three-way overlap between ProWorks, MakerOps
-and KSix does not exist:
+**The learning loop.** No repository has a difference operator (§23), operator-correction capture
+(§21), external-edit comparison (§22), feedback records (§27), or scoped learning (§26). The
+`photoshop-tools` gateway is the closest thing and it pushes work *out*, not observations *back*.
 
-- ProWorks has **no** preparation implementation — only the contract and the bridge UI
-- MakerOps has no repository
-- KSix holds **all** of it, in three files totalling ~757 lines
-
-The duplication risk is between **KSix and the unreachable Prep Studio add-on**, and I cannot assess
-that without the add-on's source.
+This is the genuinely new construction, and it is smaller than the extraction.
 
 ---
 
-## 7. Missing capabilities
+## Migration order
 
-Nothing in any repository does: upscaling · denoising · sharpening · dithering/halftone ·
-threshold · ICC/colour management · white-layer or underbase preparation · vector path cleanup ·
-open/closed path analysis · duplicate-path detection · bridges and tabs · embroidery ·
-asset difference (§23) · operator-correction capture (§21) · the learning loop (§20).
-
-**The learning architecture is entirely new.** No repository has any of it.
-
----
-
-## 8. The architectural problem, and the proposed package shape
-
-**Every piece of working intelligence is browser-coupled.** `laserExport.ts`, `printExport.ts` and
-`smartBgRemoval.ts` carry 11–15 references each to `HTMLCanvasElement`, `ImageData`, `document`,
-`Blob`. The algorithms are portable; the I/O is not.
-
-A portable engine cannot depend on a browser, and §33 requires the core to work outside React and
-outside a browser entirely — a licensee's Node service must be able to call it.
-
-So extraction is not a `git mv`. It needs a pixel-buffer abstraction the algorithms operate on, with
-canvas as one adapter:
-
-```
-packages/visioniq/src/
-  core/
-    raster/      analyze · grayscale · levels · crop · background · contour
-    vector/      paths · bounds · cleanup (new)
-    pixels.ts    PixelBuffer — the portability seam
-  capabilities/
-    laser/       from laserExport.ts
-    print/       from printExport.ts
-  profiles/      machine · material · production
-  provenance/    transformation chain
-  learning/      difference operator · feedback (new)
-  ports.ts       VisionAssetStore · AiProvider · decoders
-```
-
-`PixelBuffer` is `{ width, height, data: Uint8ClampedArray }` — which `ImageData` already satisfies
-structurally, so the canvas adapter is nearly free and the algorithms move almost unchanged.
+1. Read `core/prepStudioArchitecture.ts` and `printPrepArchitecture.ts` first — 159 lines that state
+   the existing design in its authors' own words
+2. Diff `InvoFlowHub` against `InvoFlowHub-ExactParity` to confirm which is authoritative
+3. Resolve the three internal duplications before moving anything
+4. Lift `core/` **as-is** into `packages/visioniq` — it is already portable, and this proves the
+   package boundary with zero algorithmic risk
+5. `PrepResult` + zod contracts into `contracts`, reconciled with `ProductionAssetManifest`
+6. Effective-DPI primitive; ForgeIQ consumes it
+7. `PixelBuffer` seam, then `lib/` algorithms area by area
+8. Process capabilities: laser first (largest, best developed), then DTF
+9. Compare KSix's `laserExport` against `modules/laser-prep`; retire the loser
+10. Learning loop — difference operator, feedback, scoped observations
+11. Hosts consume VisionIQ; delete duplicates **only after** the §26 comparison passes
 
 ---
 
-## 9. Migration order
+## Risks and open questions
 
-1. `PixelBuffer` + the port surface — nothing moves until there is somewhere portable to move to
-2. Effective-DPI primitive into contracts; ForgeIQ consumes it (removes the only real duplication)
-3. Raster core from `smartBgRemoval` + the grayscale/levels half of `laserExport`
-4. Laser capability — engrave prep, material inversion, machine-class recommendation
-5. Reconcile `PrepResult` with `ProductionAssetManifest` in contracts
-6. Print capability — contour tracing, cut files, DPI stamping
-7. KSix adapter: `laserExport`/`printExport` become thin re-export shims — **behaviour preserved,
-   originals not deleted**
-8. Provenance and the transformation chain
-9. Difference operator and feedback
-10. Delete KSix duplicates **only after** the comparison in §26 passes
+**Prep Studio is a separate deployable.** It lives in `InvoFlowHub`, not in the three repos I have
+been working in, and ProWorks stubs it as an add-on. Extracting into
+`@proworks-hub/visioniq` means Prep Studio itself must then consume the engine it currently owns —
+a bigger change than adding a package to ProWorks.
 
----
+**58k lines is a lot of behaviour to preserve**, and §26 requires proving old output matches new.
+There are existing tests (`sharedPrepEngine.test.ts`, `exportFinalPrep.test.ts`, adapter migration
+tests) — a genuine starting point, and I have not yet run them.
 
-## 10. Risks, and what I need from you
+**Questions:**
 
-**The blocking one: Prep Studio is unreachable.** Its intelligence is the addendum's stated target.
-I can extract KSix's, which is real and works — but I would be building VisionIQ from one of the two
-sources you named, and the other may be better. **Where is the Prep Studio add-on source?**
-
-**Second: `PrepResult` v2 is live.** Fourteen ProWorks components consume it and it has already
-survived a recipe migration (`recipeMigrationFrom` exists). VisionIQ's output must reconcile with
-it rather than replace it, or the bridge UI breaks.
-
-**Third: KSix's prep code is used by live builders.** `SignBuilder`, `OrnamentBuilder`,
-`CanvasBuilder`, `PosterBuilder` and `Order` all import these libraries. Extraction touches the
-deployed storefront's production-file path — the highest-consequence code in the ecosystem, since a
-mistake there means a wrong file on a machine.
-
-**Fourth: no reference assets.** §26 requires comparing old output against new for the same input.
-I have no sample customer photograph, no known-good slate output. **A handful of real before/after
-files would make that acceptance test meaningful instead of synthetic.**
+1. **Is `C:\Users\ksixd\InvoFlowHub` the live one?** `InvoFlowHub-ExactParity` and two `Downloads`
+   copies exist. Extracting from a stale tree would be expensive to unwind.
+2. **Is InvoFlowHub a git repository with a remote?** It is not one of the three I have been pushing
+   to, and I will not push anything there without being told where.
+3. **Does Prep Studio still ship as a KSix add-on**, or is it becoming a ProWorks/MakerOps module?
+   It changes who consumes the extracted engine first.
+4. **Sample assets for §26** — a real photo plus its known-good slate output.
 
 ---
 
 ## What I did not do
 
-No `packages/visioniq`. No code moved. No files deleted. §49 says audit first, and the Prep Studio
-gap means a decision is needed before extraction order is settled.
+No `packages/visioniq`. No code moved, nothing deleted, nothing pushed to InvoFlowHub. §49 requires
+the audit first, and questions 1 and 2 need answers before extraction starts.
