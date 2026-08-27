@@ -1,6 +1,6 @@
 {
   "name": "@proworks-hub/receiptiq",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "type": "module",
   "description": "ReceiptIQ — read it, normalize it, learn from it. Turns receipts into normalized purchases and canonical price observations.",
   "author": "Steven Kreutzer",

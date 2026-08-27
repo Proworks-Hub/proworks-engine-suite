@@ -108,3 +108,5 @@ export * as spotChannelValidation from "./prep/spotChannelValidator.js";
 // and because flattening 19 more modules into the root barrel is how the
 // MACHINE_PRESETS collision happened.
 export * as laser from "./capabilities/laser/index.js";
+export * as dtf from "./capabilities/dtf/index.js";
+export * from "./prep/artworkAnalysis.js";

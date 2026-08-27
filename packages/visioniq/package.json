@@ -1,6 +1,6 @@
 {
   "name": "@proworks-hub/visioniq",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "type": "module",
   "description": "VisionIQ — how a digital asset should be prepared for a process, machine and material.",
   "author": "Steven Kreutzer",
@@ -19,6 +19,18 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./laser": {
+      "types": "./dist/capabilities/laser/index.d.ts",
+      "default": "./dist/capabilities/laser/index.js"
+    },
+    "./laser/tone": {
+      "types": "./dist/capabilities/laser/tone/index.d.ts",
+      "default": "./dist/capabilities/laser/tone/index.js"
+    },
+    "./dtf": {
+      "types": "./dist/capabilities/dtf/index.d.ts",
+      "default": "./dist/capabilities/dtf/index.js"
     }
   },
   "dependencies": {
