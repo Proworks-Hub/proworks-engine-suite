@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Steven Kreutzer. All rights reserved.
+// Proprietary and confidential. Unauthorized copying, modification, or
+// distribution of this file, via any medium, is strictly prohibited.
+
 import type { ProductConfiguration } from "../core/schemas/configuration.js";
 import type { PublicPriceBreakdown } from "../core/pricing/pricingEngine.js";
 import type { ValidationResult } from "../core/validation/types.js";

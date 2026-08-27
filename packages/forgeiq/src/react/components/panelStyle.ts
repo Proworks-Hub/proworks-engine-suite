@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Steven Kreutzer. All rights reserved.
+// Proprietary and confidential. Unauthorized copying, modification, or
+// distribution of this file, via any medium, is strictly prohibited.
+
 // Material-realistic panel backgrounds, keyed by the selected option value's
 // meta.preview hint (data-driven — the definition decides, with a neutral
 // steel fallback).

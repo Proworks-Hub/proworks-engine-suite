@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Steven Kreutzer. All rights reserved.
+// Proprietary and confidential. Unauthorized copying, modification, or
+// distribution of this file, via any medium, is strictly prohibited.
+
 import { and, eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { ProductDefinition } from "../core/schemas/productDefinition.js";

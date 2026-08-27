@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "description": "ForgeIQ \u2014 configure it, validate it, manufacture it. Produces the ManufacturingPlan.",
+  "author": "Steven Kreutzer",
+  "license": "UNLICENSED",
   "main": "./dist/core/index.js",
   "types": "./dist/core/index.d.ts",
   "exports": {

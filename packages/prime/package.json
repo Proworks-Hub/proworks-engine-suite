@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "description": "Prime \u2014 evaluate it, route it, decide what happens next. Consumes normalized engine output.",
+  "author": "Steven Kreutzer",
+  "license": "UNLICENSED",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {

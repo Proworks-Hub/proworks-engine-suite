@@ -1,0 +1,29 @@
+{
+  "name": "@proworks/receiptiq",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "ReceiptIQ \u2014 read it, normalize it, learn from it. Turns receipts into normalized purchases and canonical price observations.",
+  "author": "Steven Kreutzer",
+  "license": "UNLICENSED",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@proworks/contracts": "*",
+    "zod": "^3.23.0"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "prepare": "tsc -b"
+  }
+}

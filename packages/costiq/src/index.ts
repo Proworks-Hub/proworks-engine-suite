@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Steven Kreutzer. All rights reserved.
+// Proprietary and confidential. Unauthorized copying, modification, or
+// distribution of this file, via any medium, is strictly prohibited.
+
 // CostIQ — the portable costing engine.
 //
 // The public boundary is `createCostIqEngine`: a ManufacturingPlan in, a
@@ -13,6 +17,10 @@
 // The boundary.
 export * from "./costiqEngine.js";
 export * from "./adapters/manufacturingPlanAdapter.js";
+
+// Observed prices as a cost basis. Consumes the PriceObservation contract, so
+// ReceiptIQ can supply real supplier prices without CostIQ depending on it.
+export * from "./adapters/priceObservationAdapter.js";
 
 // The depth.
 export * from "./core/costCalculator.js";

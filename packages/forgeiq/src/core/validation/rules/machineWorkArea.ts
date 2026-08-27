@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Steven Kreutzer. All rights reserved.
+// Proprietary and confidential. Unauthorized copying, modification, or
+// distribution of this file, via any medium, is strictly prohibited.
+
 import type { MachineProfileSpecs } from "../../schemas/machineProfile.js";
 import type { ProductOperation } from "../../schemas/productDefinition.js";
 import type { ValidationContext, ValidationIssue, ValidationRule } from "../types.js";

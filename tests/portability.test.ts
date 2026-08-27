@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Steven Kreutzer. All rights reserved.
+// Proprietary and confidential. Unauthorized copying, modification, or
+// distribution of this file, via any medium, is strictly prohibited.
+
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -20,7 +24,7 @@ const ROOT = join(fileURLToPath(new URL(".", import.meta.url)), "..");
 const PACKAGES = join(ROOT, "packages");
 
 /** Published entry points the engines may import from one another. */
-const SUITE_PACKAGES = /^@proworks\/(contracts|forgeiq|costiq|prime)(\/|$)/;
+const SUITE_PACKAGES = /^@proworks\/(contracts|forgeiq|costiq|prime|receiptiq)(\/|$)/;
 
 /** Host applications. Nothing here may import from them, ever. */
 const HOST_IMPORTS = [
@@ -109,14 +113,17 @@ describe("engine suite portability", () => {
     // engine that happens to produce them — another producer could.
     const offenders: string[] = [];
     for (const file of sourceFiles.filter(
-      (f) => f.relative.startsWith("costiq/") || f.relative.startsWith("prime/"),
+      (f) =>
+        f.relative.startsWith("costiq/") ||
+        f.relative.startsWith("prime/") ||
+        f.relative.startsWith("receiptiq/"),
     )) {
       for (const spec of importSpecifiers(file.text)) {
         if (spec.startsWith("@proworks/forgeiq")) offenders.push(`${file.relative} → ${spec}`);
       }
     }
     expect(offenders).toEqual([]);
-    for (const name of ["costiq", "prime"]) {
+    for (const name of ["costiq", "prime", "receiptiq"]) {
       expect(Object.keys(pkgJson(name).dependencies ?? {})).not.toContain("@proworks/forgeiq");
     }
   });
@@ -159,7 +166,7 @@ describe("engine suite portability", () => {
   it("declares only suite packages and zod as runtime dependencies", () => {
     // A host framework appearing here would make the engine un-liftable; the
     // host-facing layers declare theirs as optional peers instead.
-    for (const name of ["contracts", "forgeiq", "costiq", "prime"]) {
+    for (const name of ["contracts", "forgeiq", "costiq", "prime", "receiptiq"]) {
       for (const dep of Object.keys(pkgJson(name).dependencies ?? {})) {
         expect(dep === "zod" || SUITE_PACKAGES.test(dep)).toBe(true);
       }

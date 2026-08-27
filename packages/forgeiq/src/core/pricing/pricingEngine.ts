@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Steven Kreutzer. All rights reserved.
+// Proprietary and confidential. Unauthorized copying, modification, or
+// distribution of this file, via any medium, is strictly prohibited.
+
 import type { ProductDefinition } from "../schemas/productDefinition.js";
 import type { ProductConfiguration } from "../schemas/configuration.js";
 import type { MachineProfileSpecs } from "../schemas/machineProfile.js";

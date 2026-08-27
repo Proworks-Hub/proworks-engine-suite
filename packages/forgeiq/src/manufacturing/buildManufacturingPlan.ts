@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Steven Kreutzer. All rights reserved.
+// Proprietary and confidential. Unauthorized copying, modification, or
+// distribution of this file, via any medium, is strictly prohibited.
+
 import type { ProductDefinition, ProductOperation } from "../core/schemas/productDefinition.js";
 import { operationTypeSchema } from "../core/schemas/productDefinition.js";
 import type { ProductConfiguration } from "../core/schemas/configuration.js";

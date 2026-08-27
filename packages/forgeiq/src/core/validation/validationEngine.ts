@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Steven Kreutzer. All rights reserved.
+// Proprietary and confidential. Unauthorized copying, modification, or
+// distribution of this file, via any medium, is strictly prohibited.
+
 import { resolveSurfaceDims } from "../resolve.js";
 import { buildBillOfMaterials } from "../production/bom.js";
 import type { ValidationContext, ValidationResult, ValidationRule } from "./types.js";

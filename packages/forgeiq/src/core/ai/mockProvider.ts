@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Steven Kreutzer. All rights reserved.
+// Proprietary and confidential. Unauthorized copying, modification, or
+// distribution of this file, via any medium, is strictly prohibited.
+
 import type { AIProvider } from "./types.js";
 
 // Deterministic stand-in for a real model. It exists so the concept flow can

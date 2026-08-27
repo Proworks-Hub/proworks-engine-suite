@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Steven Kreutzer. All rights reserved.
+// Proprietary and confidential. Unauthorized copying, modification, or
+// distribution of this file, via any medium, is strictly prohibited.
+
 import type { ValidationIssue, ValidationRule } from "../types.js";
 
 // Letters with enclosed counters (the middle of an O, the loops of a B) lose

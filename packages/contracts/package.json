@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "description": "Normalized contracts exchanged between the portable engines. Depends on nothing but zod.",
+  "author": "Steven Kreutzer",
+  "license": "UNLICENSED",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {

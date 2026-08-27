@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "description": "CostIQ \u2014 cost it, margin it, price it. Consumes a ManufacturingPlan; owns the economics.",
+  "author": "Steven Kreutzer",
+  "license": "UNLICENSED",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
