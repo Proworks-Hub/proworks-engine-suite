@@ -38,6 +38,10 @@ export * from "./observability.js";
 // and the services every engine would otherwise reinvent.
 // What a consumer is ALLOWED to do. A capability is built once and exposed in
 // different amounts to different products, rather than forking the engine.
+// Two organizations transacting without sharing systems, and a shop that keeps
+// working when the connection does not.
+export * from "./collaboration.js";
+export * from "./sync.js";
 export * from "./capabilities.js";
 export * from "./gateway.js";
 export * from "./tracing.js";

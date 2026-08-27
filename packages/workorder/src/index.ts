@@ -21,6 +21,9 @@
 // owned its own entitlement vocabulary would be deciding what customers may
 // buy, which is a host's business and not a domain's.
 
+// ── Subcontracting: what crosses to another shop, and nothing else ───────
+export * from "./collaboration/subcontract.js";
+
 // ── The event vocabulary the whole domain speaks ─────────────────────────
 export * from "./models/events.js";
 
