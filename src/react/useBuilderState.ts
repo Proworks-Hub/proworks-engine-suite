@@ -17,7 +17,10 @@ export type BuilderAction =
   | { type: "SELECT_ELEMENT"; elementId: string | null }
   | { type: "ADD_ELEMENT"; surfaceId: string; element: SurfaceElement }
   | { type: "UPDATE_ELEMENT"; surfaceId: string; elementId: string; patch: Partial<SurfaceElement> }
-  | { type: "REMOVE_ELEMENT"; surfaceId: string; elementId: string };
+  | { type: "REMOVE_ELEMENT"; surfaceId: string; elementId: string }
+  // Wholesale replacement — used by automatic design repairs, which return a
+  // whole configuration rather than a field-level patch.
+  | { type: "REPLACE_CONFIG"; config: ProductConfiguration };
 
 function reducer(state: BuilderState, action: BuilderAction): BuilderState {
   switch (action.type) {
@@ -62,6 +65,13 @@ function reducer(state: BuilderState, action: BuilderAction): BuilderState {
         },
         selectedElementId:
           state.selectedElementId === action.elementId ? null : state.selectedElementId,
+      };
+    case "REPLACE_CONFIG":
+      return {
+        ...state,
+        selections: action.config.selections,
+        surfaces: action.config.surfaces,
+        quantity: action.config.quantity,
       };
     default:
       return state;

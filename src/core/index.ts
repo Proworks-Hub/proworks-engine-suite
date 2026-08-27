@@ -9,4 +9,6 @@ export * from "./pricing/quantity";
 export * from "./validation/validationEngine";
 export { elementBounds } from "./validation/geometry";
 export * from "./export/cutlineSvg";
+export * from "./export/bridges";
 export * from "./export/workOrder";
+export * from "./repair/designRepair";

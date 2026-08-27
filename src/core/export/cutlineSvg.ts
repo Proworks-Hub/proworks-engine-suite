@@ -1,4 +1,5 @@
 import type { SurfaceElement } from "../schemas/configuration";
+import { bridgeClosedPath } from "./bridges";
 
 // Per-panel production cutline SVG, in real inches, following the LightBurn
 // color convention used across the shop:
@@ -32,6 +33,9 @@ export interface CutlineSvgInput {
   // without one it stays an engrave placement reference. Kept as data so
   // this module stays DOM-free.
   cutContours?: Record<string, ElementCutContours>;
+  // Uncut tab width used to hold interior islands in place, in inches.
+  // 0 disables bridging (holes cut fully through). Default 0.1".
+  bridgeWidthIn?: number;
 }
 
 const CUT = "#FF00FF";
@@ -48,6 +52,7 @@ function esc(s: string): string {
 
 export function buildPanelCutlineSvg(input: CutlineSvgInput): string {
   const { widthIn: w, heightIn: h } = input;
+  const bridgeWidthIn = input.bridgeWidthIn ?? 0.1;
   const parts: string[] = [];
 
   parts.push(
@@ -90,21 +95,37 @@ export function buildPanelCutlineSvg(input: CutlineSvgInput): string {
       if (contours && contours.outer.length >= 3) {
         // Scale the normalized silhouette (outer boundary + interior holes)
         // to the placed element and cut it through the panel.
-        const toPath = (pts: Point[]) =>
+        const toInches = (pts: Point[]) =>
+          pts.map((p) => ({
+            x: el.xIn + p.x * el.widthIn,
+            y: el.yIn + p.y * el.heightIn,
+          }));
+        const toPathData = (pts: Point[], close: boolean) =>
           pts
-            .map(
-              (p, i) =>
-                `${i === 0 ? "M" : "L"}${(el.xIn + p.x * el.widthIn).toFixed(4)},${(el.yIn + p.y * el.heightIn).toFixed(4)}`,
-            )
-            .join(" ") + " Z";
-        const paths = [contours.outer, ...contours.holes.filter((hole) => hole.length >= 3)];
-        cutContourPaths.push(
-          `    <g${transform}>`,
-          ...paths.map(
-            (pts) => `      <path d="${toPath(pts)}" fill="none" stroke="${CUT}" stroke-width="${HAIRLINE}"/>`,
-          ),
-          `    </g>`,
-        );
+            .map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(4)},${p.y.toFixed(4)}`)
+            .join(" ") + (close ? " Z" : "");
+
+        const rows = [
+          `      <path d="${toPathData(toInches(contours.outer), true)}" fill="none" stroke="${CUT}" stroke-width="${HAIRLINE}"/>`,
+        ];
+        // Interior holes enclose panel material that would drop out, so they
+        // are cut with bridges (tabs) holding the island in place.
+        for (const hole of contours.holes) {
+          if (hole.length < 3) continue;
+          const holeIn = toInches(hole);
+          if (bridgeWidthIn > 0) {
+            for (const run of bridgeClosedPath(holeIn, { bridgeWidthIn })) {
+              rows.push(
+                `      <path d="${toPathData(run, false)}" fill="none" stroke="${CUT}" stroke-width="${HAIRLINE}"/>`,
+              );
+            }
+          } else {
+            rows.push(
+              `      <path d="${toPathData(holeIn, true)}" fill="none" stroke="${CUT}" stroke-width="${HAIRLINE}"/>`,
+            );
+          }
+        }
+        cutContourPaths.push(`    <g${transform}>`, ...rows, `    </g>`);
         // Keep the artwork as an operator reference underneath the cut.
         engraveImages.push(
           `    <g${transform}>`,

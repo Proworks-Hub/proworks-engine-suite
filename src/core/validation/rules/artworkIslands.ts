@@ -17,9 +17,9 @@ export const artworkIslandsRule: ValidationRule = {
           rule: "artwork-islands",
           surfaceId,
           elementId: el.id,
-          message: `This artwork has ${el.interiorIslands} enclosed area${el.interiorIslands === 1 ? "" : "s"} that will fall out when cut through the metal.`,
+          message: `This artwork has ${el.interiorIslands} enclosed area${el.interiorIslands === 1 ? "" : "s"} that would fall out when cut through the metal.`,
           suggestedFix:
-            "We'll add small bridges to hold those pieces, or choose a stencil-style design without enclosed areas.",
+            "Your production file automatically includes small bridges holding those pieces in place — no action needed.",
         });
       }
     }

@@ -7,6 +7,11 @@ import {
   type ElementCutContours,
 } from "../core/export/cutlineSvg";
 import { traceImageCutContour } from "./export/contour";
+import {
+  applyRepairs,
+  suggestRepairs,
+  type RepairSuggestion,
+} from "../core/repair/designRepair";
 import type { SurfaceElement } from "../core/schemas/configuration";
 import { fetchProduct, postConfiguration } from "./engineClient";
 import { useBuilderState } from "./useBuilderState";
@@ -76,6 +81,15 @@ function LoadedBuilder(
     : [];
   const selectedElement =
     activeElements.find((el) => el.id === state.selectedElementId) ?? null;
+
+  // Automatic fixes available for the current issues ("Fix automatically").
+  const repairs = useMemo(
+    () => suggestRepairs(issues, { definition, configuration: config }),
+    [issues, definition, config],
+  );
+
+  const applyRepair = (repair: RepairSuggestion) =>
+    dispatch({ type: "REPLACE_CONFIG", config: repair.apply(config) });
 
   const hasErrors = issues.some((i) => i.severity === "error");
   const canOrder = !hasErrors && validation.data !== undefined && price.data !== undefined;
@@ -235,10 +249,15 @@ function LoadedBuilder(
         />
         <ValidationPanel
           validation={validation.data}
+          repairs={repairs}
           onFocusIssue={(surfaceId, elementId) => {
             if (surfaceId) dispatch({ type: "SET_ACTIVE_SURFACE", surfaceId });
             if (elementId) dispatch({ type: "SELECT_ELEMENT", elementId });
           }}
+          onApplyRepair={applyRepair}
+          onApplyAllRepairs={() =>
+            dispatch({ type: "REPLACE_CONFIG", config: applyRepairs(config, repairs) })
+          }
         />
         <PriceSummary
           price={price.data}
