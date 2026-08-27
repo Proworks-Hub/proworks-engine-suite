@@ -193,11 +193,11 @@ Each step ends green — typecheck, tests, and both hosts building.
 | 3. Tracking service | ✅ | Does **not** depend on WorkOrderIQ; WorkOrderIQ implements its port |
 | 4. Command boundary | ✅ | First enforcement of the capability layer on the write side |
 | 5. Missing events | ✅ | `quality.*` and `packaging.*` only; `material.*` deferred to step 6 |
-| 6. InventoryIQ | — | |
-| 7. VisionIQ | — | |
-| 8. Notifications | — | |
-| 9. Vertical slice | — | |
-| 10. KSix, then ProWorks | — | |
+| 6. InventoryIQ | ✅ | Holds no cost; quantities carry units and accumulate as integers |
+| 7. VisionIQ | ⛔ | **Blocked** — §8 was never saved, and inferring an engine's whole domain is the expensive kind of guess |
+| 8. Notifications | ✅ | Decides and records; the host sends |
+| 9. Vertical slice | ✅ | Closed the `DecisionContext.inventory` seam, open since Prime was written |
+| 10. KSix, then ProWorks | ⏸ | **Needs a go** — KSix `render.yaml` has `autoDeploy: true` on `main` |
 
 ### Two findings from doing the work
 
@@ -212,9 +212,26 @@ vitest alone — which strips types. That is the mechanism behind the tests-pass
 that has recurred repeatedly here. Adding it surfaced seven real errors, including two assertions
 typed against a union so wide the properties they checked did not exist on it.
 
+**The vitest alias list and the tsconfig paths are hand-maintained, and were disagreeing.**
+Typecheck resolved suite packages through each package's built `dist`; vitest resolved through
+`src`. The symptom is a phantom "has no exported member" for code that plainly exports it — the same
+disagreement-between-checkers family as the trap above. Both lists are now guarded, and the guard
+was verified by removing an alias and watching it fail by name.
+
 ### Gaps closed since §7 was written
 
 - **ETA grounding (§40) was already done.** `EtaConfidence` (`firm | tentative | at_risk`) exists
   with documented derivation from real step estimates. I listed it as open; it was not.
 - **The capability layer now has callers** — tracking's deep audiences and every work-order command.
   Both fail closed: no resolver configured means refused, not allowed.
+- **`DecisionContext.inventory` now has a producer.** It has existed since Prime was written with
+  nothing filling it — the decision engine asking whether there is material and getting silence.
+
+### Still open
+
+- **VisionIQ has no specification here.** §8 was not saved to the docs folder and only this audit
+  mentions the engine. What it owns needs stating before it is built.
+- **`material.*` events are defined and unpublished.** InventoryIQ returns them; no host drains them
+  to a bus yet.
+- **Nothing is deployed.** Every package above is built, tested and committed, and no host consumes
+  any of it. Steps 10's integration is what makes it real.
