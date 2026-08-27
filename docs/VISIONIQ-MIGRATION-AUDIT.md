@@ -101,10 +101,38 @@ anyone reads them.
 
 ---
 
-## Duplication found
+## Duplication found — resolved
 
-1. **`machinePresets.ts` exists twice** inside Prep Studio — `lib/` and `lib/canvas-ops/`.
-2. **`ai/legacy/`** duplicates `fallbackDecisionTree` and `runAiPrepFlow`.
+**1. `machinePresets.ts` exists twice — and one copy is dead.**
+
+| | Consumers | Key vocabulary |
+|---|---|---|
+| `lib/machinePresets.ts` | **11 files** | `"DTF"`, `"LASER_ENGRAVING"` — uppercase |
+| `lib/canvas-ops/machinePresets.ts` | **0 files** | `'dtf'`, `'laser'`, `'laser_engrave'` — lowercase |
+
+Not merely duplicated: the two use **incompatible key conventions**, and the orphan has a `'laser'`
+key the live one does not. Its apparently-unique exports (`KSIX_PALETTE`, `BACKGROUND_REMOVAL_PRESETS`)
+resolve from elsewhere — `KSIX_PALETTE` comes from `@ksix/lib/ksixPalette`.
+
+**Verdict: `lib/machinePresets.ts` is authoritative.** `canvas-ops/machinePresets.ts` is an
+unadopted fork. Extract the former; leave the latter for the host to delete.
+
+**2. `ai/legacy/` is not dead — it is a live divergence.**
+
+Two files still import it: `components/ai/AiResultPanel.tsx` (type-only) and, more seriously,
+`pages/CanvasStudio.tsx`, which calls `runAiPrepFlow` from `legacy/` (75 lines) while the rest of the
+application uses the current one (213 lines).
+
+**One page is running an older decision tree.** That is a host bug, not an extraction problem.
+
+**Verdict: `ai/` is authoritative.** Extract it; flag `CanvasStudio.tsx` to the host as unmigrated.
+
+**3. `PrepResult` exists three times — and they have not drifted.**
+
+`ksix-prep-studio/types/PrepResult.ts` is canonical; `prep-studio/types/PrepResult.ts` is a
+self-described deprecated shim re-exporting it; ProWorks holds an independent copy. Compared field
+by field, **the canonical definition and ProWorks' copy are identical** — no drift, across separate
+repositories with no shared package. That is the argument for promoting it rather than redesigning.
 3. **KSix `laserExport.ts` vs `modules/laser-prep` (35 files)** — near-certain overlap. KSix's is
    253 lines; Prep Studio's is an order of magnitude larger. The directive says compare
    capability-by-capability rather than taking the newest, and this is the pair that needs it.
@@ -209,7 +237,25 @@ consumer yet. `recipeOperatingSystem.ts` and `intelligence/` stayed behind — t
 That last one is trivial when it comes: `import type { Job }` in all four intelligence files is
 **type-only**, so it erases. Replacing it with a local structural type is the whole job.
 
+## Extraction pass 2 — contracts
+
+`PrepResult` promoted into `@proworks-hub/contracts` with zod validation, plus the bridge to
+`ProductionAssetManifest`. 13 tests.
+
+**They are complementary, and merging them would lose something.** A `PrepResult` is the OUTCOME of
+preparing one asset — readiness, issues, recommendations, which recipe ran. A manifest is the SET of
+files reaching machines and what each is for. `prepResultToProductionAsset` bridges them.
+
+Three decisions worth recording:
+
+- **`source` became an open string.** The original union named the two Studios by name; a closed
+  list would make the contract refuse the third-party licensee VisionIQ is being extracted for.
+- **`machineClass` is supplied by the caller**, never parsed from `machinePreset`. A preset is a
+  host's label, and inferring a machine class from it is filename-sniffing wearing a different hat.
+- **A critical issue blocks regardless of score.** A high score beside a critical issue means the
+  scorer and the checker disagree, and the safe reading of a disagreement is the pessimistic one.
+
 ### Next
 
-Steps 2–6 of the directive's order: contracts, preflight, profile resolution, recipes, machine
-targeting — then rewire Prep Studio as the first consumer, per §"FIRST CONSUMER".
+Steps 3–6: preflight, profile resolution, recipes, machine targeting — then rewire Prep Studio as
+the first consumer, per §"FIRST CONSUMER".

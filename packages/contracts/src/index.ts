@@ -71,3 +71,7 @@ export * from "./externalOrder.js";
 // The files that reach a machine, and what each one is FOR — declared by
 // whatever produced it, so nothing downstream infers purpose from a filename.
 export * from "./productionAsset.js";
+
+// What a preparation run produced — promoted from the shape KSix Prep Studio
+// and ProWorks had already converged on independently.
+export * from "./prepResult.js";
