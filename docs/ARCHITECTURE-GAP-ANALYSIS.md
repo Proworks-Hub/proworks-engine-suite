@@ -3,7 +3,7 @@
 Owner: Steven Kreutzer · 2026-08-27 · Suite `v0.3.0` (published)
 Assessed against the Architecture Hardening & Scalability Directive.
 
-**Phase 1 (inventory) complete. Phase 2 (purity guards) implemented. Phases 3+ pending.**
+**Phases 1–4 complete** (inventory · purity guards · tenancy vocabulary · correlation ids). Phase 5 next: the event envelope and `EventBus` port.
 
 The three conflicts in §3 have been **resolved and are binding** — see the ecosystem decision log,
 entry *"Three hardening-directive items resolved against existing architecture"*:
@@ -208,8 +208,8 @@ Ordered by value-to-risk, not by directive numbering.
 
 | Risk | Why it matters |
 |---|---|
-| **Tenancy vocabulary divergence** | Three engines, three words. Every day this persists, more code is written against the wrong one |
-| **No correlation id** | Retrofitting through published contracts means a breaking version bump per engine. Cheapest it will ever be is now |
+| ~~Tenancy vocabulary divergence~~ | **CLOSED.** `TenantContext` in contracts; `Canonical<T>` makes tenancy on shared knowledge a compile error |
+| ~~No correlation id~~ | **CLOSED.** `TraceContext` added additively in 0.2.0, before any host depended on it |
 | ~~Prime's purity is undefended~~ | **CLOSED 2026-08-27.** Two guards now refuse I/O imports and ambient globals across Prime, CostIQ and ReceiptIQ |
 | **Two routing implementations** | Documented today, but nothing *enforces* that eligibility stays in Prime and capacity stays in the Hub |
 | **Event vocabulary uncoordinated** | Prime's `WorkOrderEventType` is work-order-scoped. Platform events need a namespace that will not collide |
@@ -224,8 +224,8 @@ Each step ends green — typecheck, 609 suite tests, and both hosts still buildi
 |---|---|---|
 | ~~1~~ | ~~*This document*~~ | **done** |
 | ~~2~~ | ~~Guard the pure engines: no I/O imports, no ambient globals~~ | **done** — 2 guards, 6 injections verified, 611 tests |
-| **3** | Tenant context contract; reconcile `orgId`/`tenantId`/`ownerRef` | One vocabulary, ownership model intact |
-| **4** | Correlation/causation on contracts, additive | Both hosts unaffected |
+| ~~3~~ | ~~Tenant context contract~~ | **done** — `TenantContext`, `Canonical<T>`, `ownerRefFor`; ownership model intact |
+| ~~4~~ | ~~Correlation/causation, additive~~ | **done** — optional `trace` on three contracts; hosts untouched on ^0.1.0 |
 | **5** | `PlatformEvent` envelope + `EventBus` port + in-memory adapter | Publish/subscribe tested |
 | **6** | Commands vs events; first five domain events | ForgeIQ/CostIQ/ReceiptIQ publish; nobody imports a consumer |
 | **7** | Processed-event ledger + idempotent consumers + DLQ | Duplicate delivery proven harmless |
