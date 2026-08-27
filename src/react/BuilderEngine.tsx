@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { resolveSurfaceDims } from "../core/resolve";
-import { buildPanelCutlineSvg, cutlineFilename } from "../core/export/cutlineSvg";
+import { buildPanelCutlineSvg, cutlineFilename, type Point } from "../core/export/cutlineSvg";
+import { traceImageCutContour } from "./export/contour";
 import type { SurfaceElement } from "../core/schemas/configuration";
 import { fetchProduct, postConfiguration } from "./engineClient";
 import { useBuilderState } from "./useBuilderState";
@@ -95,6 +96,28 @@ function LoadedBuilder(
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-+|-+$/g, "");
 
+      // Trace silhouettes for uploaded artwork so cut-out designs get real
+      // cut geometry (transparent PNGs only; JPEG/full-bleed images stay
+      // engrave references). Cached per URL — the same emblem on two panels
+      // traces once. Best-effort throughout.
+      const contourByUrl = new Map<string, Point[] | null>();
+      const cutContours: Record<string, Point[]> = {};
+      for (const elements of Object.values(config.surfaces)) {
+        for (const el of elements) {
+          if (el.type !== "image") continue;
+          if (!contourByUrl.has(el.url)) {
+            try {
+              contourByUrl.set(el.url, await traceImageCutContour(el.url));
+            } catch (err) {
+              console.error("ForgeIQ: contour trace failed:", err);
+              contourByUrl.set(el.url, null);
+            }
+          }
+          const traced = contourByUrl.get(el.url);
+          if (traced) cutContours[el.id] = traced;
+        }
+      }
+
       // Generate + upload per-panel cutline SVGs so the order arrives
       // production-ready. Best-effort: a failed upload must not block the
       // sale — the shop can re-export from the saved configuration.
@@ -106,6 +129,7 @@ function LoadedBuilder(
         if (!dims) continue;
         try {
           const svg = buildPanelCutlineSvg({
+            cutContours,
             productSlug: definition.slug,
             panelId: surface.id,
             panelName: surface.name,
