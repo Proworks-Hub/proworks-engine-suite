@@ -1,11 +1,18 @@
 {
   "name": "@proworks/forgeiq",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
-  "description": "ForgeIQ \u2014 configure it, validate it, manufacture it. Produces the ManufacturingPlan.",
+  "description": "ForgeIQ — configure it, validate it, manufacture it. Produces the ManufacturingPlan.",
   "author": "Steven Kreutzer",
   "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/proworks/proworks-engine-suite.git",
+    "directory": "packages/forgeiq"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "main": "./dist/core/index.js",
   "types": "./dist/core/index.d.ts",
   "exports": {

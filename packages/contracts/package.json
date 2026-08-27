@@ -1,11 +1,18 @@
 {
   "name": "@proworks/contracts",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "description": "Normalized contracts exchanged between the portable engines. Depends on nothing but zod.",
   "author": "Steven Kreutzer",
   "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/proworks/proworks-engine-suite.git",
+    "directory": "packages/contracts"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {

@@ -1,0 +1,13 @@
+# Copy this to .npmrc and replace the placeholder with your token.
+#
+#   cp .npmrc.example .npmrc
+#
+# .npmrc is gitignored. Never commit it, and never paste the token into a
+# chat, an issue, or a commit message - a leaked token has to be revoked,
+# and anything already pushed cannot be un-pushed.
+#
+# The token needs write:packages and read:packages. Generate it at
+# GitHub > Settings > Developer settings > Personal access tokens (classic).
+
+@proworks:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=REPLACE_WITH_YOUR_TOKEN

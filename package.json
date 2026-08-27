@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "ForgeIQ, CostIQ, Prime, and ReceiptIQ \u2014 portable intelligence engines. Hosts consume them; they depend on no host.",
+  "description": "ForgeIQ, CostIQ, Prime, and ReceiptIQ — portable intelligence engines. Hosts consume them; they depend on no host.",
   "author": "Steven Kreutzer",
   "license": "UNLICENSED",
   "workspaces": [
@@ -19,6 +19,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "verify": "npm run typecheck && npm run test",
+    "publish:all": "npm run verify && npm publish --workspaces",
+    "publish:dry": "npm publish --workspaces --dry-run",
     "clean": "tsc -b --clean packages/contracts packages/forgeiq packages/costiq packages/prime packages/receiptiq"
   },
   "devDependencies": {

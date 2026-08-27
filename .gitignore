@@ -1,3 +1,9 @@
 node_modules/
 dist/
 *.tsbuildinfo
+
+# .npmrc holds the registry auth token when publishing. It must never be
+# committed - a token in git history is a token that has to be revoked, and
+# rewriting history to remove one is worse than the leak.
+# Copy .npmrc.example and fill it in locally.
+.npmrc

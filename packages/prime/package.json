@@ -1,11 +1,18 @@
 {
   "name": "@proworks/prime",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
-  "description": "Prime \u2014 evaluate it, route it, decide what happens next. Consumes normalized engine output.",
+  "description": "Prime — evaluate it, route it, decide what happens next. Consumes normalized engine output.",
   "author": "Steven Kreutzer",
   "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/proworks/proworks-engine-suite.git",
+    "directory": "packages/prime"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
