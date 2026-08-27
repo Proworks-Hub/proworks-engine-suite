@@ -2,6 +2,7 @@ import type { ProductDefinition } from "../schemas/productDefinition";
 import type { ProductConfiguration } from "../schemas/configuration";
 import type { PriceBreakdown } from "../pricing/pricingEngine";
 import type { MaterialProfileSpecs } from "../schemas/materialProfile";
+import type { ManufacturingPlan } from "../manufacturing/manufacturingPlan";
 import { buildBillOfMaterials } from "../production/bom";
 import {
   resolveSurfaceDims,
@@ -23,6 +24,13 @@ export interface WorkOrderInput {
   materialName?: string;
   /** Needed to nest cut parts onto real stock for the BOM section. */
   materials?: Map<number, MaterialProfileSpecs>;
+  /**
+   * When supplied, the routing section is rendered from the plan — the same
+   * operations a costing engine sees, so the shop floor and the estimate can
+   * never describe different work. Without it the work order falls back to
+   * the product's single time estimate.
+   */
+  plan?: ManufacturingPlan;
 }
 
 const line = "─".repeat(58);
@@ -108,15 +116,42 @@ export function buildWorkOrder(input: WorkOrderInput): string {
 
   const areaSqFt = totalSurfaceAreaSqFt(def, config);
   const knobs = def.pricing.internalCost;
-  const estMachineMinutes = knobs.estMachineMinutesPerSqFt * areaSqFt * config.quantity;
-  out.push(
-    "",
-    "PRODUCTION ESTIMATE",
-    line,
-    `Panel area:      ${areaSqFt.toFixed(2)} sq ft per unit`,
-    `Machine time:    ~${Math.ceil(estMachineMinutes)} min (+${knobs.setupMinutes} min setup)`,
-    `Labor:           ~${Math.ceil(knobs.laborMinutes * config.quantity)} min`,
-  );
+
+  // ── Routing ───────────────────────────────────────────────────────────
+  if (input.plan && input.plan.operations.length > 0) {
+    const ops = input.plan.operations;
+    out.push("", "ROUTING", line);
+    ops.forEach((op, index) => {
+      const where = op.isLabor ? "bench" : (op.machineName ?? op.machineProcess);
+      const setup = op.setupMinutes > 0 ? ` +${op.setupMinutes} setup` : "";
+      out.push(
+        `${index + 1}. ${op.name ?? op.type} — ${where}  (${Math.ceil(op.estimatedMinutes)} min${setup})`,
+      );
+      if (op.note) out.push(`      ${op.note}`);
+    });
+    const machineMinutes = ops
+      .filter((op) => !op.isLabor)
+      .reduce((sum, op) => sum + op.estimatedMinutes + op.setupMinutes, 0);
+    out.push(
+      "",
+      "PRODUCTION ESTIMATE",
+      line,
+      `Panel area:      ${areaSqFt.toFixed(2)} sq ft per unit`,
+      `Machine time:    ~${Math.ceil(machineMinutes)} min across ${ops.filter((o) => !o.isLabor).length} machine operation(s)`,
+      `Bench labor:     ~${Math.ceil(input.plan.labor.estimatedMinutes)} min`,
+    );
+  } else {
+    const estMachineMinutes = knobs.estMachineMinutesPerSqFt * areaSqFt * config.quantity;
+    out.push(
+      "",
+      "PRODUCTION ESTIMATE",
+      line,
+      `Panel area:      ${areaSqFt.toFixed(2)} sq ft per unit`,
+      `Machine time:    ~${Math.ceil(estMachineMinutes)} min (+${knobs.setupMinutes} min setup)`,
+      `Labor:           ~${Math.ceil(knobs.laborMinutes * config.quantity)} min`,
+      "(No routing declared for this product — single estimated operation.)",
+    );
+  }
 
   if (price) {
     out.push(

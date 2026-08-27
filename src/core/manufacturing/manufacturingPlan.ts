@@ -1,5 +1,9 @@
 import { z } from "zod";
-import type { ProductDefinition } from "../schemas/productDefinition";
+import {
+  operationTypeSchema,
+  type ProductDefinition,
+  type ProductOperation,
+} from "../schemas/productDefinition";
 import type { ProductConfiguration } from "../schemas/configuration";
 import type { MaterialProfileSpecs } from "../schemas/materialProfile";
 import type { MachineProfileSpecs } from "../schemas/machineProfile";
@@ -66,19 +70,32 @@ export const planStockSchema = z.object({
 
 export const planOperationSchema = z.object({
   id: z.string(),
-  /** What the machine does. Extend as ForgeIQ learns new operations. */
-  type: z.enum(["cut", "engrave", "print", "assemble", "finish"]),
+  name: z.string().optional(),
+  type: operationTypeSchema,
+  /** Machine process this runs on; "bench" when no machine is involved. */
   machineProcess: z.string(),
   machineName: z.string().optional(),
   /** Run time across the whole order, excluding setup. */
   estimatedMinutes: z.number().min(0),
   /** Once-per-job setup, not multiplied by quantity. */
   setupMinutes: z.number().min(0),
+  /**
+   * Bench work — costed at a labor rate, not a machine rate. Its minutes are
+   * also summed into `labor.estimatedMinutes`, so a costing engine must not
+   * charge both (see `labor.derivedFromOperations`).
+   */
+  isLabor: z.boolean().default(false),
   note: z.string().optional(),
 });
 
 export const planLaborSchema = z.object({
   estimatedMinutes: z.number().min(0),
+  /**
+   * True when this total is the sum of the plan's own labor operations. A
+   * costing engine should then cost those operations and skip this block,
+   * rather than counting the same minutes twice.
+   */
+  derivedFromOperations: z.boolean().default(false),
   note: z.string().optional(),
 });
 
@@ -149,6 +166,38 @@ export type PlanStock = z.infer<typeof planStockSchema>;
 export type PlanOperation = z.infer<typeof planOperationSchema>;
 
 const round4 = (n: number) => Math.round(n * 10000) / 10000;
+
+/**
+ * Run time for one declared operation, measured against whatever it actually
+ * scales with. Part-based operations count the parts already expanded into
+ * the plan, so a per-surface component contributes once per surface.
+ */
+function operationMinutes(
+  op: ProductOperation,
+  ctx: { areaSqFt: number; quantity: number; parts: PlanPart[] },
+): number {
+  switch (op.time.basis) {
+    case "per-sq-ft":
+      return op.time.minutesPerSqFt * ctx.areaSqFt * ctx.quantity;
+    case "per-unit":
+      return op.time.minutesPerUnit * ctx.quantity;
+    case "fixed":
+      return op.time.minutes;
+    case "per-part": {
+      const wanted = op.time.partIds;
+      const count = ctx.parts
+        .filter((part) => {
+          if (part.kind !== "cut-part") return false;
+          if (!wanted) return true;
+          // Per-surface components expand to "<componentId>:<surfaceId>".
+          const componentId = part.id.split(":")[0];
+          return wanted.includes(componentId) || wanted.includes(part.id);
+        })
+        .reduce((sum, part) => sum + part.quantity, 0);
+      return op.time.minutesPerPart * count;
+    }
+  }
+}
 
 export interface BuildManufacturingPlanInput {
   definition: ProductDefinition;
@@ -235,17 +284,55 @@ export function buildManufacturingPlan(
   // are manufacturing facts, so the plan reports them as such.
   const knobs = definition.pricing.internalCost;
   const areaSqFt = totalSurfaceAreaSqFt(definition, configuration);
-  const operations: PlanOperation[] = [
-    {
-      id: "primary",
-      type: definition.manufacturingProcess.includes("cut") ? "cut" : "engrave",
-      machineProcess: machine.process,
-      machineName: input.machineName,
-      estimatedMinutes: round4(knobs.estMachineMinutesPerSqFt * areaSqFt * quantity),
-      setupMinutes: knobs.setupMinutes,
-      note: "Per-operation breakdown by part is a future extension.",
-    },
-  ];
+
+  // A product declares its own routing. Definitions written before routing
+  // existed — including rows already persisted — fall back to the single
+  // derived operation the plan has always reported.
+  const declared = definition.operations ?? [];
+  const selectedValueIds = new Set(selected.map((v) => v.id));
+  const operations: PlanOperation[] = declared.length
+    ? declared
+        .filter(
+          (op) => !op.requiresOptionValueId || selectedValueIds.has(op.requiresOptionValueId),
+        )
+        .map((op) => ({
+          id: op.id,
+          name: op.name,
+          type: op.type,
+          machineProcess: op.process ?? (op.labor ? "bench" : machine.process),
+          machineName: op.process === undefined && !op.labor ? input.machineName : undefined,
+          estimatedMinutes: round4(
+            operationMinutes(op, { areaSqFt, quantity, parts }),
+          ),
+          setupMinutes: op.setupMinutes,
+          isLabor: op.labor,
+          note: op.note,
+        }))
+    : [
+        {
+          id: "primary",
+          type: operationTypeSchema.parse(
+            definition.manufacturingProcess.includes("cut") ? "cut" : "engrave",
+          ),
+          machineProcess: machine.process,
+          machineName: input.machineName,
+          estimatedMinutes: round4(knobs.estMachineMinutesPerSqFt * areaSqFt * quantity),
+          setupMinutes: knobs.setupMinutes,
+          isLabor: false,
+          note: "Derived from the product's time estimate; no routing is declared.",
+        },
+      ];
+
+  // Labor follows the routing when there is any, so the two never disagree.
+  const laborOperations = operations.filter((op) => op.isLabor);
+  const labor = laborOperations.length
+    ? {
+        estimatedMinutes: round4(
+          laborOperations.reduce((sum, op) => sum + op.estimatedMinutes + op.setupMinutes, 0),
+        ),
+        derivedFromOperations: true,
+      }
+    : { estimatedMinutes: round4(knobs.laborMinutes * quantity), derivedFromOperations: false };
 
   return manufacturingPlanSchema.parse({
     planVersion: PLAN_VERSION,
@@ -278,7 +365,7 @@ export function buildManufacturingPlan(
     parts,
     stock,
     operations,
-    labor: { estimatedMinutes: round4(knobs.laborMinutes * quantity) },
+    labor,
     finishing: finishValue ? [{ id: finishValue.id, name: finishValue.label }] : [],
     advisoryRates: {
       materialCostPerSqFt: material?.costPerSqFt,

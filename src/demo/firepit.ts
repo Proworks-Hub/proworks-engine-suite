@@ -200,6 +200,53 @@ export function buildFirepitDefinition(ids: FirepitProfileIds): ProductDefinitio
       maxPanelWidthIn: 24,
       maxPanelHeightIn: 24,
     },
+    // What actually happens on the floor, in order. The laser runs; the rest
+    // is bench work. Coating only appears when the customer chose it.
+    operations: [
+      {
+        id: "laser-cut",
+        name: "Laser cut panels",
+        type: "cut",
+        process: "fiber-laser",
+        time: { basis: "per-sq-ft", minutesPerSqFt: 4 },
+        setupMinutes: 20,
+        labor: false,
+        note: "Cuts all panels, the bottom plate, and the legs from nested stock.",
+      },
+      {
+        id: "deburr",
+        name: "Deburr edges",
+        type: "finish",
+        time: { basis: "per-part", minutesPerPart: 1.5, partIds: ["side-panel", "bottom-plate", "leg"] },
+        setupMinutes: 0,
+        labor: true,
+      },
+      {
+        id: "weld-assemble",
+        name: "Weld and assemble",
+        type: "weld",
+        time: { basis: "per-unit", minutesPerUnit: 35 },
+        setupMinutes: 10,
+        labor: true,
+      },
+      {
+        id: "high-temp-coat",
+        name: "High-temp coating",
+        type: "finish",
+        time: { basis: "per-unit", minutesPerUnit: 15 },
+        setupMinutes: 10,
+        labor: true,
+        requiresOptionValueId: "fin_hightemp",
+      },
+      {
+        id: "pack",
+        name: "Crate for shipping",
+        type: "pack",
+        time: { basis: "per-unit", minutesPerUnit: 8 },
+        setupMinutes: 0,
+        labor: true,
+      },
+    ],
     bom: [
       {
         id: "side-panel",

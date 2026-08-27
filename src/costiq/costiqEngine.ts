@@ -91,38 +91,54 @@ export function createCostIqEngine(config: CostIqConfig = {}): CostEngine {
         });
       }
 
-      // ── Machine time and setup ──────────────────────────────────────────
+      // ── Operations: machine time, setup, and bench labor ────────────────
+      // Each operation is costed at the rate that matches who does it — a
+      // machine or a person — so a routing of cut, deburr, weld, and coat
+      // costs correctly rather than charging bench work at machine rates.
       const machineRate = rates.machineCostPerHour ?? settings.fallbackMachineRatePerHour;
-      if (machineRate <= 0 && plan.operations.length > 0) {
+      const laborRate = rates.laborRatePerHour ?? settings.fallbackLaborRatePerHour;
+      const machineOps = plan.operations.filter((op) => !op.isLabor);
+      const laborOps = plan.operations.filter((op) => op.isLabor);
+
+      if (machineRate <= 0 && machineOps.length > 0) {
         unpriced.push("machine-time");
         assumptions.push("No machine rate available — machine time is not costed.");
       }
+      if (laborRate <= 0 && laborOps.length > 0) {
+        unpriced.push("bench-labor");
+        assumptions.push("No labor rate available — bench operations are not costed.");
+      }
+
       for (const op of plan.operations) {
-        if (machineRate <= 0) break;
+        const rate = op.isLabor ? laborRate : machineRate;
+        if (rate <= 0) continue;
+        const where = op.isLabor ? "bench" : (op.machineName ?? op.machineProcess);
         lines.push({
           code: `run-${op.id}`,
-          label: `${op.type} on ${op.machineName ?? op.machineProcess}`,
-          amount: round2((op.estimatedMinutes / 60) * machineRate),
-          category: "machine",
+          label: `${op.name ?? op.type} — ${where}`,
+          amount: round2((op.estimatedMinutes / 60) * rate),
+          category: op.isLabor ? "labor" : "machine",
         });
         if (op.setupMinutes > 0) {
           lines.push({
             code: `setup-${op.id}`,
-            label: `${op.type} setup`,
-            amount: round2((op.setupMinutes / 60) * machineRate),
+            label: `${op.name ?? op.type} setup`,
+            amount: round2((op.setupMinutes / 60) * rate),
             category: "setup",
           });
         }
       }
       if (plan.operations.length > 0) {
         assumptions.push(
-          "Machine time is ForgeIQ's estimate; actual runtime is not yet fed back from production.",
+          "Operation times are ForgeIQ's estimates; actual runtime is not yet fed back from production.",
         );
       }
 
-      // ── Labor ───────────────────────────────────────────────────────────
-      const laborRate = rates.laborRatePerHour ?? settings.fallbackLaborRatePerHour;
-      if (plan.labor.estimatedMinutes > 0) {
+      // ── Labor not already covered by the routing ────────────────────────
+      // When the plan derived its labor total from labor operations, those
+      // minutes are already costed above — charging the block again would
+      // double count.
+      if (!plan.labor.derivedFromOperations && plan.labor.estimatedMinutes > 0) {
         if (laborRate > 0) {
           lines.push({
             code: "labor",

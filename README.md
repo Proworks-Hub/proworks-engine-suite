@@ -143,6 +143,24 @@ is charged. CostIQ is currently a production-intelligence path running beside it
 two agree on direct cost and differ only by CostIQ's overhead, which is a useful check
 while the engines mature.
 
+### Manufacturing routing
+
+A product declares the steps that turn stock into a finished thing, and each
+step says what it scales with — area, part count, order quantity, or once per
+job — plus whether a machine or a person does it. A step can be conditional, so
+a coating operation appears only when the customer chose that finish.
+
+Routing flows through everything downstream: the plan reports each operation,
+CostIQ charges machine steps at the machine rate and bench steps at the labor
+rate, Prime matches capacity signals per process, and the work order prints a
+numbered routing for the floor. `labor.derivedFromOperations` tells a costing
+engine when labor is already covered by the routing, so the same minutes are
+never charged twice.
+
+Products with no routing — including definitions persisted before it existed —
+still work: the plan derives a single operation from the product's time
+estimate, exactly as before, and the work order says so plainly.
+
 ### The contract surface
 
 Three directories hold everything the engines use to talk to each other:

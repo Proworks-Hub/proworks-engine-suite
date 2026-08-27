@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { computePrice } from "../src/core/pricing/pricingEngine";
 import { buildWorkOrder } from "../src/core/export/workOrder";
 import { buildPanelCutlineSvg } from "../src/core/export/cutlineSvg";
+import { buildManufacturingPlan } from "../src/core/manufacturing/manufacturingPlan";
 import { baseConfig, definition, machine, materials } from "./helpers";
 
 describe("work order builder", () => {
@@ -49,6 +50,38 @@ describe("work order builder", () => {
 
   it("carries customer notes", () => {
     expect(doc).toContain("Leave the patina raw please");
+  });
+
+  it("says plainly when a product declares no routing", () => {
+    expect(doc).toContain("No routing declared");
+    expect(doc).not.toContain("ROUTING\n");
+  });
+
+  it("renders the routing from the plan when one is supplied", () => {
+    const plan = buildManufacturingPlan({
+      definition,
+      configuration: config,
+      materials,
+      machine,
+      machineName: "Gweike M3 Ultra (fiber)",
+    });
+    const routed = buildWorkOrder({
+      orderRef: "KSix order #9",
+      productVersion: 4,
+      definition,
+      configuration: config,
+      materials,
+      plan,
+    });
+    // Numbered steps, each naming where the work happens.
+    expect(routed).toContain("ROUTING");
+    expect(routed).toContain("1. Laser cut panels — fiber-laser");
+    expect(routed).toContain("2. Deburr edges — bench");
+    expect(routed).toContain("3. Weld and assemble — bench");
+    // Machine and bench time are reported separately, not lumped together.
+    expect(routed).toContain("machine operation(s)");
+    expect(routed).toContain("Bench labor:");
+    expect(routed).not.toContain("No routing declared");
   });
 });
 

@@ -93,18 +93,69 @@ describe("ManufacturingPlan", () => {
     expect(plan.stock!.utilizationPct).toBeLessThan(1);
   });
 
-  it("reports operations, labor, and finishing as manufacturing facts", () => {
+  it("reports the product's declared routing", () => {
     const plan = planFor(baseConfig({ quantity: 2 }));
-    expect(plan.operations).toHaveLength(1);
+    // Cut on the laser, then bench work: deburr, weld, pack. The coating step
+    // is absent because this configuration chose the raw finish.
+    expect(plan.operations.map((o) => o.id)).toEqual([
+      "laser-cut",
+      "deburr",
+      "weld-assemble",
+      "pack",
+    ]);
     expect(plan.operations[0]).toMatchObject({
       type: "cut",
       machineProcess: "fiber-laser",
       setupMinutes: 20,
+      isLabor: false,
     });
-    // 4 min/sq ft × 12 sq ft × qty 2
+    // per-sq-ft: 4 min × 12 sq ft × qty 2
     expect(plan.operations[0].estimatedMinutes).toBeCloseTo(96, 3);
-    expect(plan.labor.estimatedMinutes).toBeCloseTo(90, 3);
+    // per-part: 1.5 min × 18 cut parts (9 per unit × 2)
+    expect(plan.operations[1]).toMatchObject({ machineProcess: "bench", isLabor: true });
+    expect(plan.operations[1].estimatedMinutes).toBeCloseTo(27, 3);
+    // per-unit: 35 min × 2
+    expect(plan.operations[2].estimatedMinutes).toBeCloseTo(70, 3);
     expect(plan.finishing).toEqual([{ id: "fin_raw", name: "Raw / natural" }]);
+  });
+
+  it("derives labor from the routing so the two cannot disagree", () => {
+    const plan = planFor();
+    // deburr 13.5 + weld (35 run + 10 setup) + pack 8
+    expect(plan.labor.derivedFromOperations).toBe(true);
+    expect(plan.labor.estimatedMinutes).toBeCloseTo(66.5, 3);
+  });
+
+  it("includes a conditional operation only when its option is chosen", () => {
+    const raw = planFor();
+    expect(raw.operations.map((o) => o.id)).not.toContain("high-temp-coat");
+
+    const coated = planFor(
+      baseConfig({ selections: { ...baseConfig().selections, finish: "fin_hightemp" } }),
+    );
+    expect(coated.operations.map((o) => o.id)).toContain("high-temp-coat");
+    expect(coated.labor.estimatedMinutes).toBeGreaterThan(raw.labor.estimatedMinutes);
+    expect(coated.finishing).toEqual([
+      { id: "fin_hightemp", name: "High-temp black coating" },
+    ]);
+  });
+
+  it("falls back to a single derived operation when no routing is declared", () => {
+    // Definitions persisted before routing existed come back without the
+    // field at all, not merely empty.
+    const legacy = structuredClone(definition) as Record<string, unknown>;
+    delete legacy.operations;
+    const plan = buildManufacturingPlan({
+      definition: legacy as typeof definition,
+      configuration: baseConfig(),
+      materials,
+      machine,
+    });
+    expect(plan.operations).toHaveLength(1);
+    expect(plan.operations[0]).toMatchObject({ id: "primary", type: "cut", isLabor: false });
+    expect(plan.operations[0].estimatedMinutes).toBeCloseTo(48, 3);
+    // Labor then comes from the product's own estimate, as it always did.
+    expect(plan.labor).toMatchObject({ estimatedMinutes: 45, derivedFromOperations: false });
   });
 
   it("passes through the host's rates as advisory only", () => {
@@ -191,28 +242,29 @@ const mockCostIQ: CostEngine = {
       });
     }
 
+    // Bench work is costed at the labor rate, machine work at the machine
+    // rate — the plan says which is which.
     const machineRate = plan.advisoryRates.machineCostPerHour ?? 0;
+    const laborRate = plan.advisoryRates.laborRatePerHour ?? 0;
     for (const op of plan.operations) {
+      const rate = op.isLabor ? laborRate : machineRate;
       lines.push({
         code: `op-${op.id}`,
         label: `${op.type} on ${op.machineProcess}`,
-        amount: (op.estimatedMinutes / 60) * machineRate,
-        category: "machine",
-      });
-      lines.push({
-        code: `setup-${op.id}`,
-        label: `${op.type} setup`,
-        amount: (op.setupMinutes / 60) * machineRate,
-        category: "setup",
+        amount: ((op.estimatedMinutes + op.setupMinutes) / 60) * rate,
+        category: op.isLabor ? "labor" : "machine",
       });
     }
 
-    lines.push({
-      code: "labor",
-      label: "Assembly labor",
-      amount: (plan.labor.estimatedMinutes / 60) * (plan.advisoryRates.laborRatePerHour ?? 0),
-      category: "labor",
-    });
+    // Only charge the labor block when the routing did not already cover it.
+    if (!plan.labor.derivedFromOperations) {
+      lines.push({
+        code: "labor",
+        label: "Assembly labor",
+        amount: (plan.labor.estimatedMinutes / 60) * laborRate,
+        category: "labor",
+      });
+    }
 
     if (plan.finishing.length > 0) unpriced.push(...plan.finishing.map((f) => f.id));
 
@@ -240,8 +292,8 @@ describe("CostEngine seam", () => {
     expect(result.engine).toBe("mock-costiq");
 
     // 1 sheet ($176) + fasteners 6.50 + weld 4 + crate 14
-    // + machine 48min@$45 ($36) + setup 20min@$45 ($15) + labor 45min@$30 ($22.50)
-    expect(result.totalCost).toBeCloseTo(274, 2);
+    // + laser 68 min @ $45 ($51) + bench 66.5 min @ $30 ($33.25)
+    expect(result.totalCost).toBeCloseTo(284.75, 2);
     expect(result.recommendedPrice).toBeGreaterThan(result.totalCost);
     expect(result.lines.some((l) => l.category === "material")).toBe(true);
     expect(result.lines.some((l) => l.category === "machine")).toBe(true);

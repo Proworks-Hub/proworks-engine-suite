@@ -125,6 +125,66 @@ export const bomComponentSchema = z.object({
   note: z.string().optional(),
 });
 
+// ── Manufacturing operations ────────────────────────────────────────────────
+// What physically happens to turn stock into the finished product, in order.
+// A product without operations still works: the plan derives a single
+// primary operation from the pricing block's time estimate, which is how
+// every definition behaved before this existed.
+
+/** The shop-floor step an operation represents. */
+export const operationTypeSchema = z.enum([
+  "cut",
+  "engrave",
+  "print",
+  "bend",
+  "weld",
+  "assemble",
+  "finish",
+  "qc",
+  "pack",
+]);
+
+/** How long an operation takes, expressed against something real. */
+export const operationTimeSchema = z.discriminatedUnion("basis", [
+  /** Scales with the customizable area — cutting, engraving, printing. */
+  z.object({ basis: z.literal("per-sq-ft"), minutesPerSqFt: z.number().min(0) }),
+  /** Scales with part count — deburring, bending, drilling. */
+  z.object({
+    basis: z.literal("per-part"),
+    minutesPerPart: z.number().min(0),
+    /**
+     * BOM component ids this applies to. A per-surface component expands to
+     * ids like "side-panel:front", so listing "side-panel" covers them all.
+     * Omit to apply to every cut part.
+     */
+    partIds: z.array(z.string()).optional(),
+  }),
+  /** Scales with order quantity — assembly, finishing, packing. */
+  z.object({ basis: z.literal("per-unit"), minutesPerUnit: z.number().min(0) }),
+  /** Once per job regardless of quantity. */
+  z.object({ basis: z.literal("fixed"), minutes: z.number().min(0) }),
+]);
+
+export const productOperationSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  type: operationTypeSchema,
+  /**
+   * Machine process this runs on, matching a MachineProfile's `process`.
+   * Omit for bench work that occupies a person rather than a machine.
+   */
+  process: z.string().optional(),
+  machineProfileId: z.number().int().optional(),
+  time: operationTimeSchema,
+  /** Once-per-job setup, never multiplied by quantity. */
+  setupMinutes: z.number().min(0).default(0),
+  /** Bench work: costed at the labor rate rather than a machine rate. */
+  labor: z.boolean().default(false),
+  /** Include only when this option value is selected — e.g. a coating step. */
+  requiresOptionValueId: z.string().optional(),
+  note: z.string().optional(),
+});
+
 // ── Manufacturing constraints ───────────────────────────────────────────────
 export const manufacturingConstraintsSchema = z.object({
   minFeatureIn: z.number().positive().default(0.05),
@@ -154,6 +214,8 @@ export const productDefinitionSchema = z.object({
   constraints: manufacturingConstraintsSchema,
   // Optional: products without a BOM fall back to area-based material costing.
   bom: z.array(bomComponentSchema).default([]),
+  // Optional: products without operations fall back to a single derived one.
+  operations: z.array(productOperationSchema).default([]),
 });
 
 export type PriceModifier = z.infer<typeof priceModifierSchema>;
@@ -163,5 +225,8 @@ export type DimensionPreset = z.infer<typeof dimensionPresetSchema>;
 export type ProductSurface = z.infer<typeof surfaceSchema>;
 export type PricingRules = z.infer<typeof pricingRulesSchema>;
 export type BomComponent = z.infer<typeof bomComponentSchema>;
+export type OperationType = z.infer<typeof operationTypeSchema>;
+export type OperationTime = z.infer<typeof operationTimeSchema>;
+export type ProductOperation = z.infer<typeof productOperationSchema>;
 export type ManufacturingConstraints = z.infer<typeof manufacturingConstraintsSchema>;
 export type ProductDefinition = z.infer<typeof productDefinitionSchema>;
