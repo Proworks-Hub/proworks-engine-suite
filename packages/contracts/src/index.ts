@@ -59,3 +59,11 @@ export * from "./tracking.js";
 
 // Asking an engine to do something, as distinct from being told it happened.
 export * from "./commands.js";
+
+// The SKU spine: one identifier created in the catalogue and pushed into every
+// channel, so an order coming back is matched on an id rather than on a title.
+export * from "./catalog.js";
+
+// An order that arrived from somewhere else. The channel does not matter; the
+// contract does.
+export * from "./externalOrder.js";

@@ -27,6 +27,7 @@ export default defineConfig({
       "@proworks-hub/tracking": pkg("tracking", "src/index.ts"),
       "@proworks-hub/inventoryiq": pkg("inventoryiq", "src/index.ts"),
       "@proworks-hub/notifications": pkg("notifications", "src/index.ts"),
+      "@proworks-hub/orderiq": pkg("orderiq", "src/index.ts"),
     },
   },
   test: {

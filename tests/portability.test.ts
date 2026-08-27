@@ -24,7 +24,7 @@ const ROOT = join(fileURLToPath(new URL(".", import.meta.url)), "..");
 const PACKAGES = join(ROOT, "packages");
 
 /** Published entry points the engines may import from one another. */
-const SUITE_PACKAGES = /^@proworks-hub\/(contracts|forgeiq|costiq|prime|receiptiq|platform-events|platform-runtime|workorderiq|tracking|inventoryiq|notifications)(\/|$)/;
+const SUITE_PACKAGES = /^@proworks-hub\/(contracts|forgeiq|costiq|prime|receiptiq|platform-events|platform-runtime|workorderiq|tracking|inventoryiq|notifications|orderiq)(\/|$)/;
 
 /** Host applications. Nothing here may import from them, ever. */
 const HOST_IMPORTS = [
@@ -145,7 +145,7 @@ describe("engine suite portability", () => {
     // bus coming too — which is the exact coupling the bus was added to remove.
     //
     // A host wires the adapter in. An engine must never reach for it.
-    const ENGINES = ["forgeiq", "costiq", "prime", "receiptiq", "workorderiq", "inventoryiq"];
+    const ENGINES = ["forgeiq", "costiq", "prime", "receiptiq", "workorderiq", "inventoryiq", "orderiq"];
     for (const name of ENGINES) {
       const deps = Object.keys(pkgJson(name).dependencies ?? {});
       expect(deps).not.toContain("@proworks-hub/platform-events");
@@ -227,7 +227,7 @@ describe("engine suite portability", () => {
 
     // And the same at the manifest level, so a dependency cannot be declared
     // ahead of the import that would use it.
-    for (const name of ["forgeiq", "costiq", "prime", "receiptiq", "workorderiq", "tracking", "inventoryiq", "notifications", "platform-events", "platform-runtime"]) {
+    for (const name of ["forgeiq", "costiq", "prime", "receiptiq", "workorderiq", "tracking", "inventoryiq", "notifications", "orderiq", "platform-events", "platform-runtime"]) {
       const suiteDeps = Object.keys(pkgJson(name).dependencies ?? {}).filter((d) =>
         d.startsWith("@proworks-hub/"),
       );
@@ -309,7 +309,7 @@ describe("engine suite portability", () => {
     //
     // ForgeIQ is deliberately absent: it ships optional `server` and `react`
     // layers, and its `core` purity is covered by its own test above.
-    const PURE_PACKAGES = ["prime", "costiq", "receiptiq", "contracts", "workorderiq", "platform-events", "platform-runtime", "tracking", "inventoryiq", "notifications"];
+    const PURE_PACKAGES = ["prime", "costiq", "receiptiq", "contracts", "workorderiq", "platform-events", "platform-runtime", "tracking", "inventoryiq", "notifications", "orderiq"];
 
     const bannedExact = [
       "express",
@@ -360,7 +360,7 @@ describe("engine suite portability", () => {
     // A package can stay import-clean and still reach for a browser or Node
     // global. These are the ones that would quietly tie an engine to one
     // runtime, or give it hidden state that does not survive being moved.
-    const PURE_PACKAGES = ["prime", "costiq", "receiptiq", "contracts", "workorderiq", "platform-events", "platform-runtime", "tracking", "inventoryiq", "notifications"];
+    const PURE_PACKAGES = ["prime", "costiq", "receiptiq", "contracts", "workorderiq", "platform-events", "platform-runtime", "tracking", "inventoryiq", "notifications", "orderiq"];
     const bannedGlobals = [
       /\blocalStorage\b/,
       /\bsessionStorage\b/,
@@ -397,7 +397,7 @@ describe("engine suite portability", () => {
   it("declares only suite packages and zod as runtime dependencies", () => {
     // A host framework appearing here would make the engine un-liftable; the
     // host-facing layers declare theirs as optional peers instead.
-    for (const name of ["contracts", "forgeiq", "costiq", "prime", "receiptiq", "workorderiq", "platform-events", "platform-runtime", "tracking", "inventoryiq", "notifications"]) {
+    for (const name of ["contracts", "forgeiq", "costiq", "prime", "receiptiq", "workorderiq", "platform-events", "platform-runtime", "tracking", "inventoryiq", "notifications", "orderiq"]) {
       for (const dep of Object.keys(pkgJson(name).dependencies ?? {})) {
         expect(dep === "zod" || SUITE_PACKAGES.test(dep)).toBe(true);
       }
