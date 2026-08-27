@@ -73,6 +73,18 @@ export const CAPABILITIES = {
     advanced: "costiq.advanced",
     realtime: "costiq.realtime",
   },
+  inventory: {
+    /** What is on hand, and correcting it. A maker counting sheets on a rack. */
+    basic: "inventory.basic",
+    /** More than one place to look. A shop with a rack, a shelf and a back room. */
+    multiLocation: "inventory.multi_location",
+    /** Promising material to a job before it is used, so two jobs cannot claim it. */
+    reservations: "inventory.reservations",
+    /** Reorder points and the signals that come off them. */
+    replenishment: "inventory.reorder",
+    /** Reserved versus actually used — the shop's real waste rate. */
+    consumptionVariance: "inventory.consumption_variance",
+  },
   receipt: {
     capture: "receipts.capture",
     costIntelligence: "receipts.cost_intelligence",
@@ -97,6 +109,12 @@ const IMPLIED: Readonly<Record<string, readonly string[]>> = {
   "forgeiq.manufacturing": ["forgeiq.basic", "forgeiq.builder"],
   "costiq.advanced": ["costiq.basic"],
   "costiq.realtime": ["costiq.basic", "costiq.advanced"],
+  "inventory.multi_location": ["inventory.basic"],
+  "inventory.reorder": ["inventory.basic"],
+  "inventory.reservations": ["inventory.basic"],
+  // Variance is reserved-versus-used, so it is meaningless without something
+  // to have reserved against.
+  "inventory.consumption_variance": ["inventory.basic", "inventory.reservations"],
   "receipts.cost_intelligence": ["receipts.capture"],
   "prime.automation": ["prime.orchestration"],
 };

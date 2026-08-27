@@ -23,3 +23,7 @@ export * from "./inMemory.js";
 // The producer for a decision-context block that has had none: Prime has been
 // asking whether there is material and getting silence.
 export * from "./decisionSignal.js";
+
+// One engine, two tiers. What a maker gets and what a shop gets, expressed as
+// capabilities rather than as two codebases that eventually disagree.
+export * from "./capabilities.js";
