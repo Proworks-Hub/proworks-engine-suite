@@ -4,12 +4,12 @@
 
 import { beforeEach, describe, expect, it } from "vitest";
 import {
-  buildInteraxisSku,
+  buildProductSku,
   detectListingDrift,
   externalOrderKey,
-  generateInteraxisSku,
-  isValidInteraxisSku,
-  type CatalogProduct,
+  generateProductSku,
+  isValidProductSku,
+  type CanonicalProduct,
   type ExternalOrder,
 } from "@proworks-hub/contracts";
 
@@ -25,10 +25,11 @@ const ORG = "org-a";
 // Bodies avoid I, L, O and U — the alphabet excludes them, and my first draft
 // of these fixtures used "FIREPIT2" and was rejected by the very check this
 // file is testing.
-const SKU = buildInteraxisSku("F1REPT29");
-const ORNAMENT = buildInteraxisSku("RNAMENT7");
+const SKU = buildProductSku("F1REPT29");
+const ORNAMENT = buildProductSku("RNAMENT7");
 
-const product = (over: Partial<CatalogProduct> = {}): CatalogProduct => ({
+const product = (over: Partial<CanonicalProduct> = {}): CanonicalProduct => ({
+  productId: "prod_firepit",
   sku: SKU,
   organizationId: ORG,
   name: 'Custom Fire Pit 24"',
@@ -64,20 +65,20 @@ describe("the SKU spine", () => {
     // These get read down a phone and typed into an Etsy field by hand. A
     // transposition either matches nothing, which is annoying, or matches
     // ANOTHER REAL PRODUCT, which ships the wrong thing.
-    const sku = buildInteraxisSku("ABCDEFGH");
+    const sku = buildProductSku("ABCDEFGH");
     const transposed = `IX-BACDEFGH${sku[11]}`;
 
-    expect(isValidInteraxisSku(sku)).toBe(true);
-    expect(isValidInteraxisSku(transposed)).toBe(false);
+    expect(isValidProductSku(sku)).toBe(true);
+    expect(isValidProductSku(transposed)).toBe(false);
   });
 
   it("omits the characters people misread", () => {
     // I and L look like 1, O looks like 0, and U turns codes into words
     // nobody wants printed on a work order.
-    const generated = Array.from({ length: 200 }, () => generateInteraxisSku());
+    const generated = Array.from({ length: 200 }, () => generateProductSku());
     for (const sku of generated) {
       expect(sku.slice(3)).not.toMatch(/[ILOU]/);
-      expect(isValidInteraxisSku(sku)).toBe(true);
+      expect(isValidProductSku(sku)).toBe(true);
     }
   });
 
@@ -121,7 +122,14 @@ describe("ingesting an order", () => {
   it("distinguishes a fixed SKU from one that still needs configuring", async () => {
     // The flag that lets one pipeline carry an ornament and a fire pit. Ready
     // is not the same as routable.
-    catalog.add(product({ sku: ORNAMENT, name: "Snowflake Ornament", configurable: false }));
+    catalog.add(
+      product({
+        productId: "prod_ornament",
+        sku: ORNAMENT,
+        name: "Snowflake Ornament",
+        configurable: false,
+      }),
+    );
 
     const configurable = await ingest.execute(order());
     expect(
@@ -293,13 +301,13 @@ describe("a line that cannot be matched", () => {
     // A real SKU with one character changed: right shape, wrong check.
     const mistyped = `${SKU.slice(0, 11)}${SKU[11] === "2" ? "3" : "2"}`;
     expect((await withSku(mistyped)).order?.lines[0]?.matchFailure).toBe("malformed_sku");
-    expect((await withSku(buildInteraxisSku("N5XCHKY2"))).order?.lines[0]?.matchFailure).toBe(
+    expect((await withSku(buildProductSku("N5XCHKY2"))).order?.lines[0]?.matchFailure).toBe(
       "unknown_sku",
     );
   });
 
   it("does not let one organization's order pull another's product", async () => {
-    catalog.add(product({ sku: ORNAMENT, organizationId: "org-b" }));
+    catalog.add(product({ productId: "prod_other", sku: ORNAMENT, organizationId: "org-b" }));
     const result = await withSku(ORNAMENT);
 
     expect(result.order?.lines[0]?.matchFailure).toBe("wrong_organization");
@@ -307,7 +315,7 @@ describe("a line that cannot be matched", () => {
   });
 
   it("refuses a product that has been retired", async () => {
-    catalog.add(product({ sku: ORNAMENT, active: false }));
+    catalog.add(product({ productId: "prod_retired", sku: ORNAMENT, active: false }));
     expect((await withSku(ORNAMENT)).order?.lines[0]?.matchFailure).toBe("inactive_product");
   });
 
@@ -361,6 +369,7 @@ describe("drift between the catalogue and a channel", () => {
     // quietly. A shop that edited a price in Etsy did it for a reason.
     const drift = detectListingDrift(product({ basePriceCents: 29808 }), [
       {
+        productId: "prod_firepit",
         sku: SKU,
         channel: { channel: "etsy" },
         listingId: "L1",
@@ -380,6 +389,7 @@ describe("drift between the catalogue and a channel", () => {
       product({ basePriceCents: 1000 }),
       [
         {
+          productId: "prod_firepit",
           sku: SKU,
           channel: { channel: "shopify" },
           listingId: "L2",
@@ -398,6 +408,7 @@ describe("drift between the catalogue and a channel", () => {
   it("ignores a listing that has ended", async () => {
     const drift = detectListingDrift(product({ basePriceCents: 29808 }), [
       {
+        productId: "prod_firepit",
         sku: SKU,
         channel: { channel: "etsy" },
         listingId: "L1",

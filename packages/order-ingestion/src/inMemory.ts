@@ -2,7 +2,7 @@
 // Proprietary and confidential. Unauthorized copying, modification, or
 // distribution of this file, via any medium, is strictly prohibited.
 
-import type { CatalogProduct, NormalizedOrder } from "@proworks-hub/contracts";
+import type { CanonicalProduct, NormalizedOrder } from "@proworks-hub/contracts";
 
 import type { IngestionLedger, ProductCatalog } from "./ports.js";
 
@@ -48,14 +48,14 @@ export function createInMemoryIngestionLedger(): InMemoryIngestionLedger {
 }
 
 export interface InMemoryProductCatalog extends ProductCatalog {
-  add(product: CatalogProduct): void;
+  add(product: CanonicalProduct): void;
   clear(): void;
 }
 
 export function createInMemoryProductCatalog(
-  initial: ReadonlyArray<CatalogProduct> = [],
+  initial: ReadonlyArray<CanonicalProduct> = [],
 ): InMemoryProductCatalog {
-  const products = new Map<string, CatalogProduct>();
+  const products = new Map<string, CanonicalProduct>();
   for (const product of initial) products.set(product.sku, clone(product));
 
   return {

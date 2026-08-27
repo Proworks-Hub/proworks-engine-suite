@@ -20,7 +20,7 @@ export const ORDER_EVENTS = [
 
 export type OrderEventType = (typeof ORDER_EVENTS)[number];
 
-export interface OrderIqEvent<TPayload = unknown> {
+export interface OrderIngestionEvent<TPayload = unknown> {
   readonly type: OrderEventType;
   readonly organizationId: string;
   readonly orderRef: string;

@@ -2,7 +2,7 @@
 // Proprietary and confidential. Unauthorized copying, modification, or
 // distribution of this file, via any medium, is strictly prohibited.
 
-// @proworks-hub/orderiq — turns an order from any channel into one the shop can
+// @proworks-hub/order-ingestion — turns an order from any channel into one the shop can
 // actually run.
 //
 // An Etsy purchase, a Shopify checkout, a phone call typed into an admin form

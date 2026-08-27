@@ -2,7 +2,7 @@
 // Proprietary and confidential. Unauthorized copying, modification, or
 // distribution of this file, via any medium, is strictly prohibited.
 
-import type { CatalogProduct, NormalizedOrder } from "@proworks-hub/contracts";
+import type { CanonicalProduct, NormalizedOrder } from "@proworks-hub/contracts";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // What OrderIQ asks of a host.
@@ -41,5 +41,5 @@ export interface ProductCatalog {
   bySkus(
     organizationId: string,
     skus: ReadonlyArray<string>,
-  ): Promise<CatalogProduct[]>;
+  ): Promise<CanonicalProduct[]>;
 }

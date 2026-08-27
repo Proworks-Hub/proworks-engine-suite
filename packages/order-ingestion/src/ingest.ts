@@ -4,11 +4,12 @@
 
 import {
   ORDER_CONTRACT_VERSION,
+  SKU_PREFIX,
   externalOrderKey,
-  isValidInteraxisSku,
-  interaxisSkuSchema,
+  isValidProductSku,
+  productSkuSchema,
   validateExternalOrder,
-  type CatalogProduct,
+  type CanonicalProduct,
   type ExternalOrder,
   type ExternalOrderLine,
   type LineMatchFailure,
@@ -17,7 +18,7 @@ import {
 } from "@proworks-hub/contracts";
 
 import type { IngestionLedger, ProductCatalog } from "./ports.js";
-import type { OrderIqEvent } from "./events.js";
+import type { OrderIngestionEvent } from "./events.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Ingestion.
@@ -60,7 +61,7 @@ export type IngestOutcome =
 export interface IngestResult {
   readonly outcome: IngestOutcome;
   readonly order?: NormalizedOrder;
-  readonly events: OrderIqEvent[];
+  readonly events: OrderIngestionEvent[];
   readonly error?: { readonly message: string; readonly details?: unknown };
 }
 
@@ -161,7 +162,7 @@ export function createIngestOrderUseCase(deps: IngestOrderDeps): IngestOrderUseC
         order,
       );
 
-      const events: OrderIqEvent[] = [
+      const events: OrderIngestionEvent[] = [
         {
           type: "order.ingested",
           organizationId: order.organizationId,
@@ -223,7 +224,7 @@ export function createIngestOrderUseCase(deps: IngestOrderDeps): IngestOrderUseC
  */
 function matchLine(
   line: ExternalOrderLine,
-  bySku: ReadonlyMap<string, CatalogProduct>,
+  bySku: ReadonlyMap<string, CanonicalProduct>,
   organizationId: string,
 ): NormalizedOrderLine {
   const base = {
@@ -249,13 +250,13 @@ function matchLine(
   if (!raw) return fail("no_sku");
 
   const candidate = raw.toUpperCase();
-  if (!candidate.startsWith("IX-")) return fail("foreign_sku");
+  if (!candidate.startsWith(SKU_PREFIX)) return fail("foreign_sku");
 
   // Shaped like ours but failing its own check character: a transcription
   // error, not an unknown product. Different message, different fix — and
   // telling somebody "unknown SKU" when they mistyped one sends them looking
   // for a product that was there all along.
-  if (!interaxisSkuSchema.safeParse(candidate).success || !isValidInteraxisSku(candidate)) {
+  if (!productSkuSchema.safeParse(candidate).success || !isValidProductSku(candidate)) {
     return fail("malformed_sku");
   }
 
@@ -266,6 +267,7 @@ function matchLine(
 
   return {
     ...base,
+    productId: product.productId,
     sku: product.sku,
     configurable: product.configurable,
     ...(product.productDefinitionId
@@ -274,12 +276,12 @@ function matchLine(
   };
 }
 
-/** Well-formed Interaxis SKUs on the order, deduplicated, for one catalogue read. */
+/** Well-formed canonical SKUs on the order, deduplicated, for one catalogue read. */
 function collectCandidateSkus(lines: ReadonlyArray<ExternalOrderLine>): string[] {
   const skus = new Set<string>();
   for (const line of lines) {
     const candidate = line.sku?.trim().toUpperCase();
-    if (candidate && isValidInteraxisSku(candidate)) skus.add(candidate);
+    if (candidate && isValidProductSku(candidate)) skus.add(candidate);
   }
   return [...skus];
 }

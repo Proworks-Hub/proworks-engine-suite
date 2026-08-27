@@ -1,14 +1,14 @@
 {
-  "name": "@proworks-hub/orderiq",
+  "name": "@proworks-hub/order-ingestion",
   "version": "0.8.0",
   "type": "module",
-  "description": "OrderIQ — turns an order from any channel into one the shop can actually run.",
+  "description": "Order ingestion — normalizes an order from any channel into the canonical order contract, once.",
   "author": "Steven Kreutzer",
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Proworks-Hub/proworks-engine-suite.git",
-    "directory": "packages/orderiq"
+    "directory": "packages/order-ingestion"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"

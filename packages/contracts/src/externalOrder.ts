@@ -4,7 +4,7 @@
 
 import { z } from "zod";
 
-import { channelRefSchema, interaxisSkuSchema } from "./catalog.js";
+import { salesChannelSchema, productSkuSchema } from "./catalog.js";
 // ReceiptIQ already defined money for the suite, and one money type is the
 // point of having contracts at all. A second one here would differ in some
 // detail nobody noticed until two of them met in the same calculation.
@@ -22,7 +22,12 @@ import { moneySchema } from "./receipt.js";
 //
 // That is the ReceiptIQ pattern, reused deliberately: a messy external artifact
 // is normalized once, at the edge, by something that knows about that specific
-// mess. What survives the normalization is clean and channel-free.
+// mess. What survives is clean and channel-free.
+//
+// This is the CANONICAL order boundary, and it is not named for a company or a
+// host. The contract belongs to the ecosystem: every host and every engine
+// reads the same shape regardless of who owns the business or which
+// application happens to be in front of it.
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -39,7 +44,7 @@ export const externalOrderLineSchema = z
     externalLineId: z.string().min(1),
     /** What the channel showed the buyer. Kept for humans, never matched on. */
     title: z.string().optional(),
-    /** The channel's SKU field. Where an Interaxis SKU comes back to us. */
+    /** The channel's SKU field. Where a canonical product SKU comes back to us. */
     sku: z.string().optional(),
     listingId: z.string().optional(),
     variantId: z.string().optional(),
@@ -78,7 +83,7 @@ export type ExternalBuyer = z.infer<typeof externalBuyerSchema>;
 
 export const externalOrderSchema = z
   .object({
-    channel: channelRefSchema,
+    channel: salesChannelSchema,
     /**
      * The channel's order id. Half of the idempotency key, and the reason the
      * same order can be pulled a hundred times safely.
@@ -128,8 +133,16 @@ export const normalizedOrderLineSchema = z
     externalLineId: z.string().min(1),
     quantity: z.number().int().positive(),
     unitPrice: moneySchema.optional(),
-    /** Present when the line matched. */
-    sku: interaxisSkuSchema.optional(),
+    /**
+     * The durable product id, present when the line matched.
+     *
+     * This is what downstream work references. The SKU is kept beside it for
+     * humans and for reconciliation with the channel, but a work order built
+     * against a business identifier detaches the day somebody reissues one.
+     */
+    productId: z.string().optional(),
+    /** Present when the line matched. The business identifier. */
+    sku: productSkuSchema.optional(),
     productDefinitionId: z.string().optional(),
     /**
      * True when the product needs a configuration before it can be made.
@@ -157,7 +170,7 @@ export const normalizedOrderSchema = z
     /** Our id for this order, stable across re-reads of the same external one. */
     orderRef: z.string().min(1),
     organizationId: z.string().min(1),
-    channel: channelRefSchema,
+    channel: salesChannelSchema,
     externalOrderId: z.string().min(1),
     externalOrderNumber: z.string().optional(),
     placedAt: z.string().datetime(),
