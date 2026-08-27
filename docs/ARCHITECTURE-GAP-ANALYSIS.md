@@ -3,7 +3,12 @@
 Owner: Steven Kreutzer · 2026-08-27 · Suite `v0.3.0` (published)
 Assessed against the Architecture Hardening & Scalability Directive.
 
-**Phases 1–4 complete** (inventory · purity guards · tenancy vocabulary · correlation ids). Phase 5 next: the event envelope and `EventBus` port.
+**All twelve phases complete**, published as `0.3.0` (suite tag `v0.5.0`). 712 tests.
+
+The three conflicts in §3 were resolved and are binding — see the ecosystem decision log.
+What remains is deliberately not built: a gateway, distributed tracing, circuit breakers,
+webhooks, notifications, artifacts, cache and feature flags all wait for a real caller, per the
+directive's own §49.
 
 The three conflicts in §3 have been **resolved and are binding** — see the ecosystem decision log,
 entry *"Three hardening-directive items resolved against existing architecture"*:
@@ -226,14 +231,14 @@ Each step ends green — typecheck, 609 suite tests, and both hosts still buildi
 | ~~2~~ | ~~Guard the pure engines: no I/O imports, no ambient globals~~ | **done** — 2 guards, 6 injections verified, 611 tests |
 | ~~3~~ | ~~Tenant context contract~~ | **done** — `TenantContext`, `Canonical<T>`, `ownerRefFor`; ownership model intact |
 | ~~4~~ | ~~Correlation/causation, additive~~ | **done** — optional `trace` on three contracts; hosts untouched on ^0.1.0 |
-| **5** | `PlatformEvent` envelope + `EventBus` port + in-memory adapter | Publish/subscribe tested |
-| **6** | Commands vs events; first five domain events | ForgeIQ/CostIQ/ReceiptIQ publish; nobody imports a consumer |
-| **7** | Processed-event ledger + idempotent consumers + DLQ | Duplicate delivery proven harmless |
-| **8** | `WorkflowStateStore` port; durable Prime workflows | Prime restart resumes; Prime still pure |
-| **9** | Job/queue abstraction, in-process adapter | Long work off the request path |
-| **10** | Observability ports — structured logging, metrics | Correlation id visible end to end |
-| **11** | Contract tests Prime ↔ engines; failure tests | Breaking changes caught pre-integration |
-| **12** | Read models across engines | One query per screen |
+| ~~5~~ | ~~Event envelope + `EventBus` port~~ | **done** — generalises Prime's log |
+| ~~6~~ | ~~Engines publish~~ | **done** — bus optional; canonical events refuse a tenant |
+| ~~7~~ | ~~Idempotency, retries, dead letters~~ | **done** — permanent failures never retried |
+| ~~8~~ | ~~Durable workflows + compensation~~ | **done** — Prime still pure, guards prove it |
+| ~~9~~ | ~~Jobs and queues~~ | **done** — bulkheads by job-type prefix |
+| ~~10~~ | ~~Observability ports~~ | **done** — no-op by default, percentiles not averages |
+| ~~11~~ | ~~Contract tests~~ | **done** — real producers, no hand-written fixtures |
+| ~~12~~ | ~~Failure tests~~ | **done** — 11 scenarios. Cross-engine read models still open |
 
 **Phases 2–4 are the ones that get harder every day.** Everything after can wait for a caller.
 
