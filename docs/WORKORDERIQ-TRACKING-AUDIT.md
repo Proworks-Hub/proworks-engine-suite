@@ -181,3 +181,40 @@ Each step ends green — typecheck, tests, and both hosts building.
 10. KSix integration (§46), then ProWorks (§47)
 
 **Steps 1–4 are reuse and connection. Step 6 onward is the real building.**
+
+---
+
+## 9. Progress
+
+| Step | State | Note |
+|---|---|---|
+| 1. Rename to `workorderiq` | ✅ | Also fixed two stale `packages/workorder` paths the rename left behind |
+| 2. Tracking contracts | ✅ | Redaction is structural — narrowing deletes a block rather than re-picking fields |
+| 3. Tracking service | ✅ | Does **not** depend on WorkOrderIQ; WorkOrderIQ implements its port |
+| 4. Command boundary | ✅ | First enforcement of the capability layer on the write side |
+| 5. Missing events | ✅ | `quality.*` and `packaging.*` only; `material.*` deferred to step 6 |
+| 6. InventoryIQ | — | |
+| 7. VisionIQ | — | |
+| 8. Notifications | — | |
+| 9. Vertical slice | — | |
+| 10. KSix, then ProWorks | — | |
+
+### Two findings from doing the work
+
+**The portability guard named a pair, not a rule.** It forbade `prime ↔ workorderiq`
+specifically, so every package added afterwards was unguarded by default. Verified by injecting an
+import of `workorderiq` into the new `tracking` package: **12 tests passed.** The rule is now stated
+generally — no package imports another, contracts excepted — and catches that injection by name.
+
+**The top-level `tests/` directory was never typechecked.** The root tsconfig included
+`packages/*/src` and `packages/*/tests` but not `tests/`, so eight integration tests were checked by
+vitest alone — which strips types. That is the mechanism behind the tests-pass-typecheck-fails trap
+that has recurred repeatedly here. Adding it surfaced seven real errors, including two assertions
+typed against a union so wide the properties they checked did not exist on it.
+
+### Gaps closed since §7 was written
+
+- **ETA grounding (§40) was already done.** `EtaConfidence` (`firm | tentative | at_risk`) exists
+  with documented derivation from real step estimates. I listed it as open; it was not.
+- **The capability layer now has callers** — tracking's deep audiences and every work-order command.
+  Both fail closed: no resolver configured means refused, not allowed.

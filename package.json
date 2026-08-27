@@ -15,17 +15,18 @@
     "packages/platform-events",
     "packages/platform-runtime",
     "packages/workorderiq",
-    "packages/tracking"
+    "packages/tracking",
+    "packages/inventoryiq"
   ],
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "build": "tsc -b packages/contracts packages/platform-events packages/platform-runtime packages/forgeiq packages/costiq packages/workorderiq packages/prime packages/receiptiq packages/tracking",
+    "build": "tsc -b packages/contracts packages/platform-events packages/platform-runtime packages/forgeiq packages/costiq packages/workorderiq packages/prime packages/receiptiq packages/tracking packages/inventoryiq",
     "test": "vitest run",
     "test:watch": "vitest",
     "verify": "npm run typecheck && npm run test",
     "publish:all": "npm run verify && npm publish --workspaces",
     "publish:dry": "npm publish --workspaces --dry-run",
-    "clean": "tsc -b --clean packages/contracts packages/platform-events packages/platform-runtime packages/forgeiq packages/costiq packages/workorderiq packages/prime packages/receiptiq packages/tracking"
+    "clean": "tsc -b --clean packages/contracts packages/platform-events packages/platform-runtime packages/forgeiq packages/costiq packages/workorderiq packages/prime packages/receiptiq packages/tracking packages/inventoryiq"
   },
   "devDependencies": {
     "@tanstack/react-query": "^5.102.6",
