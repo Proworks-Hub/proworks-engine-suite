@@ -152,6 +152,7 @@ describe("an order that can be made", () => {
     };
 
     const tracking = createTrackingService({
+      application: "proworks",
       sources: [
         {
           name: "production",

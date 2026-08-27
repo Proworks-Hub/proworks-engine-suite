@@ -103,7 +103,16 @@ export interface WorkOrderCommandDispatcherDeps {
    * reveal that.
    */
   readonly capabilities?: CapabilityResolver;
-  readonly application?: string;
+  /**
+   * The consuming application, for the capability lookup.
+   *
+   * REQUIRED, deliberately. It defaulted to "proworks", which meant a MakerOps
+   * host that forgot to pass it had its entitlements looked up under a product
+   * it does not run — refused silently, or matched against a grant belonging to
+   * a different application. A default that names one host is the coupling this
+   * architecture exists to avoid; an omission should fail loudly instead.
+   */
+  readonly application: string;
   /** Observed for every command, accepted or refused. */
   readonly onDispatch?: (record: DispatchRecord) => void;
 }
@@ -127,7 +136,7 @@ export interface WorkOrderCommandDispatcher {
 export function createWorkOrderCommandDispatcher(
   deps: WorkOrderCommandDispatcherDeps,
 ): WorkOrderCommandDispatcher {
-  const application = deps.application ?? "proworks";
+  const application = deps.application;
 
   const record = (
     command: CommandEnvelope<WorkOrderCommandType, unknown>,

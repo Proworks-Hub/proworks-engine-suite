@@ -44,8 +44,16 @@ export interface TrackingServiceDeps {
    * optional access check is not an access check.
    */
   readonly capabilities?: CapabilityResolver;
-  /** The consuming application, for the capability lookup. */
-  readonly application?: string;
+  /**
+   * The consuming application, for the capability lookup.
+   *
+   * REQUIRED, deliberately. It defaulted to "proworks", which meant a MakerOps
+   * host that forgot to pass it had its entitlements looked up under a product
+   * it does not run — refused silently, or matched against a grant belonging to
+   * a different application. A default that names one host is the coupling this
+   * architecture exists to avoid; an omission should fail loudly instead.
+   */
+  readonly application: string;
   readonly onError?: (source: string, error: unknown) => void;
 }
 
@@ -58,7 +66,7 @@ export interface TrackingService {
 }
 
 export function createTrackingService(deps: TrackingServiceDeps): TrackingService {
-  const application = deps.application ?? "proworks";
+  const application = deps.application;
 
   return {
     async track(request) {

@@ -46,6 +46,7 @@ describe("the boundary refuses before it delegates", () => {
     // how it behaves would say so.
     const handler = ok();
     const dispatcher = createWorkOrderCommandDispatcher({
+      application: "proworks",
       handlers: { "work_order.create": handler },
     });
 
@@ -97,6 +98,7 @@ describe("the boundary refuses before it delegates", () => {
     // Conflating them makes a missing feature look like a billing problem, and
     // sends the customer to the wrong person.
     const dispatcher = createWorkOrderCommandDispatcher({
+      application: "proworks",
       handlers: {},
       capabilities: resolverWith([CAPABILITIES.workOrder.shopFloor]),
     });
@@ -109,6 +111,7 @@ describe("the boundary refuses before it delegates", () => {
 
   it("refuses a type it has never heard of", async () => {
     const dispatcher = createWorkOrderCommandDispatcher({
+      application: "proworks",
       handlers: {},
       capabilities: resolverWith([CAPABILITIES.workOrder.shopFloor]),
     });
@@ -126,6 +129,7 @@ describe("what happens on the way through", () => {
   it("hands the payload and actor to the use case unchanged", async () => {
     const handler = ok();
     const dispatcher = createWorkOrderCommandDispatcher({
+      application: "proworks",
       handlers: { "work_order.create": handler },
       capabilities: resolverWith([CAPABILITIES.workOrder.basic]),
     });
@@ -139,6 +143,7 @@ describe("what happens on the way through", () => {
     // A step that cannot advance from where it is has not crashed. It has been
     // told no, and that is a normal outcome a caller can act on.
     const dispatcher = createWorkOrderCommandDispatcher({
+      application: "proworks",
       handlers: {
         "work_order.advance_step": {
           execute: async () => ({ ok: false, error: { code: "invalid_transition" } }),
@@ -158,6 +163,7 @@ describe("what happens on the way through", () => {
     // succeeded cannot answer why a customer says the button does nothing.
     const onDispatch = vi.fn();
     const dispatcher = createWorkOrderCommandDispatcher({
+      application: "proworks",
       handlers: { "work_order.create": ok() },
       capabilities: resolverWith([CAPABILITIES.workOrder.basic]),
       onDispatch,
@@ -201,6 +207,7 @@ describe("the command catalogue", () => {
     const parsed = validateCommandEnvelope(wire);
 
     const dispatcher = createWorkOrderCommandDispatcher({
+      application: "proworks",
       handlers: { "work_order.create": ok() },
       capabilities: resolverWith([CAPABILITIES.workOrder.basic]),
     });

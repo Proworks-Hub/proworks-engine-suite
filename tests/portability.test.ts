@@ -307,6 +307,35 @@ describe("engine suite portability", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("never defaults an application name inside an engine", () => {
+    // The subtler form of host coupling, and the one the "no host-specific
+    // branching" guard misses because it is not a branch.
+    //
+    // Two services defaulted `application` to "proworks". A MakerOps host that
+    // forgot the parameter had its entitlements looked up under a product it
+    // does not run — refused silently, or matched against a grant belonging to
+    // a different application. The acceptance criterion "MakerOps consumes the
+    // engines without ProWorks" was technically true and practically a trap.
+    //
+    // An omission must fail loudly. Requiring the field does that; this stops
+    // the default coming back.
+    const HOSTS = /"(proworks|makerops|ksix|fabriops)"/i;
+    const offenders: string[] = [];
+
+    for (const file of sourceFiles) {
+      if (/(^|\/)(__tests__|tests)\//.test(file.relative)) continue;
+      for (const line of file.text.split("\n")) {
+        // A host name used as the fallback of an `application` field.
+        if (line.includes("application") && line.includes("??") && HOSTS.test(line)) {
+          offenders.push(`${file.relative} → ${line.trim()}`);
+          continue;
+        }
+      }
+    }
+
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps ForgeIQ core pure: no express, drizzle, or react", () => {
     const banned = ["express", "drizzle-orm", "react", "react-dom", "@tanstack/react-query"];
     const offenders: string[] = [];
