@@ -1,6 +1,6 @@
 {
   "name": "@proworks-hub/inventoryiq",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "type": "module",
   "description": "InventoryIQ — what is on hand, what is spoken for, and what is about to run out.",
   "author": "Steven Kreutzer",
