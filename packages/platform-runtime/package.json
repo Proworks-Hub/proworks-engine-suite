@@ -1,14 +1,14 @@
 {
-  "name": "@proworks-hub/prime",
+  "name": "@proworks-hub/platform-runtime",
   "version": "0.3.0",
   "type": "module",
-  "description": "Prime — evaluate it, route it, decide what happens next. Consumes normalized engine output.",
+  "description": "In-memory job queue, structured logger and metrics collector. The development and test bindings for the runtime ports.",
   "author": "Steven Kreutzer",
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Proworks-Hub/proworks-engine-suite.git",
-    "directory": "packages/prime"
+    "directory": "packages/platform-runtime"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"

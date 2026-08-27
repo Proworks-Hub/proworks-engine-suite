@@ -31,6 +31,9 @@ export * from "./resilience.js";
 // Workflow state that outlives the process running it. PRIME owns the state
 // machine; a host owns the storage, which is what keeps PRIME pure.
 export * from "./workflow.js";
+// Background work, and being able to answer "what happened?" months later.
+export * from "./jobs.js";
+export * from "./observability.js";
 export * from "./trace.js";
 
 export * from "./manufacturingPlan.js";

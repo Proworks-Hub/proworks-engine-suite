@@ -24,7 +24,7 @@ const ROOT = join(fileURLToPath(new URL(".", import.meta.url)), "..");
 const PACKAGES = join(ROOT, "packages");
 
 /** Published entry points the engines may import from one another. */
-const SUITE_PACKAGES = /^@proworks-hub\/(contracts|forgeiq|costiq|prime|receiptiq|platform-events)(\/|$)/;
+const SUITE_PACKAGES = /^@proworks-hub\/(contracts|forgeiq|costiq|prime|receiptiq|platform-events|platform-runtime)(\/|$)/;
 
 /** Host applications. Nothing here may import from them, ever. */
 const HOST_IMPORTS = [
@@ -132,7 +132,7 @@ describe("engine suite portability", () => {
       }
     }
     expect(offenders).toEqual([]);
-    for (const name of ["costiq", "prime", "receiptiq", "platform-events"]) {
+    for (const name of ["costiq", "prime", "receiptiq", "platform-events", "platform-runtime"]) {
       expect(Object.keys(pkgJson(name).dependencies ?? {})).not.toContain("@proworks-hub/forgeiq");
     }
   });
@@ -148,6 +148,7 @@ describe("engine suite portability", () => {
     for (const name of ENGINES) {
       const deps = Object.keys(pkgJson(name).dependencies ?? {});
       expect(deps).not.toContain("@proworks-hub/platform-events");
+      expect(deps).not.toContain("@proworks-hub/platform-runtime");
       // Contracts is the only suite package an engine may depend on at runtime.
       expect(deps.filter((d) => d.startsWith("@proworks-hub/"))).toEqual([
         "@proworks-hub/contracts",
@@ -159,7 +160,7 @@ describe("engine suite portability", () => {
       const pkg = file.relative.split("/")[0]!;
       if (!ENGINES.includes(pkg)) continue;
       for (const spec of importSpecifiers(file.text)) {
-        if (spec.startsWith("@proworks-hub/platform-events")) {
+        if (spec.startsWith("@proworks-hub/platform-events") || spec.startsWith("@proworks-hub/platform-runtime")) {
           offenders.push(`${file.relative} → ${spec}`);
         }
       }
@@ -216,7 +217,7 @@ describe("engine suite portability", () => {
     //
     // ForgeIQ is deliberately absent: it ships optional `server` and `react`
     // layers, and its `core` purity is covered by its own test above.
-    const PURE_PACKAGES = ["prime", "costiq", "receiptiq", "contracts", "platform-events"];
+    const PURE_PACKAGES = ["prime", "costiq", "receiptiq", "contracts", "platform-events", "platform-runtime"];
 
     const bannedExact = [
       "express",
@@ -267,7 +268,7 @@ describe("engine suite portability", () => {
     // A package can stay import-clean and still reach for a browser or Node
     // global. These are the ones that would quietly tie an engine to one
     // runtime, or give it hidden state that does not survive being moved.
-    const PURE_PACKAGES = ["prime", "costiq", "receiptiq", "contracts", "platform-events"];
+    const PURE_PACKAGES = ["prime", "costiq", "receiptiq", "contracts", "platform-events", "platform-runtime"];
     const bannedGlobals = [
       /\blocalStorage\b/,
       /\bsessionStorage\b/,
@@ -304,7 +305,7 @@ describe("engine suite portability", () => {
   it("declares only suite packages and zod as runtime dependencies", () => {
     // A host framework appearing here would make the engine un-liftable; the
     // host-facing layers declare theirs as optional peers instead.
-    for (const name of ["contracts", "forgeiq", "costiq", "prime", "receiptiq", "platform-events"]) {
+    for (const name of ["contracts", "forgeiq", "costiq", "prime", "receiptiq", "platform-events", "platform-runtime"]) {
       for (const dep of Object.keys(pkgJson(name).dependencies ?? {})) {
         expect(dep === "zod" || SUITE_PACKAGES.test(dep)).toBe(true);
       }
