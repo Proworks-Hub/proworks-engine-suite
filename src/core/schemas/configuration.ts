@@ -21,6 +21,11 @@ export const imageElementSchema = z.object({
   // Captured at upload; required for the image-resolution rule.
   naturalWidthPx: z.number().int().positive(),
   naturalHeightPx: z.number().int().positive(),
+  // Count of enclosed interior holes in the artwork's silhouette, captured by
+  // client-side tracing at upload. When the design is cut through, material
+  // inside each hole becomes a free-falling island — the artwork-islands
+  // rule warns on this. Absent for untraceable images (JPEG/full-bleed).
+  interiorIslands: z.number().int().min(0).optional(),
   xIn: z.number(),
   yIn: z.number(),
   widthIn: z.number().positive(),

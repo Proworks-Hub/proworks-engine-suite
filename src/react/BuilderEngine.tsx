@@ -1,7 +1,11 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { resolveSurfaceDims } from "../core/resolve";
-import { buildPanelCutlineSvg, cutlineFilename, type Point } from "../core/export/cutlineSvg";
+import {
+  buildPanelCutlineSvg,
+  cutlineFilename,
+  type ElementCutContours,
+} from "../core/export/cutlineSvg";
 import { traceImageCutContour } from "./export/contour";
 import type { SurfaceElement } from "../core/schemas/configuration";
 import { fetchProduct, postConfiguration } from "./engineClient";
@@ -100,8 +104,8 @@ function LoadedBuilder(
       // cut geometry (transparent PNGs only; JPEG/full-bleed images stay
       // engrave references). Cached per URL — the same emblem on two panels
       // traces once. Best-effort throughout.
-      const contourByUrl = new Map<string, Point[] | null>();
-      const cutContours: Record<string, Point[]> = {};
+      const contourByUrl = new Map<string, ElementCutContours | null>();
+      const cutContours: Record<string, ElementCutContours> = {};
       for (const elements of Object.values(config.surfaces)) {
         for (const el of elements) {
           if (el.type !== "image") continue;

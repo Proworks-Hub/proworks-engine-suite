@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import type { SurfaceElement } from "../../core/schemas/configuration";
 import type { UploadFn } from "../types";
+import { traceImageCutContour } from "../export/contour";
 
 const btn: React.CSSProperties = {
   padding: "6px 12px",
@@ -53,6 +54,15 @@ export function ElementControls(props: {
         img.onerror = () => reject(new Error("Could not read the uploaded image"));
         img.src = url;
       });
+      // Trace the silhouette once at upload to count enclosed islands — the
+      // artwork-islands validation rule reads this. Best-effort.
+      let interiorIslands: number | undefined;
+      try {
+        const traced = await traceImageCutContour(url);
+        if (traced) interiorIslands = traced.holes.length;
+      } catch {
+        // untraceable — leave undefined
+      }
       const widthIn = 6;
       props.onAdd({
         id: nextId("img"),
@@ -60,6 +70,7 @@ export function ElementControls(props: {
         url,
         naturalWidthPx: dims.w,
         naturalHeightPx: dims.h,
+        interiorIslands,
         xIn: 2,
         yIn: 2,
         widthIn,

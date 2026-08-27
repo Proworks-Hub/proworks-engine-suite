@@ -6,10 +6,12 @@ import { baseConfig, definition, machine, materials } from "./helpers";
 const validate = (config = baseConfig(), def = definition, mach = machine) =>
   runValidation({ definition: def, configuration: config, materials, machine: mach });
 
+// Counter-free text ("SMITH") so the text-enclosed-counters warning doesn't
+// fire in tests that expect a clean result.
 const text = (over: Partial<Extract<SurfaceElement, { type: "text" }>> = {}): SurfaceElement => ({
   id: "t1",
   type: "text",
-  text: "THOMPSON",
+  text: "SMITH",
   fontFamily: "Arial",
   xIn: 6,
   yIn: 6,

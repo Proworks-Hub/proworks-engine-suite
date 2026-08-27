@@ -64,16 +64,27 @@ describe("cutline SVG with traced contour", () => {
         { id: "i1", type: "image", url: "/uploads/emblem.png", naturalWidthPx: 1000, naturalHeightPx: 1000, xIn: 10, yIn: 6, widthIn: 4, heightIn: 4, rotationDeg: 0 },
       ],
       cutContours: {
-        i1: [
-          { x: 0.5, y: 0 },
-          { x: 1, y: 1 },
-          { x: 0, y: 1 },
-        ],
+        i1: {
+          outer: [
+            { x: 0.5, y: 0 },
+            { x: 1, y: 1 },
+            { x: 0, y: 1 },
+          ],
+          holes: [
+            [
+              { x: 0.4, y: 0.5 },
+              { x: 0.6, y: 0.5 },
+              { x: 0.5, y: 0.75 },
+            ],
+          ],
+        },
       },
     });
     // Triangle scaled into the 4" box at (10,6): apex (12,6), corners (14,10),(10,10)
     expect(svg).toContain('id="cut-artwork"');
     expect(svg).toContain("M12.0000,6.0000 L14.0000,10.0000 L10.0000,10.0000 Z");
+    // Interior hole is cut too: (11.6,8) (12.4,8) (12,9)
+    expect(svg).toContain("M11.6000,8.0000 L12.4000,8.0000 L12.0000,9.0000 Z");
     // The artwork stays as a dimmed operator reference, not an engrave frame.
     expect(svg).toContain('opacity="0.5"');
     expect(svg).not.toContain('stroke="#00B050"');

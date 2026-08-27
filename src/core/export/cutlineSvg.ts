@@ -11,6 +11,11 @@ import type { SurfaceElement } from "../schemas/configuration";
 
 export type Point = { x: number; y: number };
 
+export interface ElementCutContours {
+  outer: Point[];
+  holes: Point[][];
+}
+
 export interface CutlineSvgInput {
   productSlug: string;
   panelId: string;
@@ -22,10 +27,11 @@ export interface CutlineSvgInput {
   machineLabel?: string;
   // Traced silhouettes for image elements, keyed by element id. Points are
   // normalized to the artwork's own bounds ([0..1]×[0..1]); the builder
-  // scales them to the element's placed size and position. An image with a
-  // contour becomes a CUT (through-hole); without one it stays an engrave
-  // placement reference. Kept as data so this module stays DOM-free.
-  cutContours?: Record<string, Point[]>;
+  // scales them to the element's placed size and position. An image with
+  // contours becomes a CUT (through-hole, outer boundary + interior holes);
+  // without one it stays an engrave placement reference. Kept as data so
+  // this module stays DOM-free.
+  cutContours?: Record<string, ElementCutContours>;
 }
 
 const CUT = "#FF00FF";
@@ -80,20 +86,23 @@ export function buildPanelCutlineSvg(input: CutlineSvgInput): string {
       const cy = el.yIn + el.heightIn / 2;
       const transform =
         el.rotationDeg !== 0 ? ` transform="rotate(${el.rotationDeg} ${cx} ${cy})"` : "";
-      const contour = input.cutContours?.[el.id];
-      if (contour && contour.length >= 3) {
-        // Scale the normalized silhouette to the placed element and cut it
-        // through the panel.
-        const d =
-          contour
+      const contours = input.cutContours?.[el.id];
+      if (contours && contours.outer.length >= 3) {
+        // Scale the normalized silhouette (outer boundary + interior holes)
+        // to the placed element and cut it through the panel.
+        const toPath = (pts: Point[]) =>
+          pts
             .map(
               (p, i) =>
                 `${i === 0 ? "M" : "L"}${(el.xIn + p.x * el.widthIn).toFixed(4)},${(el.yIn + p.y * el.heightIn).toFixed(4)}`,
             )
             .join(" ") + " Z";
+        const paths = [contours.outer, ...contours.holes.filter((hole) => hole.length >= 3)];
         cutContourPaths.push(
           `    <g${transform}>`,
-          `      <path d="${d}" fill="none" stroke="${CUT}" stroke-width="${HAIRLINE}"/>`,
+          ...paths.map(
+            (pts) => `      <path d="${toPath(pts)}" fill="none" stroke="${CUT}" stroke-width="${HAIRLINE}"/>`,
+          ),
           `    </g>`,
         );
         // Keep the artwork as an operator reference underneath the cut.

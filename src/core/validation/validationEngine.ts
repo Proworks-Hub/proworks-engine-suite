@@ -6,6 +6,8 @@ import { imageResolutionRule } from "./rules/imageResolution";
 import { materialAllowedRule } from "./rules/materialAllowed";
 import { machineMaterialCompatRule } from "./rules/machineMaterialCompat";
 import { machineWorkAreaRule } from "./rules/machineWorkArea";
+import { artworkIslandsRule } from "./rules/artworkIslands";
+import { textCountersRule } from "./rules/textCounters";
 
 export type {
   ValidationContext,
@@ -23,6 +25,8 @@ export const builtinRules: ValidationRule[] = [
   materialAllowedRule,
   machineMaterialCompatRule,
   machineWorkAreaRule,
+  artworkIslandsRule,
+  textCountersRule,
 ];
 
 export function runValidation(

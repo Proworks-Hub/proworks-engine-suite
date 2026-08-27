@@ -17,14 +17,21 @@ export function loadImageElement(src: string): Promise<HTMLImageElement> {
   });
 }
 
+export interface TracedContours {
+  outer: Point[];
+  // Interior holes of the silhouette. When the design is cut through a
+  // panel, the material enclosed by each hole becomes a free-falling island
+  // unless the shop adds bridges — callers surface that as a warning.
+  holes: Point[][];
+}
+
 export async function traceImageCutContour(
   url: string,
   samplePx = 480,
   offsetFrac = 0.01,
-): Promise<Point[] | null> {
+): Promise<TracedContours | null> {
   const img = await loadImageElement(url);
-  const traced = traceAlphaContour(img, samplePx, offsetFrac);
-  return traced?.points ?? null;
+  return traceAlphaContours(img, samplePx, offsetFrac);
 }
 
 export function traceAlphaContour(
@@ -32,6 +39,15 @@ export function traceAlphaContour(
   samplePx = 480,
   offsetFrac = 0.04,
 ): { points: Point[] } | null {
+  const traced = traceAlphaContours(img, samplePx, offsetFrac);
+  return traced ? { points: traced.outer } : null;
+}
+
+export function traceAlphaContours(
+  img: HTMLImageElement,
+  samplePx = 480,
+  offsetFrac = 0.01,
+): TracedContours | null {
   const aspect = img.naturalWidth / img.naturalHeight;
   const long = samplePx;
   const w = aspect >= 1 ? long : Math.max(8, Math.round(long * aspect));
@@ -67,10 +83,80 @@ export function traceAlphaContour(
   const contour = marchingSquares(dilated, cw, ch);
   if (!contour || contour.length < 3) return null;
 
-  const simplified = rdpSimplify(contour, Math.max(1.2, long * 0.004));
-  const smoothed = chaikin(simplified, 2);
-  const pts = smoothed.map((p) => ({ x: (p.x - pad) / w, y: (p.y - pad) / h }));
-  return { points: pts };
+  const norm = (pts: Point[]) => pts.map((p) => ({ x: (p.x - pad) / w, y: (p.y - pad) / h }));
+  const smooth = (pts: Point[]) => chaikin(rdpSimplify(pts, Math.max(1.2, long * 0.004)), 2);
+
+  // Interior holes: background pixels not reachable from the canvas border.
+  const holes: Point[][] = [];
+  const exterior = floodExterior(dilated, cw, ch);
+  const seen = new Uint8Array(cw * ch);
+  const minHolePx = Math.max(9, Math.round((long * long) / 10000)); // ignore speck noise
+  for (let y = 1; y < ch - 1; y++) {
+    for (let x = 1; x < cw - 1; x++) {
+      const i = y * cw + x;
+      if (dilated[i] || exterior[i] || seen[i]) continue;
+      // Collect this hole component.
+      const component: number[] = [];
+      const holeMask = new Uint8Array(cw * ch);
+      const stack = [i];
+      seen[i] = 1;
+      while (stack.length) {
+        const j = stack.pop()!;
+        component.push(j);
+        holeMask[j] = 1;
+        const jx = j % cw;
+        const jy = (j / cw) | 0;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+          const nx = jx + dx;
+          const ny = jy + dy;
+          if (nx < 0 || ny < 0 || nx >= cw || ny >= ch) continue;
+          const n = ny * cw + nx;
+          if (!dilated[n] && !exterior[n] && !seen[n]) {
+            seen[n] = 1;
+            stack.push(n);
+          }
+        }
+      }
+      if (component.length < minHolePx) continue;
+      const holeContour = marchingSquares(holeMask, cw, ch);
+      if (holeContour && holeContour.length >= 3) {
+        holes.push(norm(smooth(holeContour)));
+      }
+    }
+  }
+
+  return { outer: norm(smooth(contour)), holes };
+}
+
+// Marks every background pixel reachable from the canvas border (the true
+// exterior); what remains unmarked and unmasked is an interior hole.
+function floodExterior(mask: Uint8Array, w: number, h: number): Uint8Array {
+  const exterior = new Uint8Array(w * h);
+  const stack: number[] = [];
+  const push = (i: number) => {
+    if (!mask[i] && !exterior[i]) {
+      exterior[i] = 1;
+      stack.push(i);
+    }
+  };
+  for (let x = 0; x < w; x++) {
+    push(x);
+    push((h - 1) * w + x);
+  }
+  for (let y = 0; y < h; y++) {
+    push(y * w);
+    push(y * w + w - 1);
+  }
+  while (stack.length) {
+    const i = stack.pop()!;
+    const x = i % w;
+    const y = (i / w) | 0;
+    if (x > 0) push(i - 1);
+    if (x < w - 1) push(i + 1);
+    if (y > 0) push(i - w);
+    if (y < h - 1) push(i + w);
+  }
+  return exterior;
 }
 
 function dilateMask(mask: Uint8Array, w: number, h: number, r: number): Uint8Array {
