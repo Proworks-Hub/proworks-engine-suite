@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { runValidation } from "../src/core/validation/validationEngine";
-import { buildManufacturingPlan } from "../src/core/manufacturing/manufacturingPlan";
+import { buildManufacturingPlan } from "../src/manufacturing/buildManufacturingPlan";
 import { productConfigurationSchema } from "../src/core/schemas/configuration";
 import { productDefinitionSchema } from "../src/core/schemas/productDefinition";
-import { createCostIqEngine } from "../src/costiq/costiqEngine";
-import { createPrimeEngine } from "../src/prime/primeEngine";
+import { createCostIqEngine } from "@proworks/costiq";
+import { createPrimeEngine } from "@proworks/prime";
 import {
   decisionContextSchema,
   DECISION_CONTEXT_VERSION,
-} from "../src/core/decision/decisionEngine";
+} from "@proworks/contracts";
 import { buildMetalSignDefinition, demoAluminumSpecs } from "../src/demo/metalSign";
 import { demoCortenSpecs, demoFiberLaserSpecs } from "../src/demo/firepit";
 import type { MaterialProfileSpecs } from "../src/core/schemas/materialProfile";

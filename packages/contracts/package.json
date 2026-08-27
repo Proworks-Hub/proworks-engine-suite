@@ -1,0 +1,11 @@
+{
+  "name": "@proworks/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Normalized contracts exchanged between the portable engines. Depends on nothing but zod.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": { "zod": "^3.23.0" }
+}

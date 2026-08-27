@@ -1,15 +1,11 @@
 import { describe, expect, it } from "vitest";
-import {
-  buildManufacturingPlan,
-  manufacturingPlanSchema,
-  PLAN_VERSION,
-  type ManufacturingPlan,
-} from "../src/core/manufacturing/manufacturingPlan";
+import { manufacturingPlanSchema, PLAN_VERSION, type ManufacturingPlan } from "@proworks/contracts";
+import { buildManufacturingPlan } from "../src/manufacturing/buildManufacturingPlan";
 import {
   costResultSchema,
   type CostEngine,
   type CostLine,
-} from "../src/core/cost/costEngine";
+} from "@proworks/contracts";
 import { runValidation } from "../src/core/validation/validationEngine";
 import { buildBillOfMaterials } from "../src/core/production/bom";
 import type { SurfaceElement } from "../src/core/schemas/configuration";
@@ -265,7 +261,7 @@ describe("ManufacturingPlan", () => {
 // the seam. If this test ever needs another import to compute a cost, the
 // contract is incomplete.
 // ─────────────────────────────────────────────────────────────────────────────
-const mockCostIQ: CostEngine = {
+const mockCostIQ = {
   name: "mock-costiq",
   calculate(plan: ManufacturingPlan) {
     const lines: CostLine[] = [];
@@ -332,6 +328,7 @@ const mockCostIQ: CostEngine = {
       recommendedPrice,
       margin: Math.round((recommendedPrice - totalCost) * 100) / 100,
       marginPct: targetMargin,
+      assumptions: [],
       unpriced,
     };
   },

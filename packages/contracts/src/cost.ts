@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ManufacturingPlan } from "../manufacturing/manufacturingPlan";
+import type { ManufacturingPlan } from "./manufacturingPlan";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // The costing seam.

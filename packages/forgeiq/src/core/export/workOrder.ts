@@ -2,7 +2,7 @@ import type { ProductDefinition } from "../schemas/productDefinition";
 import type { ProductConfiguration } from "../schemas/configuration";
 import type { PriceBreakdown } from "../pricing/pricingEngine";
 import type { MaterialProfileSpecs } from "../schemas/materialProfile";
-import type { ManufacturingPlan } from "../manufacturing/manufacturingPlan";
+import type { ManufacturingPlan } from "@proworks/contracts";
 import { buildBillOfMaterials } from "../production/bom";
 import {
   resolveSurfaceDims,

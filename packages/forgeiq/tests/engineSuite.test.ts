@@ -3,7 +3,7 @@ import {
   costResultSchema,
   type CostEngine,
   type CostResult,
-} from "../src/core/cost/costEngine";
+} from "@proworks/contracts";
 import {
   decisionContextSchema,
   decisionResultSchema,
@@ -11,13 +11,9 @@ import {
   type DecisionContext,
   type DecisionEngine,
   type DecisionResult,
-} from "../src/core/decision/decisionEngine";
-import {
-  buildManufacturingPlan,
-  manufacturingPlanSchema,
-  PLAN_VERSION,
-  type ManufacturingPlan,
-} from "../src/core/manufacturing/manufacturingPlan";
+} from "@proworks/contracts";
+import { manufacturingPlanSchema, PLAN_VERSION, type ManufacturingPlan } from "@proworks/contracts";
+import { buildManufacturingPlan } from "../src/manufacturing/buildManufacturingPlan";
 import { baseConfig, definition, machine, materials } from "./helpers";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -76,7 +72,7 @@ const foreignPlan: ManufacturingPlan = manufacturingPlanSchema.parse({
 });
 
 /** Stand-in for CostIQ. Consumes a plan and nothing else. */
-const mockCostIQ: CostEngine = {
+const mockCostIQ = {
   name: "mock-costiq",
   calculate(plan) {
     const rates = plan.advisoryRates;
@@ -107,16 +103,17 @@ const mockCostIQ: CostEngine = {
       recommendedPrice,
       margin: Math.round((recommendedPrice - totalCost) * 100) / 100,
       marginPct,
+      assumptions: [],
       unpriced: [],
     } satisfies CostResult;
   },
-};
+} satisfies CostEngine;
 
 /**
  * Stand-in for Prime. Consumes normalized outputs from the other engines plus
  * operational signals — never their internals.
  */
-const mockPrime: DecisionEngine = {
+const mockPrime = {
   name: "mock-prime",
   decide(context) {
     const reasons: DecisionResult["reasons"] = [];
@@ -184,7 +181,7 @@ const mockPrime: DecisionEngine = {
 
     return decisionResultSchema.parse({ engine: "mock-prime", status, priority, reasons, actions });
   },
-};
+} satisfies DecisionEngine;
 
 describe("CostIQ seam", () => {
   it("costs a plan authored outside ForgeIQ", () => {

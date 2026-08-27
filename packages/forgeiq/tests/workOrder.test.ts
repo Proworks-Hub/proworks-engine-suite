@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { computePrice } from "../src/core/pricing/pricingEngine";
 import { buildWorkOrder } from "../src/core/export/workOrder";
 import { buildPanelCutlineSvg } from "../src/core/export/cutlineSvg";
-import { buildManufacturingPlan } from "../src/core/manufacturing/manufacturingPlan";
+import { buildManufacturingPlan } from "../src/manufacturing/buildManufacturingPlan";
 import { baseConfig, definition, machine, machines, materials } from "./helpers";
 
 describe("work order builder", () => {

@@ -4,7 +4,7 @@ import type {
   DecisionEngine,
   DecisionReason,
   DecisionResult,
-} from "../core/decision/decisionEngine";
+} from "@proworks/contracts";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Prime — evaluate it, route it, decide what happens next.
@@ -40,7 +40,16 @@ const DEFAULTS = {
   reviewWhenCostIncomplete: true,
 } as const;
 
-export function createPrimeEngine(config: PrimeConfig = {}): DecisionEngine {
+/**
+ * A Prime instance. Narrower than the DecisionEngine port: this implementation
+ * is synchronous and deterministic, so callers get a DecisionResult without
+ * awaiting. It still satisfies the port.
+ */
+export interface PrimeEngine extends DecisionEngine {
+  decide(context: DecisionContext): DecisionResult;
+}
+
+export function createPrimeEngine(config: PrimeConfig = {}): PrimeEngine {
   const settings = { ...DEFAULTS, ...config };
 
   return {

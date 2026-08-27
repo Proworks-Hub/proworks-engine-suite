@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { manufacturingPlanSchema } from "../manufacturing/manufacturingPlan";
-import { costResultSchema } from "../cost/costEngine";
+import { manufacturingPlanSchema } from "./manufacturingPlan";
+import { costResultSchema } from "./cost";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // The decision seam.

@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "module": "ESNext",
+    "target": "ES2022",
+    "strict": true,
+    "lib": ["esnext", "dom", "dom.iterable"],
+    "jsx": "preserve",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@proworks/contracts": ["./packages/contracts/src/index.ts"],
+      "@proworks/forgeiq": ["./packages/forgeiq/src/core/index.ts"],
+      "@proworks/forgeiq/*": ["./packages/forgeiq/src/*"],
+      "@proworks/costiq": ["./packages/costiq/src/index.ts"],
+      "@proworks/prime": ["./packages/prime/src/index.ts"]
+    }
+  }
+}

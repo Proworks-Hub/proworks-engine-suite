@@ -1,5 +1,5 @@
-import type { ManufacturingPlan } from "../core/manufacturing/manufacturingPlan";
-import type { CostEngine, CostLine, CostResult } from "../core/cost/costEngine";
+import type { ManufacturingPlan } from "@proworks/contracts";
+import type { CostEngine, CostLine, CostResult } from "@proworks/contracts";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CostIQ — cost it, margin it, price it.
@@ -37,7 +37,16 @@ const DEFAULTS = {
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
-export function createCostIqEngine(config: CostIqConfig = {}): CostEngine {
+/**
+ * A CostIQ instance. Narrower than the CostEngine port: this implementation is
+ * synchronous, so callers get a CostResult without awaiting. It still satisfies
+ * the port, so it can be injected anywhere a CostEngine is expected.
+ */
+export interface CostIqEngine extends CostEngine {
+  calculate(plan: ManufacturingPlan): CostResult;
+}
+
+export function createCostIqEngine(config: CostIqConfig = {}): CostIqEngine {
   const settings = { ...DEFAULTS, ...config };
 
   return {

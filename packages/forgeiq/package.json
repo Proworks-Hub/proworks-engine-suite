@@ -1,0 +1,30 @@
+{
+  "name": "@proworks/forgeiq",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "ForgeIQ — configure it, validate it, manufacture it. Produces the ManufacturingPlan.",
+  "main": "./src/core/index.ts",
+  "types": "./src/core/index.ts",
+  "exports": {
+    ".": "./src/core/index.ts",
+    "./core": "./src/core/index.ts",
+    "./server": "./src/server/index.ts",
+    "./react": "./src/react/index.ts",
+    "./demo/firepit": "./src/demo/firepit.ts",
+    "./demo/metalSign": "./src/demo/metalSign.ts"
+  },
+  "dependencies": { "@proworks/contracts": "*", "zod": "^3.23.0" },
+  "peerDependencies": {
+    "@tanstack/react-query": "^5.0.0",
+    "drizzle-orm": "^0.39.0",
+    "express": "^5.0.0",
+    "react": "^18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@tanstack/react-query": { "optional": true },
+    "drizzle-orm": { "optional": true },
+    "express": { "optional": true },
+    "react": { "optional": true }
+  }
+}
