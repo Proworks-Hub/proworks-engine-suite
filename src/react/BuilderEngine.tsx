@@ -23,6 +23,7 @@ import { SurfaceEditor } from "./components/SurfaceEditor";
 import { ElementControls } from "./components/ElementControls";
 import { ValidationPanel } from "./components/ValidationPanel";
 import { PriceSummary } from "./components/PriceSummary";
+import { ConceptStudio } from "./components/ConceptStudio";
 import type { BuilderEngineProps, ProductResponse } from "./types";
 
 export function BuilderEngine(props: BuilderEngineProps) {
@@ -56,6 +57,9 @@ function LoadedBuilder(
   const { price, validation } = usePriceAndValidation(apiBase, product.id, config);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  // Customers either design it themselves or answer a few questions and let
+  // the engine propose concepts. Undecided until they pick.
+  const [mode, setMode] = useState<"choosing" | "manual" | "assisted">("choosing");
 
   const surfaceDims = useMemo(
     () => resolveSurfaceDims(definition, config),
@@ -189,6 +193,41 @@ function LoadedBuilder(
     }
   }
 
+  if (mode === "choosing") {
+    return (
+      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontFamily: "system-ui, sans-serif" }}>
+        <ModeCard
+          title="Build it myself"
+          body="Full control — pick your size and material, then design each panel."
+          action="Start designing"
+          onClick={() => setMode("manual")}
+        />
+        <ModeCard
+          title="✨ Make it for me"
+          body="Answer five quick questions and we'll design three options you can order or keep editing."
+          action="Answer a few questions"
+          accent
+          onClick={() => setMode("assisted")}
+        />
+      </div>
+    );
+  }
+
+  if (mode === "assisted") {
+    return (
+      <ConceptStudio
+        apiBase={apiBase}
+        definition={definition}
+        productDefinitionId={product.id}
+        onCancel={() => setMode("manual")}
+        onUseConcept={(configuration) => {
+          dispatch({ type: "REPLACE_CONFIG", config: configuration });
+          setMode("manual");
+        }}
+      />
+    );
+  }
+
   return (
     <div style={{ display: "flex", gap: 24, alignItems: "flex-start", flexWrap: "wrap", fontFamily: "system-ui, sans-serif" }}>
       {/* Left: options */}
@@ -270,5 +309,36 @@ function LoadedBuilder(
         {saveError && <div style={{ color: "#dc2626", fontSize: 13 }}>{saveError}</div>}
       </div>
     </div>
+  );
+}
+
+function ModeCard(props: {
+  title: string;
+  body: string;
+  action: string;
+  accent?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={props.onClick}
+      style={{
+        flex: "1 1 280px",
+        textAlign: "left",
+        padding: 20,
+        borderRadius: 14,
+        border: props.accent ? "2px solid #0f766e" : "1px solid #d4d4d8",
+        background: props.accent ? "#f0fdfa" : "#fff",
+        cursor: "pointer",
+        font: "inherit",
+      }}
+    >
+      <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 6 }}>{props.title}</div>
+      <div style={{ fontSize: 14, color: "#52525b", marginBottom: 14 }}>{props.body}</div>
+      <span style={{ fontSize: 14, fontWeight: 700, color: props.accent ? "#0f766e" : "#d97706" }}>
+        {props.action} →
+      </span>
+    </button>
   );
 }

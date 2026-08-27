@@ -6,6 +6,9 @@ import { machineProfileSpecsSchema } from "../core/schemas/machineProfile";
 import { materialProfileSpecsSchema } from "../core/schemas/materialProfile";
 import { computePrice, toPublicBreakdown } from "../core/pricing/pricingEngine";
 import { runValidation } from "../core/validation/validationEngine";
+import { generateConcepts } from "../core/ai/conceptService";
+import { conceptBriefSchema, type AIProvider } from "../core/ai/types";
+import { resolveMaterialProfileId } from "../core/resolve";
 import { BuilderEngineStorage, type FiqDb } from "./storage";
 
 export interface BuilderEngineRouterDeps {
@@ -15,6 +18,9 @@ export interface BuilderEngineRouterDeps {
   adminMiddleware: RequestHandler;
   getOrgId: (req: Request) => number | Promise<number>;
   getUserId?: (req: Request) => number | null;
+  // Optional AI provider for "Make it for me". Without one, the concepts
+  // endpoint reports the feature as unconfigured rather than guessing.
+  aiProvider?: AIProvider;
 }
 
 const priceRequestSchema = z.object({
@@ -156,6 +162,66 @@ export function createBuilderEngineRouter(deps: BuilderEngineRouterDeps): Router
       price: row.priceSnapshot ? toPublicBreakdown(row.priceSnapshot) : null,
       validation: row.validationSnapshot,
     });
+  });
+
+  // "Make it for me" — a brief in, manufacturable priced concepts out.
+  router.post("/concepts", async (req, res) => {
+    if (!deps.aiProvider) {
+      return res.status(503).json({
+        message: "Automatic design generation is not configured for this shop.",
+      });
+    }
+    const body = parse(
+      z.object({
+        productDefinitionId: z.number().int().positive(),
+        brief: conceptBriefSchema,
+        count: z.number().int().min(1).max(4).optional(),
+      }),
+      req.body,
+      res,
+    );
+    if (!body) return;
+
+    const orgId = await deps.getOrgId(req);
+    const product = await storage.getProductById(orgId, body.productDefinitionId);
+    if (!product) return res.status(404).json({ message: "Product not found" });
+
+    // Profiles for the definition's defaults — concepts choose their own
+    // options, but the prompt needs a representative material and machine.
+    const seed = { selections: {}, surfaces: {}, quantity: 1 };
+    const profiles = await storage.getPricingProfiles(orgId, product.definition, seed);
+    const materialId = resolveMaterialProfileId(product.definition, seed);
+
+    try {
+      const result = await generateConcepts({
+        definition: product.definition,
+        materials: profiles.materials,
+        machine: profiles.machine,
+        material: materialId !== undefined ? profiles.materials.get(materialId) : undefined,
+        brief: body.brief,
+        provider: deps.aiProvider,
+        count: body.count ?? 3,
+      });
+      res.json({
+        provider: result.provider,
+        productDefinitionId: product.id,
+        concepts: result.concepts.map((c) => ({
+          id: c.id,
+          name: c.name,
+          rationale: c.rationale,
+          configuration: c.configuration,
+          price: toPublicBreakdown(c.price),
+          validation: c.validation,
+          repairsApplied: c.repairsApplied,
+        })),
+        rejected: result.rejected,
+      });
+    } catch (err) {
+      console.error("ForgeIQ concept generation failed:", err);
+      res.status(502).json({
+        message: "The design assistant could not produce concepts. Please try again.",
+      });
+    }
   });
 
   // ── Admin ─────────────────────────────────────────────────────────────────

@@ -52,6 +52,33 @@ export interface SaveConfigurationResponse {
   validation: ValidationResult;
 }
 
+export interface ConceptResponse {
+  provider: string;
+  productDefinitionId: number;
+  concepts: {
+    id: string;
+    name: string;
+    rationale: string;
+    configuration: ProductConfiguration;
+    price: PublicPriceBreakdown;
+    validation: ValidationResult;
+    repairsApplied: string[];
+  }[];
+  rejected: { name: string; reason: string }[];
+}
+
+export function postConcepts(
+  apiBase: string,
+  productDefinitionId: number,
+  brief: Record<string, string | undefined>,
+) {
+  return fetch(`${apiBase}/concepts`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ productDefinitionId, brief }),
+  }).then((r) => json<ConceptResponse>(r));
+}
+
 export function postConfiguration(
   apiBase: string,
   productDefinitionId: number,
