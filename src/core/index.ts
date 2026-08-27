@@ -16,6 +16,7 @@ export * from "./production/bom";
 export * from "./production/nesting";
 export * from "./manufacturing/manufacturingPlan";
 export * from "./cost/costEngine";
+export * from "./decision/decisionEngine";
 export * from "./ai/types";
 export * from "./ai/conceptPrompt";
 export * from "./ai/conceptService";

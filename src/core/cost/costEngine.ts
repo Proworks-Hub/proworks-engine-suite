@@ -38,9 +38,12 @@ export const costLineSchema = z.object({
   ]),
 });
 
+export const COST_RESULT_VERSION = 1;
+
 export const costResultSchema = z.object({
   /** Identifies the costing engine that produced this, e.g. "costiq". */
   engine: z.string(),
+  resultVersion: z.literal(COST_RESULT_VERSION).default(COST_RESULT_VERSION),
   currency: z.string().default("USD"),
   /** Everything it costs the business to produce the plan, in total. */
   totalCost: z.number().min(0),
@@ -49,6 +52,12 @@ export const costResultSchema = z.object({
   recommendedPrice: z.number().min(0).optional(),
   margin: z.number().optional(),
   marginPct: z.number().optional(),
+  /**
+   * What the engine assumed to reach this number — flat overhead rates,
+   * uncosted finishing, estimates not yet validated against production.
+   * Stated so a caller never mistakes an estimate for a measured cost.
+   */
+  assumptions: z.array(z.string()).default([]),
   /** Anything the engine could not cost, so callers can say so honestly. */
   unpriced: z.array(z.string()).default([]),
 });
@@ -60,6 +69,10 @@ export type CostResult = z.infer<typeof costResultSchema>;
  * Implemented by CostIQ, or by any host that wants to own its own economics.
  * The plan is the only input: a cost engine must not need the builder UI,
  * the host application, or the original product definition.
+ *
+ * A cost engine is therefore usable without ForgeIQ at all — ForgeIQ is the
+ * preferred producer of a ManufacturingPlan, not the only possible one. Any
+ * system that can construct a valid plan can be costed.
  */
 export interface CostEngine {
   /** Identifier surfaced on results and in logs. */
