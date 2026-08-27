@@ -47,3 +47,16 @@ export {
 // The one seam extraction required: operator recipe variants persisted through
 // a host-supplied store rather than ambient browser storage.
 export { setRecipeVariantStore, type RecipeVariantStore } from "./core/recipeEngine.js";
+
+// The preparation vocabulary — background, cleanup, colour, halftone, vector
+// and export settings. Declared here rather than imported from a generated API
+// client, because an HTTP schema should not be the source of truth for what
+// "cleanup" means.
+export * from "./core/prepSettings.js";
+
+// Machine targeting, presets, templates, and the recipe operating system that
+// resolves process + machine + material into a recipe.
+export * from "./machines/machinePresets.js";
+export * from "./machines/machineTargeting.js";
+export * from "./machines/machineTemplateEngine.js";
+export * from "./machines/recipeOperatingSystem.js";

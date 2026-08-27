@@ -255,7 +255,43 @@ Three decisions worth recording:
 - **A critical issue blocks regardless of score.** A high score beside a critical issue means the
   scorer and the checker disagree, and the safe reading of a disagreement is the pessimistic one.
 
+## Extraction pass 3 — machines and recipes
+
+Four files, ~1,290 lines: `machinePresets`, `machineTargeting`, `machineTemplateEngine`,
+`recipeOperatingSystem`. **`packages/visioniq` now holds ~3,010 lines with zero host imports.**
+
+Steps 3 and 4 of the order (preflight, profile resolution) were already satisfied — both engines
+came across in pass 1 as part of the dependency-clean set.
+
+### The finding: an API schema owned the domain vocabulary
+
+Every external import in this layer was `import type`, so all of it erased at runtime — the
+extraction was type substitution, not rewriting.
+
+But *what* they imported matters. `BackgroundSettings`, `CleanupSettings`, `ColorSettings`,
+`HalftoneSettings`, `VectorSettings` and `ExportSettings` came from
+`lib/api-client-react/src/generated/api.schemas.ts` — **OpenAPI-generated code**. That made an HTTP
+schema the source of truth for what "cleanup" means. Background-removal strength and halftone cell
+size are domain concepts that happen to travel over HTTP, not the reverse.
+
+They are now declared in `core/prepSettings.ts`, **structurally identical** — every field, every
+optionality, every union member. The host can pass its generated types straight in and TypeScript
+accepts them, so it migrates when it chooses rather than when this package lands.
+
+`PrepJob` and `PrepMachine` are deliberately *structural minimums* — only what the engine reads. A
+portable engine that accepted the host's whole `Job` would quietly acquire a dependency on every
+field the host later adds.
+
+### Characterization tests added
+
+The machine layer arrived with no tests. Eleven now pin what it does today — most importantly the
+**rule ordering** in `inferProcessFamilyFromMachine`, which walks most-specific to least: `"UV DTF"`
+contains `"dtf"`, so checking DTF first would route every UV DTF machine wrongly *and the label
+would still look right*.
+
 ### Next
 
-Steps 3–6: preflight, profile resolution, recipes, machine targeting — then rewire Prep Studio as
-the first consumer, per §"FIRST CONSUMER".
+Step 7 onward: the `PixelBuffer` seam, then `lib/` algorithms (halftone, vector prep, spot channels),
+then process capabilities — laser first. Then rewire Prep Studio as the first consumer.
+
+Still true: **nothing deleted anywhere.** Prep Studio owns and runs its own copy.
