@@ -3,7 +3,12 @@
 Owner: Steven Kreutzer · 2026-08-27 · Suite `v0.3.0` (published)
 Assessed against the Architecture Hardening & Scalability Directive.
 
-**This is Phase 1 only — inventory and analysis. No code has been changed.**
+**Phase 1 (inventory) complete. Phase 2 (purity guards) implemented. Phases 3+ pending.**
+
+The three conflicts in §3 have been **resolved and are binding** — see the ecosystem decision log,
+entry *"Three hardening-directive items resolved against existing architecture"*:
+tenancy never touches canonical knowledge · durable workflow state arrives as a port ·
+no gateway or restructure until there is a caller.
 
 ---
 
@@ -205,7 +210,7 @@ Ordered by value-to-risk, not by directive numbering.
 |---|---|
 | **Tenancy vocabulary divergence** | Three engines, three words. Every day this persists, more code is written against the wrong one |
 | **No correlation id** | Retrofitting through published contracts means a breaking version bump per engine. Cheapest it will ever be is now |
-| **Prime's purity is undefended** | No architecture test asserts Prime imports no I/O. It is pure by discipline, not by guard — the one property most likely to be lost by accident |
+| ~~Prime's purity is undefended~~ | **CLOSED 2026-08-27.** Two guards now refuse I/O imports and ambient globals across Prime, CostIQ and ReceiptIQ |
 | **Two routing implementations** | Documented today, but nothing *enforces* that eligibility stays in Prime and capacity stays in the Hub |
 | **Event vocabulary uncoordinated** | Prime's `WorkOrderEventType` is work-order-scoped. Platform events need a namespace that will not collide |
 
@@ -217,8 +222,8 @@ Each step ends green — typecheck, 609 suite tests, and both hosts still buildi
 
 | Phase | Work | Ends when |
 |---|---|---|
-| **1** | *This document* | Reviewed |
-| **2** | Guard Prime's purity; add an architecture test asserting no I/O imports | Guard fails when violated |
+| ~~1~~ | ~~*This document*~~ | **done** |
+| ~~2~~ | ~~Guard the pure engines: no I/O imports, no ambient globals~~ | **done** — 2 guards, 6 injections verified, 611 tests |
 | **3** | Tenant context contract; reconcile `orgId`/`tenantId`/`ownerRef` | One vocabulary, ownership model intact |
 | **4** | Correlation/causation on contracts, additive | Both hosts unaffected |
 | **5** | `PlatformEvent` envelope + `EventBus` port + in-memory adapter | Publish/subscribe tested |
