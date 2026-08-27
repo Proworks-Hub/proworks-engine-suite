@@ -117,3 +117,9 @@ export * from "./prep/artworkAnalysis.js";
 export * from "./learning/provenance.js";
 export * from "./learning/feedback.js";
 export * from "./learning/difference.js";
+
+// Colour and pixel operations lifted out of the host's canvasProcessing.
+// Namespaced: it exports its own `luminance` over an RgbColor, while
+// core/pixelBuffer exports one over three channels. Same word, different
+// signature — the fifth name collision this extraction has surfaced.
+export * as colorOps from "./prep/colorOps.js";
