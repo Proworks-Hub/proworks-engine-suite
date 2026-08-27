@@ -20,6 +20,7 @@ export default defineConfig({
       "@proworks-hub/forgeiq": pkg("forgeiq", "src/core/index.ts"),
       "@proworks-hub/costiq": pkg("costiq", "src/index.ts"),
       "@proworks-hub/prime": pkg("prime", "src/index.ts"),
+      "@proworks-hub/workorder": pkg("workorder", "src/index.ts"),
       "@proworks-hub/receiptiq": pkg("receiptiq", "src/index.ts"),
       "@proworks-hub/platform-events": pkg("platform-events", "src/index.ts"),
       "@proworks-hub/platform-runtime": pkg("platform-runtime", "src/index.ts"),

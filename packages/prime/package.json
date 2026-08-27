@@ -1,8 +1,8 @@
 {
   "name": "@proworks-hub/prime",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "type": "module",
-  "description": "Prime — evaluate it, route it, decide what happens next. Consumes normalized engine output.",
+  "description": "Prime Engine — orchestration and decision-making. Coordinates the domain engines; owns none of their records.",
   "author": "Steven Kreutzer",
   "license": "UNLICENSED",
   "repository": {

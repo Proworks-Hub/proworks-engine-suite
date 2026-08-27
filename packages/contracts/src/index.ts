@@ -36,6 +36,9 @@ export * from "./jobs.js";
 export * from "./observability.js";
 // The boundary a request crosses on its way in, following it across engines,
 // and the services every engine would otherwise reinvent.
+// What a consumer is ALLOWED to do. A capability is built once and exposed in
+// different amounts to different products, rather than forking the engine.
+export * from "./capabilities.js";
 export * from "./gateway.js";
 export * from "./tracing.js";
 export * from "./platformServices.js";

@@ -1,14 +1,14 @@
 {
-  "name": "@proworks-hub/contracts",
+  "name": "@proworks-hub/workorder",
   "version": "0.5.0",
   "type": "module",
-  "description": "Normalized contracts exchanged between the portable engines. Depends on nothing but zod.",
+  "description": "WorkOrder Engine — the canonical work order and its production execution state. Usable at its basic level with no orchestrator and no shop-floor system.",
   "author": "Steven Kreutzer",
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Proworks-Hub/proworks-engine-suite.git",
-    "directory": "packages/contracts"
+    "directory": "packages/workorder"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
@@ -22,6 +22,7 @@
     }
   },
   "dependencies": {
+    "@proworks-hub/contracts": "*",
     "zod": "^3.23.0"
   },
   "devDependencies": {

@@ -1,16 +1,22 @@
 import { describe, expect, it } from "vitest";
 import type { CostResult, ManufacturingPlan } from "@proworks-hub/contracts";
 import { decisionContextSchema, DECISION_CONTEXT_VERSION } from "@proworks-hub/contracts";
+import { createPrimeEngine } from "@proworks-hub/prime";
 import {
-  createPrimeEngine,
   createInMemoryEventLog,
   createCreateWorkOrderUseCase,
   type EventActor,
   type IntakeInput,
-} from "../src/index";
+} from "@proworks-hub/workorder";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Prime's two layers, composed.
+// Two ENGINES, composed. This used to be Prime's two internal layers; the
+// lifecycle is now its own engine, and the test moved to suite level because it
+// reaches into both and therefore belongs to neither.
+//
+// What it proves is the point of the split: Prime decides, WorkOrder executes,
+// and Prime does so while importing nothing from the engine that owns the
+// record — it passes a decision, not a work order.
 //
 //   decision boundary  →  "should this proceed?"
 //   lifecycle          →  "then put it through intake and start the events"
