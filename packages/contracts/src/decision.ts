@@ -3,6 +3,7 @@
 // distribution of this file, via any medium, is strictly prohibited.
 
 import { z } from "zod";
+import { traceContextSchema } from "./trace.js";
 import { manufacturingPlanSchema } from "./manufacturingPlan.js";
 import { costResultSchema } from "./cost.js";
 
@@ -102,6 +103,12 @@ export const decisionResultSchema = z.object({
   actions: z.array(decisionActionSchema).default([]),
   /** Optional self-assessment; omit rather than inventing certainty. */
   confidence: z.number().min(0).max(1).optional(),
+  /**
+   * Ties this to the unit of work that produced it. Optional so nothing
+   * existing breaks; supplied, it is what makes a wrong answer traceable back
+   * through the engines that produced it.
+   */
+  trace: traceContextSchema.optional(),
 });
 
 export type CapacitySignal = z.infer<typeof capacitySignalSchema>;

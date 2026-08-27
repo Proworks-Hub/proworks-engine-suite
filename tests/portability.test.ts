@@ -98,7 +98,16 @@ describe("engine suite portability", () => {
 
   it("keeps contracts dependent on nothing but zod", () => {
     const offenders: string[] = [];
-    for (const file of sourceFiles.filter((f) => f.relative.startsWith("contracts/"))) {
+    // Tests import vitest; the shipped contract does not. The distinction that
+    // matters is what a CONSUMER pulls in, and `files: ["dist"]` plus the
+    // tsconfig exclude keep tests out of the published package entirely.
+    const shipped = sourceFiles.filter(
+      (f) =>
+        f.relative.startsWith("contracts/") &&
+        !f.relative.includes("__tests__/") &&
+        !f.relative.includes("/tests/"),
+    );
+    for (const file of shipped) {
       for (const spec of importSpecifiers(file.text)) {
         if (spec.startsWith(".") || spec === "zod") continue;
         offenders.push(`${file.relative} → ${spec}`);

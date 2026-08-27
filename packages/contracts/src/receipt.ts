@@ -29,98 +29,28 @@ import { z } from "zod";
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ── Ownership ────────────────────────────────────────────────────────────────
+//
+// These moved to `tenancy.ts` when the ecosystem needed one vocabulary rather
+// than ReceiptIQ's private one. Re-exported here so every existing import keeps
+// working, and so a reader of this file still sees the rule that governs it.
+//
+// The rule: canonical records identify a product, a merchant or a price, and
+// identify nobody. `Canonical<T>` makes that a compile error; the guard below
+// catches what types cannot, such as a host attaching `{ meta: { userId } }`.
 
-/**
- * Every persisted record carries one of these. There is no default: a record
- * whose ownership was never decided is a record that will eventually leak.
- *
- * - `canonical`     — shared knowledge. Identifies a product, a merchant, or a
- *                     price. Identifies no person, household, business or
- *                     device. Readable by any authorized consumer.
- * - `host-private`  — belongs to one host application. Family Table's receipts
- *                     are invisible to ProWorks and vice versa.
- * - `tenant-private`— belongs to one tenant within a host: a single household,
- *                     a single shop. Invisible to other tenants of that host.
- */
-export const ownershipClassSchema = z.enum(["canonical", "host-private", "tenant-private"]);
-export type OwnershipClass = z.infer<typeof ownershipClassSchema>;
-
-/**
- * Words that must never appear as a field name on a canonical record.
- *
- * Matched as whole words rather than substrings. Family Table's SQL guard used
- * a substring regex, which works against snake_case column names but would
- * reject `ownership` here for containing `owner`, and `personalize` for
- * containing `person`. A guard that cries wolf gets switched off, so this one
- * tokenizes the field name first and compares word by word.
- */
-export const IDENTITY_FIELD_WORDS: ReadonlySet<string> = new Set([
-  "household",
-  "user",
-  "member",
-  "person",
-  "family",
-  "account",
-  "device",
-  "email",
-  "phone",
-  "address",
-  "postcode",
-  "zip",
-  "latitude",
-  "longitude",
-  "ip",
-  "owner",
-  "tenant",
-  "uid",
-  "ssn",
-]);
-
-/** Exact field names that are identifying even though their words are innocuous. */
-const IDENTITY_FIELD_NAMES: ReadonlySet<string> = new Set([
-  "createdby",
-  "submittedby",
-  "capturedby",
-  "authuid",
-  "sub",
-]);
-
-/** Splits `householdId`, `household_id` and `HOUSEHOLD-ID` into comparable words. */
-function fieldWords(key: string): string[] {
-  return key
-    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
-    .split(/[^A-Za-z0-9]+/)
-    .filter(Boolean)
-    .map((word) => word.toLowerCase());
-}
-
-/**
- * Refuses an object that carries anything capable of identifying who observed
- * something. Descends into nested objects and arrays, because the realistic
- * failure is a host attaching `{ meta: { householdId } }` and nobody noticing
- * until the shared database already has a year of it.
- *
- * Throws rather than returning false: this is a boundary violation, not a
- * validation failure, and a caller who could ignore the result would.
- */
-export function assertNoIdentityFields(value: unknown, path = "record"): void {
-  if (value === null || typeof value !== "object") return;
-  if (Array.isArray(value)) {
-    value.forEach((entry, i) => assertNoIdentityFields(entry, `${path}[${i}]`));
-    return;
-  }
-  for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
-    const words = fieldWords(key);
-    const offending = words.find((word) => IDENTITY_FIELD_WORDS.has(word));
-    if (offending || IDENTITY_FIELD_NAMES.has(words.join(""))) {
-      throw new Error(
-        `Canonical records must not identify anyone. Found "${key}" at ${path}. ` +
-          `If this is a private record, classify it as host-private or tenant-private instead.`,
-      );
-    }
-    assertNoIdentityFields(entry, `${path}.${key}`);
-  }
-}
+export {
+  ownershipClassSchema,
+  assertNoIdentityFields,
+  IDENTITY_FIELD_WORDS,
+  ownerRefFor,
+} from "./tenancy.js";
+export type {
+  OwnershipClass,
+  TenantContext,
+  Canonical,
+  HostPrivate,
+  TenantPrivate,
+} from "./tenancy.js";
 
 // ── Primitives ───────────────────────────────────────────────────────────────
 

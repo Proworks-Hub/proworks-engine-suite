@@ -3,6 +3,7 @@
 // distribution of this file, via any medium, is strictly prohibited.
 
 import { z } from "zod";
+import { traceContextSchema } from "./trace.js";
 
 /**
  * The shop-floor step an operation represents. Declared here rather than
@@ -188,6 +189,12 @@ export const manufacturingPlanSchema = z.object({
    * rough estimate.
    */
   estimatedFromArea: z.boolean(),
+  /**
+   * Ties this to the unit of work that produced it. Optional so nothing
+   * existing breaks; supplied, it is what makes a wrong answer traceable back
+   * through the engines that produced it.
+   */
+  trace: traceContextSchema.optional(),
 });
 
 export type ManufacturingPlan = z.infer<typeof manufacturingPlanSchema>;

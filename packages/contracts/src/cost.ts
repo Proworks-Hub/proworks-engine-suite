@@ -3,6 +3,7 @@
 // distribution of this file, via any medium, is strictly prohibited.
 
 import { z } from "zod";
+import { traceContextSchema } from "./trace.js";
 import type { ManufacturingPlan } from "./manufacturingPlan.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -64,6 +65,12 @@ export const costResultSchema = z.object({
   assumptions: z.array(z.string()).default([]),
   /** Anything the engine could not cost, so callers can say so honestly. */
   unpriced: z.array(z.string()).default([]),
+  /**
+   * Ties this to the unit of work that produced it. Optional so nothing
+   * existing breaks; supplied, it is what makes a wrong answer traceable back
+   * through the engines that produced it.
+   */
+  trace: traceContextSchema.optional(),
 });
 
 export type CostLine = z.infer<typeof costLineSchema>;

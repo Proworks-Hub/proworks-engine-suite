@@ -16,6 +16,12 @@
 //
 // Each contract carries an explicit version marker so it can evolve
 // deliberately: planVersion, resultVersion, contextVersion, receiptVersion.
+// Who data belongs to, and how one unit of work is followed across engines.
+// Both are prerequisites for the event bus, and both are far cheaper to add
+// before hosts depend on the contracts than after.
+export * from "./tenancy.js";
+export * from "./trace.js";
+
 export * from "./manufacturingPlan.js";
 export * from "./cost.js";
 export * from "./decision.js";
