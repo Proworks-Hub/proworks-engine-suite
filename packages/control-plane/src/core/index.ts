@@ -21,3 +21,7 @@ export * from "./intelligence.js";
 export * from "./brand.js";
 export * from "./motionLanguage.js";
 export * from "./systemHealth.js";
+export * from "./heartbeat.js";
+export * from "./operationalState.js";
+export * from "./alerts.js";
+export * from "./tracing.js";

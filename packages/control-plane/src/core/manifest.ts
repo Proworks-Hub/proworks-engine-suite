@@ -110,6 +110,27 @@ export const eventMappingSchema = z
     to: z.string().min(1).optional(),
     /** A scene-specific hint, e.g. which station on the line. */
     visualHint: z.string().min(1).optional(),
+    /**
+     * What the engine is DOING while this event is current, in its own
+     * vocabulary: `generating_plan`, `reserving`, `awaiting_review`.
+     *
+     * Domain-specific on purpose. Forcing ForgeIQ's `manufacturability_check`
+     * and InventoryIQ's `reconciling` into one shared enum would either produce
+     * an enum with forty members or lose the word that actually tells an
+     * engineer what is happening.
+     */
+    activity: z.string().regex(/^[a-z][a-z0-9_]*$/).optional(),
+    /**
+     * The same thing in the vocabulary every engine shares, so the observability
+     * table has a column that sorts and filters.
+     *
+     * Defaulted from `effect` when a manifest does not say — which is right for
+     * most events and wrong for CostIQ, whose work is `calculating` rather than
+     * generic processing. That is exactly why it is overridable.
+     */
+    normalizedActivity: z
+      .enum(["receiving", "processing", "calculating", "updating", "monitoring", "waiting"])
+      .optional(),
   })
   .strict();
 export type EventMapping = z.infer<typeof eventMappingSchema>;

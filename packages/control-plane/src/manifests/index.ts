@@ -43,11 +43,12 @@ export const primeManifest: EngineManifest = {
     // Prime's scene should read as delegation, never as doing the work. A pulse
     // arrives at the core and leaves along one route — the destination engine
     // is what lights up next.
-    { eventType: "manufacturing.request.routed", effect: "emit", intensity: 0.6, to: "forgeiq" },
-    { eventType: "cost.request.routed", effect: "emit", intensity: 0.5, to: "costiq" },
-    { eventType: "workorder.request.routed", effect: "emit", intensity: 0.5, to: "workorderiq" },
-    { eventType: "inventory.request.routed", effect: "emit", intensity: 0.5, to: "inventoryiq" },
-    { eventType: "workflow.started", effect: "activate", intensity: 0.4 },
+    { eventType: "manufacturing.request.routed", effect: "emit", intensity: 0.6, to: "forgeiq", activity: "routing" },
+    { eventType: "cost.request.routed", effect: "emit", intensity: 0.5, to: "costiq", activity: "routing" },
+    { eventType: "workorder.request.routed", effect: "emit", intensity: 0.5, to: "workorderiq", activity: "routing" },
+    { eventType: "inventory.request.routed", effect: "emit", intensity: 0.5, to: "inventoryiq", activity: "routing" },
+    { eventType: "workflow.started", effect: "activate", intensity: 0.4, activity: "coordinating" },
+    { eventType: "workflow.step.awaiting", effect: "activate", intensity: 0.2, activity: "waiting", normalizedActivity: "waiting" },
     { eventType: "workflow.compensated", effect: "alert", intensity: 0.9 },
   ],
 };
@@ -71,8 +72,10 @@ export const forgeIqManifest: EngineManifest = {
     "configuration", "rules", "testing", "versions", "intelligence",
   ],
   eventMappings: [
-    { eventType: "manufacturing.request.routed", effect: "receive", intensity: 0.5, to: "forgeiq" },
-    { eventType: "manufacturing.plan.generated", effect: "emit", intensity: 0.8, to: "costiq", visualHint: "workpiece" },
+    { eventType: "manufacturing.request.routed", effect: "receive", intensity: 0.5, to: "forgeiq", activity: "configuring" },
+    { eventType: "configurator.rules.evaluated", effect: "activate", intensity: 0.4, activity: "validating" },
+    { eventType: "manufacturability.checked", effect: "activate", intensity: 0.5, activity: "manufacturability_check" },
+    { eventType: "manufacturing.plan.generated", effect: "emit", intensity: 0.8, to: "costiq", visualHint: "workpiece", activity: "generating_plan" },
     { eventType: "configurator.rule.blocked", effect: "alert", intensity: 0.7 },
   ],
 };
@@ -95,9 +98,10 @@ export const costIqManifest: EngineManifest = {
     "overview", "liveActivity", "events", "diagnostics", "performance", "configuration", "rules", "testing", "versions",
   ],
   eventMappings: [
-    { eventType: "manufacturing.plan.generated", effect: "receive", intensity: 0.5, to: "costiq" },
-    { eventType: "cost.calculation.completed", effect: "emit", intensity: 0.7, to: "prime", visualHint: "stack" },
-    { eventType: "material.purchase.detected", effect: "receive", intensity: 0.4, to: "costiq" },
+    { eventType: "manufacturing.plan.generated", effect: "receive", intensity: 0.5, to: "costiq", activity: "calculating", normalizedActivity: "calculating" },
+    { eventType: "cost.calculation.completed", effect: "emit", intensity: 0.7, to: "prime", visualHint: "stack", activity: "calculating", normalizedActivity: "calculating" },
+    { eventType: "cost.variance.evaluated", effect: "activate", intensity: 0.4, activity: "evaluating_variance", normalizedActivity: "calculating" },
+    { eventType: "material.purchase.detected", effect: "receive", intensity: 0.4, to: "costiq", activity: "updating_cost_basis", normalizedActivity: "updating" },
   ],
 };
 
@@ -120,8 +124,11 @@ export const visionIqManifest: EngineManifest = {
     "configuration", "testing", "versions", "intelligence",
   ],
   eventMappings: [
-    { eventType: "artwork.submitted", effect: "receive", intensity: 0.5, to: "visioniq" },
-    { eventType: "artwork.prepared", effect: "emit", intensity: 0.8, to: "forgeiq", visualHint: "lens" },
+    { eventType: "artwork.submitted", effect: "receive", intensity: 0.5, to: "visioniq", activity: "analyzing" },
+    { eventType: "artwork.scanned", effect: "activate", intensity: 0.5, activity: "scanning" },
+    { eventType: "artwork.rendered", effect: "activate", intensity: 0.5, activity: "rendering" },
+    { eventType: "vision.correction.captured", effect: "activate", intensity: 0.3, activity: "learning", normalizedActivity: "updating" },
+    { eventType: "artwork.prepared", effect: "emit", intensity: 0.8, to: "forgeiq", visualHint: "lens", activity: "preparing" },
     { eventType: "artwork.rejected", effect: "alert", intensity: 0.8 },
   ],
 };
@@ -148,9 +155,11 @@ export const workOrderIqManifest: EngineManifest = {
     "overview", "liveActivity", "events", "diagnostics", "performance", "configuration", "rules", "testing", "versions",
   ],
   eventMappings: [
-    { eventType: "workorder.request.routed", effect: "receive", intensity: 0.5, to: "workorderiq" },
-    { eventType: "work.order.created", effect: "activate", intensity: 0.5, visualHint: "station-1" },
-    { eventType: "work.order.step.completed", effect: "activate", intensity: 0.4 },
+    { eventType: "workorder.request.routed", effect: "receive", intensity: 0.5, to: "workorderiq", activity: "routing" },
+    { eventType: "work.order.created", effect: "activate", intensity: 0.5, visualHint: "station-1", activity: "creating" },
+    { eventType: "work.order.quality.checked", effect: "activate", intensity: 0.4, activity: "quality_check", normalizedActivity: "monitoring" },
+    { eventType: "work.order.packaged", effect: "activate", intensity: 0.4, activity: "packaging" },
+    { eventType: "work.order.step.completed", effect: "activate", intensity: 0.4, activity: "updating", normalizedActivity: "updating" },
     { eventType: "work.order.completed", effect: "emit", intensity: 0.8, to: "prime" },
   ],
 };
@@ -174,8 +183,9 @@ export const receiptIqManifest: EngineManifest = {
     "configuration", "testing", "versions", "intelligence",
   ],
   eventMappings: [
-    { eventType: "receipt.ingested", effect: "receive", intensity: 0.5, to: "receiptiq" },
-    { eventType: "receipt.normalized", effect: "activate", intensity: 0.6 },
+    { eventType: "receipt.ingested", effect: "receive", intensity: 0.5, to: "receiptiq", activity: "extracting" },
+    { eventType: "receipt.awaiting.review", effect: "activate", intensity: 0.2, activity: "awaiting_review", normalizedActivity: "waiting" },
+    { eventType: "receipt.normalized", effect: "activate", intensity: 0.6, activity: "normalizing" },
     { eventType: "material.purchase.detected", effect: "emit", intensity: 0.7, to: "costiq", visualHint: "fields" },
   ],
 };
@@ -201,12 +211,16 @@ export const inventoryIqManifest: EngineManifest = {
     "overview", "liveActivity", "events", "diagnostics", "performance", "configuration", "rules", "testing", "versions",
   ],
   eventMappings: [
-    { eventType: "inventory.request.routed", effect: "receive", intensity: 0.4, to: "inventoryiq" },
-    { eventType: "inventory.availability.checked", effect: "activate", intensity: 0.4 },
-    { eventType: "inventory.level.changed", effect: "activate", intensity: 0.5, visualHint: "bin" },
+    { eventType: "inventory.request.routed", effect: "receive", intensity: 0.4, to: "inventoryiq", activity: "checking" },
+    { eventType: "inventory.availability.checked", effect: "activate", intensity: 0.4, activity: "checking", normalizedActivity: "monitoring" },
+    { eventType: "inventory.reserved", effect: "activate", intensity: 0.4, activity: "reserving" },
+    { eventType: "inventory.consumed", effect: "activate", intensity: 0.4, activity: "consuming" },
+    { eventType: "inventory.reconciled", effect: "activate", intensity: 0.4, activity: "reconciling", normalizedActivity: "updating" },
+    { eventType: "inventory.oversold", effect: "alert", intensity: 0.9, activity: "oversold" },
+    { eventType: "inventory.level.changed", effect: "activate", intensity: 0.5, visualHint: "bin", activity: "updating", normalizedActivity: "updating" },
     // Restrained on purpose. A low-stock warning that flashes is a low-stock
     // warning people turn off.
-    { eventType: "inventory.reorder.reached", effect: "alert", intensity: 0.6 },
+    { eventType: "inventory.reorder.reached", effect: "alert", intensity: 0.6, activity: "shortage" },
   ],
 };
 
@@ -228,11 +242,13 @@ export const orderIngestionManifest: EngineManifest = {
     "overview", "liveActivity", "events", "diagnostics", "performance", "configuration", "testing", "versions",
   ],
   eventMappings: [
-    { eventType: "shop.order.received", effect: "receive", intensity: 0.4, to: "order-ingestion" },
-    { eventType: "shop.order.normalized", effect: "emit", intensity: 0.7, to: "prime", visualHint: "converge" },
+    { eventType: "shop.order.received", effect: "receive", intensity: 0.4, to: "order-ingestion", activity: "receiving", normalizedActivity: "receiving" },
+    { eventType: "shop.order.deduplicated", effect: "activate", intensity: 0.3, activity: "deduplicating" },
+    { eventType: "shop.order.product.resolved", effect: "activate", intensity: 0.4, activity: "resolving_product" },
+    { eventType: "shop.order.normalized", effect: "emit", intensity: 0.7, to: "prime", visualHint: "converge", activity: "normalizing" },
     // A line that cannot be matched to a product is the failure this engine
     // exists to catch, so it is the one thing its scene raises its voice about.
-    { eventType: "shop.order.line.unmatched", effect: "alert", intensity: 0.8 },
+    { eventType: "shop.order.line.unmatched", effect: "alert", intensity: 0.8, activity: "needs_review" },
   ],
 };
 
