@@ -90,7 +90,13 @@ export function computeSystemHealth(
   const latencyBudgetMs = options.latencyBudgetMs ?? 2_000;
   const components: HealthComponent[] = [];
 
-  if (healths.length > 0) {
+  // Every engine unknown is epistemically identical to no engines at all: the
+  // console has no telemetry. Scoring that 0% would report a total outage,
+  // which is a different claim — and the one thing this file exists to avoid is
+  // presenting an absence of information as information.
+  const allUnknown = healths.length > 0 && healths.every((h) => h.state === "unknown");
+
+  if (healths.length > 0 && !allUnknown) {
     const counted = healths.length;
     const up = healths.filter((h) => h.state !== "failed" && h.state !== "unknown").length;
     components.push({
@@ -139,6 +145,9 @@ export function computeSystemHealth(
   const expected = options.expected ?? DEFAULT_EXPECTED_COMPONENTS;
   const present = new Set(components.map((c) => c.key));
   const unmeasured = expected.filter((e) => !present.has(e.key)).map((e) => e.label);
+  // Named explicitly, so an all-unknown fleet reads as "nothing is reporting"
+  // rather than silently producing an empty score with no explanation.
+  if (allUnknown) unmeasured.unshift("Availability (no engine is reporting)");
 
   if (components.length === 0) {
     return { overall: null, components, unmeasured };

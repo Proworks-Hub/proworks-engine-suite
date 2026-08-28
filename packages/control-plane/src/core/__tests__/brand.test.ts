@@ -194,3 +194,29 @@ describe("services in the hive", () => {
     expect(computeHiveLayout(registry, { includeServices: true }).core?.engineId).toBe("prime");
   });
 });
+
+describe("a fleet nobody is reporting on", () => {
+  const silent = (id: string) => deriveEngineHealth(id, undefined, { now: NOW });
+
+  it("scores nothing rather than zero when every engine is unknown", () => {
+    // Eight unknown engines is epistemically identical to no engines: the
+    // console has no telemetry. Scoring 0% would report a total outage, which
+    // is a different and much louder claim.
+    const score = computeSystemHealth([silent("a"), silent("b"), silent("c")]);
+    expect(score.overall).toBeNull();
+    expect(formatScore(score.overall)).toBe("—");
+  });
+
+  it("says why it scored nothing", () => {
+    const score = computeSystemHealth([silent("a")]);
+    expect(score.unmeasured[0]).toContain("no engine is reporting");
+  });
+
+  it("still scores availability when only some are unknown", () => {
+    // A partly-silent fleet is real information: something IS reporting, and
+    // the ones that are not drag the number down exactly as they should.
+    const score = computeSystemHealth([health("up"), silent("down")]);
+    expect(score.overall).toBeCloseTo(0.5);
+    expect(score.weakest?.key).toBe("availability");
+  });
+});

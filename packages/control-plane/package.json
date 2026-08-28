@@ -1,6 +1,6 @@
 {
   "name": "@proworks-hub/control-plane",
-  "version": "0.13.1",
+  "version": "0.13.2",
   "type": "module",
   "description": "Control plane \u2014 engine manifests, operational state, internal console authorization, and the telemetry-to-visualization adapter. Observes the engines; never runs them.",
   "author": "Steven Kreutzer",
