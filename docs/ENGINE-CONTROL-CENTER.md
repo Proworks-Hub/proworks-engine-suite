@@ -1,5 +1,14 @@
 # ProWorks Hive — Engine Center · architecture
 
+> **Hierarchical architecture (2026-08-28).** The Hive is organised
+> Prime → Core → Specialized → Industry. This console observes and administers
+> that structure; it owns no domain knowledge and is not required for any engine
+> to run. See `HIVE-CONSTITUTION.md` and ADR-001 in the ecosystem docs.
+>
+> The manifest field `hivePlacement: "core"` means *the visual centre of the
+> hive* (Prime's position), NOT one of the eight Core domains. Domain ownership
+> lives in `@proworks-hub/contracts/hiveMap`.
+
 Owner: Steven Kreutzer · 2026-08-27
 Package: `@proworks-hub/control-plane`
 

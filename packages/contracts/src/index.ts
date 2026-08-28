@@ -75,3 +75,5 @@ export * from "./productionAsset.js";
 // What a preparation run produced — promoted from the shape KSix Prep Studio
 // and ProWorks had already converged on independently.
 export * from "./prepResult.js";
+export * from "./hiveArchitecture.js";
+export * from "./hiveMap.js";
