@@ -95,8 +95,9 @@ export const HIVE_MAP: readonly HiveComponent[] = [
   // ── Finance Core ───────────────────────────────────────────────────────────
   component({
     id: "finance-core", name: "Finance Core", tier: "core", core: "finance", status: "partial",
+    packageName: "@proworks-hub/finance-core",
     responsibility: "Monetary reasoning: cost, budget, price, quote, invoice, profitability.",
-    gap: "CostIQ and ReceiptIQ exist and are called directly by hosts. No Core coordinates them.",
+    gap: "The coordinator exists — registry, routing, timeouts, fallback, partial answers, health. No host has registered CostIQ or ReceiptIQ against it yet, so production still calls them directly.",
   }),
   component({
     id: "costiq", name: "CostIQ", tier: "specialized", core: "finance", status: "existing",

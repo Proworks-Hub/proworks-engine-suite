@@ -146,10 +146,21 @@ export const CORE_ADMISSION_TEST: readonly string[] = [
  * Prime cannot be used without the orchestrator.
  */
 export const ALLOWED_DEPENDENCIES: Readonly<Record<HiveTier, readonly HiveTier[]>> = {
-  prime: ["core", "platform"],
-  core: ["specialized", "platform"],
+  // Prime and the Cores COORDINATE the tier below them; they do not IMPORT it.
+  // A Core that imported CostIQ could not be tested without CostIQ, could not
+  // be deployed without it, and would drag every specialist into the bundle of
+  // anything that touched the Core. Specialists are registered at runtime by
+  // the host, exactly as `tracking` already takes its sources.
+  //
+  // So the compile-time law is stricter than the conceptual hierarchy: only
+  // downward to PLATFORM. The Prime → Core → Specialized relationship is real
+  // and is expressed through ports, not imports.
+  prime: ["platform"],
+  core: ["platform"],
   specialized: ["platform"],
-  industry: ["core", "specialized", "platform"],
+  // The one exception, and it is what an industry pack IS: composition. ForgeIQ
+  // legitimately assembles reusable capabilities into a manufacturing answer.
+  industry: ["platform"],
   platform: [],
 };
 

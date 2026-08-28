@@ -124,8 +124,12 @@ describe("ownership", () => {
 describe("dependencies run downward", () => {
   const find = (id: string): HiveComponent => HIVE_MAP.find((entry) => entry.id === id)!;
 
-  it("lets Prime depend on a Core", () => {
-    expect(checkDependency(find("prime"), find("finance-core"))).toBeNull();
+  it("stops even Prime from importing a Core", () => {
+    // Prime COORDINATES the Cores; it does not import them. A Prime that
+    // imported eight Cores could not be tested without all eight, and would
+    // pull the entire system into anything that touched it. The relationship is
+    // real and travels through ports.
+    expect(checkDependency(find("prime"), find("finance-core"))).not.toBeNull();
   });
 
   it("refuses a specialized engine depending on Prime", () => {
@@ -160,9 +164,15 @@ describe("dependencies run downward", () => {
     expect(violation?.reason).toContain("peers must communicate through events");
   });
 
-  it("lets an industry engine compose Cores and specialists", () => {
-    expect(checkDependency(find("forgeiq"), find("finance-core"))).toBeNull();
-    expect(checkDependency(find("forgeiq"), find("costiq"))).toBeNull();
+  it("keeps an industry engine off its specialists too", () => {
+    // Composition happens through registration, not imports — otherwise a
+    // manufacturing pack drags costing into every bundle that renders a sign.
+    expect(checkDependency(find("forgeiq"), find("costiq"))).not.toBeNull();
+  });
+
+  it("lets everything depend on the platform", () => {
+    expect(checkDependency(find("costiq"), find("contracts"))).toBeNull();
+    expect(checkDependency(find("finance-core"), find("platform-events"))).toBeNull();
   });
 
   it("keeps everything off the platform's back", () => {
