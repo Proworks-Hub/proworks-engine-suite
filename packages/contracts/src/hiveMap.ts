@@ -76,7 +76,7 @@ export const HIVE_MAP: readonly HiveComponent[] = [
     id: "operations-core", name: "Operations Core", tier: "core", core: "operations", status: "partial",
     packageName: "@proworks-hub/operations-core",
     responsibility: "Work: workflows, work orders, scheduling, tasks, approvals, automation.",
-    gap: "ProWorks registers Order Ingestion and WorkOrderIQ against it and serves /api/operations, but the direct call sites into both engines still exist beside it, so the Core is an additional door rather than the only one. Tracking is not registered at all: it needs production and carrier sources this host has not wired, so locate_order is refused rather than answered emptily. Nothing claims schedule_work.",
+    gap: "ProWorks serves /api/operations with normalize_order and create_work_order, the latter bound to WorkOrderIQ's intake use case so orders are validated and events emitted. Both run against in-memory stores, so created work orders and duplicate detection do not survive a restart. Tracking is not registered: it needs production and carrier sources this host has not wired, so locate_order is refused rather than answered emptily. Nothing claims schedule_work or route_work_order. Filing a channel order needs a customer identity this installation cannot resolve — the adapter derives a channel-scoped one and refuses when the channel sent no buyer, which a resolve_customer capability would replace.",
   }),
   component({
     id: "workorderiq", name: "WorkOrderIQ", tier: "specialized", core: "operations", status: "existing",
@@ -104,7 +104,7 @@ export const HIVE_MAP: readonly HiveComponent[] = [
     id: "finance-core", name: "Finance Core", tier: "core", core: "finance", status: "partial",
     packageName: "@proworks-hub/finance-core",
     responsibility: "Monetary reasoning: cost, budget, price, quote, invoice, profitability.",
-    gap: "ProWorks registers CostIQ and ReceiptIQ against it and serves /api/finance, but the direct call sites into both engines still exist beside it, so the Core is an additional door rather than the only one. No production flow has been moved onto it yet.",
+    gap: "ProWorks serves /api/finance including price_job, CostIQ's canonical pricing entry point. The client still calls CostIQ directly for interactive pricing and SHOULD: a pure microsecond function behind a margin slider must not become a network call. So the Core is not the only door, and an equivalence test holds both paths to the same answer field for field. What that guarantee does not cover is a NEW consumer binding some other CostIQ function — it constrains the bindings that exist, not the ones nobody has written yet.",
   }),
   component({
     id: "costiq", name: "CostIQ", tier: "specialized", core: "finance", status: "existing",

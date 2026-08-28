@@ -59,7 +59,12 @@ describe("work-order creation at volume", () => {
         const create = createCreateWorkOrderUseCase({ eventLog: log });
         for (let i = 0; i < size; i += 1) await create.execute(intake("org-a", i), actor);
       },
-      [250, 500, 1000],
+      // Big enough that the total is tens of milliseconds. The earlier sizes
+      // finished in 2-4ms, and a ratio of two single-digit-millisecond samples
+      // measures the OS scheduler more than the algorithm — one GC pause moves
+      // it further than a real regression would. This is the same check with
+      // enough work under it to mean something.
+      [2000, 4000, 8000],
       "work-order creation",
     );
 
@@ -72,6 +77,8 @@ describe("work-order creation at volume", () => {
 
     // Linear is ~1.0. Quadratic would climb with every doubling. 2.5 is loose
     // enough to survive a noisy machine and tight enough to catch O(n²).
+    // The threshold is deliberately unchanged — the fix for the flake was to
+    // measure more work, not to accept a worse result.
     const worst = Math.max(...profile.slice(1).map((r) => r.scalingFactor));
     expect(worst).toBeLessThan(2.5);
   });
@@ -240,7 +247,9 @@ describe("the job queue under a flood", () => {
         // The measurement that matters: one claim against a deep queue.
         q.claim(["forgeiq.nest"], "forge", 30_000);
       },
-      [500, 1000, 2000],
+      // Raised for the same reason as work-order creation above: the ratio has
+      // to be taken over samples large enough to survive scheduler noise.
+      [4000, 8000, 16000],
       "claim against a deep queue",
     );
 
