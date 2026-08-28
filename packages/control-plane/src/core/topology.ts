@@ -64,6 +64,20 @@ export interface HiveLayoutOptions {
    * manifests happened to be ordered in a file.
    */
   startAngle?: number;
+  /**
+   * Whether the platform services join the ring.
+   *
+   * Off by default, and the default is the architectural position: tracking is
+   * a projection over what the engines publish, and notifications is a delivery
+   * policy. Neither owns a domain, and neither was made an engine.
+   *
+   * The option exists because the brand board draws tracking in the hive, and
+   * that is a reasonable thing to want — the hive is a picture of the system,
+   * and those services are part of the system. What it must not do is change
+   * the count: `registry.engines` stays eight either way, so a service can
+   * appear in the picture without being promoted in the architecture.
+   */
+  includeServices?: boolean;
 }
 
 /**
@@ -74,9 +88,10 @@ export interface HiveLayoutOptions {
  * for six is a layout that breaks on the next engine, which is the failure this
  * whole file exists to avoid.
  *
- * Only `kind: "engine"` is placed. Services and the intelligence layer have
- * their own sections; putting them in the hive would make the picture disagree
- * with the count beside it.
+ * Only `kind: "engine"` is placed unless `includeServices` says otherwise. The
+ * intelligence layer is never placed: it is not a node in the flow, it is the
+ * thing several nodes call, and drawing it as a peer would misdescribe that to
+ * everyone who learns the system from this screen.
  */
 export function computeHiveLayout(
   registry: EngineRegistry,
@@ -85,9 +100,11 @@ export function computeHiveLayout(
   const radius = options.radius ?? 1;
   const startAngle = options.startAngle ?? -Math.PI / 2;
 
-  const engines = registry.engines;
-  const coreManifest = engines.find((m) => m.hivePlacement === "core");
-  const ringManifests = engines.filter((m) => m !== coreManifest);
+  const placed = options.includeServices
+    ? [...registry.engines, ...registry.services]
+    : registry.engines;
+  const coreManifest = placed.find((m) => m.hivePlacement === "core");
+  const ringManifests = placed.filter((m) => m !== coreManifest);
 
   const core: HiveNode | undefined = coreManifest
     ? { engineId: coreManifest.id, manifest: coreManifest, x: 0, y: 0, angle: 0, isCore: true }

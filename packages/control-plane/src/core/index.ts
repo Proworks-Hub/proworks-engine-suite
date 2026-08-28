@@ -18,3 +18,6 @@ export * from "./access.js";
 export * from "./visualization.js";
 export * from "./topology.js";
 export * from "./intelligence.js";
+export * from "./brand.js";
+export * from "./motionLanguage.js";
+export * from "./systemHealth.js";

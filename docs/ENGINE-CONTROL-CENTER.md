@@ -1,4 +1,4 @@
-# Engine Control Center — architecture
+# ProWorks Hive — Engine Center · architecture
 
 Owner: Steven Kreutzer · 2026-08-27
 Package: `@proworks-hub/control-plane`
@@ -261,6 +261,47 @@ Add an `eventMapping` to the manifest — event type, one of four effects, an in
 - **Console optional** — no engine may import or depend on this package
 
 Not covered: React component rendering. The visual layer's *decisions* are pure and tested; its pixels are not, and would need jsdom and testing-library, which the suite does not carry.
+
+---
+
+## Brand board reconciliation (2026-08-27)
+
+The brand and experience storyboard is a **guide, not a specification**. Its features and identity
+were taken; its layout was not copied. Three points where it met the architecture:
+
+**The nine engine hues already matched.** What was missing was the layer above them, now in
+`core/brand.ts`: naming constants, the console's neutral ground, typography, and — deliberately —
+**two blues**. `--hive-primary` is ProWorks and the Hive; `engine-blue` is Prime. Collapsing them
+would be the easy mistake: the point of an engine having a colour is that a colour identifies an
+engine, and a blue that sometimes means "the product" identifies nothing.
+
+**"Tracking Engine" in the sidebar and in the hive.** Tracking was deliberately built as a projection
+over what the engines publish, and notifications as a delivery policy; neither owns a domain and
+neither was made an engine. So `navLabel()` **derives** the noun from `kind` and renders
+*"Tracking Service"* — the interface cannot contradict the architecture without the architecture
+changing first. And because the hive is a picture of the system, `computeHiveLayout` gained
+`includeServices`, which draws them on the ring **without changing the count**: `registry.engines`
+stays eight either way. The board's own closing rule is what settles it — *never sacrifice
+architectural truth for a cooler graphic*.
+
+**A single "100% health score".** The obvious implementation is an average, and an average is how
+seven healthy engines hide one that is on fire. `computeSystemHealth` returns the **worst** measured
+component, so the panel still reads 100% when everything is fine and cannot read 100% when anything
+is not. Two further rules fell out of it: an unmeasured dimension — security, which nothing here can
+observe — is **named as unmeasured**, never scored perfect, because "we do not check this" and "this
+is fine" look identical otherwise; and `formatScore` **rounds down**, so 99.6% never displays as
+100% and hides the gap somebody is looking for.
+
+Also added: `motionLanguage.ts`, collapsing the seven health states into the board's three visual
+vocabularies. Health answers *what is true* and needs seven; motion answers *how should this look*
+and needs three. `maintenance` maps to idle — dressing a planned outage in the failure vocabulary is
+how a team learns to ignore the failure vocabulary — and `unknown` maps to attention, because the one
+state that must never look calm is the one where the console has no idea.
+
+Still to come from the board: the logo assets themselves (hero signature, interface lockup, hive
+mark for the favicon), the six-step boot sequence, and the richer rendered engine miniatures. The
+scene contract already takes those without touching operational logic — that is what §21's seam was
+for.
 
 ---
 
