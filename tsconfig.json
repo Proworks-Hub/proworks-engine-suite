@@ -17,6 +17,8 @@
       "@proworks-hub/contracts": ["./packages/contracts/src/index.ts"],
       "@proworks-hub/senseiq": ["./packages/senseiq/src/index.ts"],
       "@proworks-hub/finance-core": ["./packages/finance-core/src/index.ts"],
+      "@proworks-hub/core-kit": ["./packages/core-kit/src/index.ts"],
+      "@proworks-hub/operations-core": ["./packages/operations-core/src/index.ts"],
       "@proworks-hub/intelligence-core": ["./packages/intelligence-core/src/index.ts"],
       "@proworks-hub/model-runtime": ["./packages/model-runtime/src/index.ts"],
       "@proworks-hub/model-evals": ["./packages/model-evals/src/index.ts"],

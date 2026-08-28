@@ -22,9 +22,6 @@
   "references": [
     {
       "path": "../contracts"
-    },
-    {
-      "path": "../core-kit"
     }
   ]
 }

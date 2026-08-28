@@ -1,14 +1,14 @@
 {
-  "name": "@proworks-hub/finance-core",
-  "version": "0.16.0",
+  "name": "@proworks-hub/operations-core",
+  "version": "0.15.0",
   "type": "module",
-  "description": "Finance Core \u2014 coordinates the financial specialists. Owns routing and normalization, never the arithmetic.",
+  "description": "Operations Core \u2014 coordinates the work specialists. Owns ordering and failure state, never the domain logic.",
   "author": "Steven Kreutzer",
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Proworks-Hub/proworks-engine-suite.git",
-    "directory": "packages/finance-core"
+    "directory": "packages/operations-core"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
@@ -23,8 +23,8 @@
   },
   "dependencies": {
     "@proworks-hub/contracts": "*",
-    "zod": "^3.23.0",
-    "@proworks-hub/core-kit": "*"
+    "@proworks-hub/core-kit": "*",
+    "zod": "^3.23.0"
   },
   "devDependencies": {
     "typescript": "^5.6.3",

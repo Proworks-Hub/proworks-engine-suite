@@ -46,6 +46,12 @@ export const HIVE_MAP: readonly HiveComponent[] = [
     responsibility: "Jobs, outbox, circuit breaking, observability ports.",
   }),
   component({
+    id: "core-kit", name: "Core Kit", tier: "platform", status: "existing",
+    packageName: "@proworks-hub/core-kit",
+    responsibility:
+      "The machinery every Core coordinator shares: registry, routing, timeouts, failure isolation, partial answers. Knows no domain.",
+  }),
+  component({
     id: "control-plane", name: "Hive Control Plane", tier: "platform", status: "existing",
     packageName: "@proworks-hub/control-plane",
     responsibility:
@@ -68,8 +74,9 @@ export const HIVE_MAP: readonly HiveComponent[] = [
   // ── Operations Core ────────────────────────────────────────────────────────
   component({
     id: "operations-core", name: "Operations Core", tier: "core", core: "operations", status: "partial",
+    packageName: "@proworks-hub/operations-core",
     responsibility: "Work: workflows, work orders, scheduling, tasks, approvals, automation.",
-    gap: "WorkOrderIQ and the tracking projection exist and are used directly. No Core coordinates them.",
+    gap: "The coordinator exists, including ordered sequences with honest partial-failure state. No host has registered WorkOrderIQ, Tracking or Order Ingestion against it, so production still calls them directly.",
   }),
   component({
     id: "workorderiq", name: "WorkOrderIQ", tier: "specialized", core: "operations", status: "existing",

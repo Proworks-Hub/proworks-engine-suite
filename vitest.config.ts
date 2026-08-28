@@ -20,6 +20,8 @@ export default defineConfig({
       "@proworks-hub/contracts": pkg("contracts", "src/index.ts"),
       "@proworks-hub/senseiq": pkg("senseiq", "src/index.ts"),
       "@proworks-hub/finance-core": pkg("finance-core", "src/index.ts"),
+      "@proworks-hub/core-kit": pkg("core-kit", "src/index.ts"),
+      "@proworks-hub/operations-core": pkg("operations-core", "src/index.ts"),
       "@proworks-hub/intelligence-core": pkg("intelligence-core", "src/index.ts"),
       "@proworks-hub/model-runtime": pkg("model-runtime", "src/index.ts"),
       "@proworks-hub/model-evals": pkg("model-evals", "src/index.ts"),
