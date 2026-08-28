@@ -1,6 +1,6 @@
 {
   "name": "@proworks-hub/finance-core",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "type": "module",
   "description": "Finance Core \u2014 coordinates the financial specialists. Owns routing and normalization, never the arithmetic.",
   "author": "Steven Kreutzer",

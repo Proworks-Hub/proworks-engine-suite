@@ -33,6 +33,14 @@ import {
  * second name has coupled itself to an implementation through a string.
  */
 export const financeCapabilitySchema = z.enum([
+  // The canonical question, and the one a UI actually asks: "what should I
+  // charge for this work order, and why?" CostIQ says `calculateJobPricing` is
+  // the function downstream consumers should call, and it composes the two
+  // primitives below while adding per-unit figures and the attribution an
+  // audit needs. Without this capability the Core could only answer the
+  // lower-level questions, so any host wanting a real price had to go around
+  // it — which is how a second door opens.
+  "price_job",
   "calculate_cost",
   "estimate_margin",
   "compare_cost_scenarios",
