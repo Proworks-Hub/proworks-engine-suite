@@ -72,8 +72,9 @@ them.*
 The directive assumes a ProWorks server exists to host Hive authorization. It does, but not where it
 looks:
 
-- `prowork-hub/hub-server` is an **Express 4 + SQLite local hub node** — pairing, stations, tablets,
-  PC clients, sync. It listens on **4100**.
+- `prowork-hub/hub-server` is an **Express 4 + Postgres** backend — pairing, stations, tablets, PC
+  clients, sync. It listens on **4100**. SQLite is present but **optional**: the whole SQLite path is
+  gated behind a `SQLITE_PATH` environment variable and serves the on-prem node case.
 - `vite.config.ts` proxies `/api` → `http://localhost:4100`, so **hub-server is the API for the web
   app**.
 - `/api/team/my-permissions` — which the whole client RBAC reads from — **is not implemented
@@ -83,8 +84,11 @@ That last point matters for PART 2: Hive authorization would be among the first 
 endpoints this server has. It also means the existing client RBAC is currently unbacked, which is
 worth knowing before anything is built on top of it.
 
-`hub-server` has a migration runner (`hub-server/src/migrations/`, ten SQL files) and declares **no**
-suite dependencies today. It is the right home for the Hive grant store.
+`hub-server` has a migration runner (`hub-server/src/migrations/`, ten SQL files against Postgres)
+and declares **no** suite dependencies today. It is the right home for the Hive grant store — and
+specifically the **Postgres** side of it, not the SQLite side. A grant store that only exists when
+`SQLITE_PATH` happens to be set is an authorization store whose presence depends on a deployment
+flag, and whichever way it then failed — open or closed — would be wrong.
 
 ---
 
@@ -124,7 +128,7 @@ on a healthy-but-quiet engine learns to ignore the state that matters most.
 1. **Publish `@proworks-hub/control-plane`** and bump the Hub. Unblocks everything below.
 2. Hive grant store in `hub-server` — migration, repository, resolver, audit.
 3. Hive route boundary + shell, outside `/platform` and outside the nav registry.
-4. SSE transport (PART 7) — the Hub already runs Express; SSE fits it and survives proxies.
+4. SSE transport (PART 7) — the Hub already runs Express 4; SSE fits it and survives proxies.
 5. Grid and Flow views over the existing topology and adapter.
 6. AI foundation packages (PART 13) — independent of the blocker, and a large piece of work in its
    own right.
