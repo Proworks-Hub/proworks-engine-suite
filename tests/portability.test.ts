@@ -24,7 +24,7 @@ const ROOT = join(fileURLToPath(new URL(".", import.meta.url)), "..");
 const PACKAGES = join(ROOT, "packages");
 
 /** Published entry points the engines may import from one another. */
-const SUITE_PACKAGES = /^@proworks-hub\/(contracts|forgeiq|costiq|prime|receiptiq|platform-events|platform-runtime|workorderiq|tracking|inventoryiq|notifications|order-ingestion|visioniq)(\/|$)/;
+const SUITE_PACKAGES = /^@proworks-hub\/(contracts|forgeiq|costiq|prime|receiptiq|platform-events|platform-runtime|workorderiq|tracking|inventoryiq|notifications|order-ingestion|visioniq|control-plane)(\/|$)/;
 
 /** Host applications. Nothing here may import from them, ever. */
 const HOST_IMPORTS = [
@@ -227,11 +227,42 @@ describe("engine suite portability", () => {
 
     // And the same at the manifest level, so a dependency cannot be declared
     // ahead of the import that would use it.
-    for (const name of ["forgeiq", "costiq", "prime", "receiptiq", "workorderiq", "tracking", "inventoryiq", "notifications", "order-ingestion", "visioniq", "platform-events", "platform-runtime"]) {
+    for (const name of ["forgeiq", "costiq", "prime", "receiptiq", "workorderiq", "tracking", "inventoryiq", "notifications", "order-ingestion", "visioniq", "platform-events", "platform-runtime", "control-plane"]) {
       const suiteDeps = Object.keys(pkgJson(name).dependencies ?? {}).filter((d) =>
         d.startsWith("@proworks-hub/"),
       );
       expect(suiteDeps).toEqual(["@proworks-hub/contracts"]);
+    }
+  });
+
+  it("keeps the control plane optional: no engine may import it", () => {
+    // §17, made structural. The engine control centre observes the engines; if
+    // it were offline, or deleted, every engine must keep working exactly as it
+    // does now.
+    //
+    // The general cross-package guard above already forbids this, but it
+    // forbids it symmetrically — and the direction is the whole point. A
+    // console importing an engine would be a bug; an ENGINE importing the
+    // console would be an outage, because the observability layer would have
+    // become load-bearing for production work.
+    const offenders: string[] = [];
+    for (const file of sourceFiles) {
+      if (/(^|\/)(__tests__|tests)\//.test(file.relative)) continue;
+      const pkg = file.relative.split("/")[0]!;
+      if (pkg === "control-plane") continue;
+      for (const spec of importSpecifiers(file.text)) {
+        if (spec.startsWith("@proworks-hub/control-plane")) offenders.push(`${file.relative} → ${spec}`);
+      }
+    }
+    expect(offenders).toEqual([]);
+
+    // And nothing may declare it as a dependency either, so it cannot be
+    // brought in ahead of the import that would use it.
+    for (const name of readdirSync(PACKAGES)) {
+      if (name === "control-plane") continue;
+      if (!statSync(join(PACKAGES, name)).isDirectory()) continue;
+      const deps = { ...pkgJson(name).dependencies, ...pkgJson(name).peerDependencies };
+      expect(Object.keys(deps), name).not.toContain("@proworks-hub/control-plane");
     }
   });
 
@@ -473,7 +504,7 @@ describe("engine suite portability", () => {
   it("declares only suite packages and zod as runtime dependencies", () => {
     // A host framework appearing here would make the engine un-liftable; the
     // host-facing layers declare theirs as optional peers instead.
-    for (const name of ["contracts", "forgeiq", "costiq", "prime", "receiptiq", "workorderiq", "platform-events", "platform-runtime", "tracking", "inventoryiq", "notifications", "order-ingestion", "visioniq"]) {
+    for (const name of ["contracts", "forgeiq", "costiq", "prime", "receiptiq", "workorderiq", "platform-events", "platform-runtime", "tracking", "inventoryiq", "notifications", "order-ingestion", "visioniq", "control-plane"]) {
       for (const dep of Object.keys(pkgJson(name).dependencies ?? {})) {
         expect(dep === "zod" || SUITE_PACKAGES.test(dep)).toBe(true);
       }
