@@ -1,6 +1,6 @@
 {
   "name": "@proworks-hub/model-runtime",
-  "version": "0.13.2",
+  "version": "0.14.0",
   "type": "module",
   "description": "Provider adapters, model registry, routing, retry, fallback, structured-output validation and cost accounting.",
   "author": "Steven Kreutzer",

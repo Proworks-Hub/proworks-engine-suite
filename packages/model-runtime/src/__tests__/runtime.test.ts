@@ -7,6 +7,7 @@ import { IntelligenceError, type IntelligenceRequest } from "@proworks-hub/intel
 
 import { createModelRegistry, estimateCost, priceAgeDays } from "../registry.js";
 import { createModelRuntime, type ProviderAdapter, type ProviderResult } from "../runtime.js";
+import { createStubAdapter, createUnconfiguredAdapter, describeAdapters } from "../adapters.js";
 
 const PRIMARY = {
   provider: "alpha",
@@ -290,5 +291,54 @@ describe("the registry as data", () => {
 
   it("refuses a descriptor with fields nobody declared", () => {
     expect(() => createModelRegistry([{ ...PRIMARY, apiKey: "sk-secret" } as never])).toThrow();
+  });
+});
+
+describe("adapters that can be verified without a key", () => {
+  it("runs the whole runtime against a stub", async () => {
+    const runtime = createModelRuntime({
+      registry: createModelRegistry([{ ...PRIMARY, provider: "stub" }]),
+      adapters: [createStubAdapter({ respond: () => ({ total: 42 }) })],
+    });
+    const response = await runtime.run(request());
+    expect(response.output).toEqual({ total: 42 });
+  });
+
+  it("marks a stubbed answer so it cannot be mistaken for a real one", () => {
+    // An answer nobody can tell apart from a real one is the whole danger of
+    // having a stub at all.
+    const adapter = createStubAdapter({ respond: () => "x" });
+    return adapter
+      .call({ model: PRIMARY as never, request: request(), signal: new AbortController().signal })
+      .then((result) => expect(result.modelVersion).toBe("stub"));
+  });
+
+  it("refuses with a stated reason when credentials are absent", async () => {
+    // Not simply missing from the registry: an absent provider produces
+    // `no_route`, which reads as a routing bug rather than a missing key.
+    const runtime = createModelRuntime({
+      registry: createModelRegistry([{ ...PRIMARY, provider: "openai" }]),
+      adapters: [createUnconfiguredAdapter("openai")],
+      attemptsPerModel: 1,
+    });
+    await expect(runtime.run(request())).rejects.toThrow(/no credentials configured/);
+  });
+
+  it("distinguishes configured, stubbed and unconfigured", () => {
+    const statuses = describeAdapters([
+      createStubAdapter({ respond: () => "x" }),
+      createUnconfiguredAdapter("anthropic"),
+    ]);
+    expect(statuses.find((s) => s.provider === "stub")?.stubbed).toBe(true);
+    expect(statuses.find((s) => s.provider === "anthropic")?.configured).toBe(false);
+  });
+
+  it("honours an abort while a stub is waiting", async () => {
+    const runtime = createModelRuntime({
+      registry: createModelRegistry([{ ...PRIMARY, provider: "stub" }]),
+      adapters: [createStubAdapter({ respond: () => "x", latencyMs: 5_000 })],
+      attemptsPerModel: 1,
+    });
+    await expect(runtime.run(request({ timeoutMs: 20 }))).rejects.toMatchObject({ failure: "timeout" });
   });
 });

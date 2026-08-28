@@ -1,6 +1,6 @@
 {
   "name": "@proworks-hub/model-evals",
-  "version": "0.13.2",
+  "version": "0.14.0",
   "type": "module",
   "description": "Measurable regression testing for models and instructions, so a change is compared rather than argued about.",
   "author": "Steven Kreutzer",
