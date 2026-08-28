@@ -8,4 +8,6 @@ export * from "./observation.js";
 export * from "./command.js";
 export * from "./ports.js";
 export * from "./discovery.js";
+export * from "./identification.js";
+export * from "./routine.js";
 export * from "./simulated.js";
