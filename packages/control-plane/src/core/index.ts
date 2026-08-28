@@ -25,3 +25,5 @@ export * from "./heartbeat.js";
 export * from "./operationalState.js";
 export * from "./alerts.js";
 export * from "./tracing.js";
+export * from "./release.js";
+export * from "./recovery.js";
