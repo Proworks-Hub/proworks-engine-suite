@@ -124,8 +124,9 @@ export const HIVE_MAP: readonly HiveComponent[] = [
   // ── Resources Core ─────────────────────────────────────────────────────────
   component({
     id: "resources-core", name: "Resources Core", tier: "core", core: "resources", status: "partial",
+    packageName: "@proworks-hub/resources-core",
     responsibility: "What an organization has: people, equipment, inventory, capacity, locations.",
-    gap: "InventoryIQ exists. Equipment and capacity live inside SenseIQ observations and host tables, uncoordinated.",
+    gap: "The coordinator exists and classifies every answer as a reading or a commitment, because stock goes stale and cost does not. No host has registered InventoryIQ against it yet, so production still calls the engine directly. locate_asset and forecast_capacity are refused by name: AssetIQ does not exist, and equipment and capacity live in SenseIQ observations and host tables that nothing coordinates.",
   }),
   component({
     id: "inventoryiq", name: "InventoryIQ", tier: "specialized", core: "resources", status: "existing",
