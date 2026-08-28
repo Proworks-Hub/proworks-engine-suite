@@ -266,3 +266,25 @@ describe("what an engine is doing", () => {
     expect(activitiesFor(byId["prime"]!)).toContain("coordinating");
   });
 });
+
+describe("events that arrive out of order", () => {
+  it("takes the newest event, not the last one delivered", () => {
+    // An at-least-once bus reorders, and a host batching a minute of reports
+    // may send newest-first. Taking the last inserted made a busy engine read
+    // as silent for as long as its batch spanned — an invented outage.
+    const c = collector();
+    c.observe(event("forgeiq", "manufacturing.plan.generated", 1_000));
+    c.observe(event("forgeiq", "manufacturing.plan.generated", 120_000));
+    c.observe(event("forgeiq", "manufacturing.plan.generated", 60_000));
+
+    expect(c.get("forgeiq")!.observedAt).toBe(at(1_000));
+  });
+
+  it("stays operational when a newest-first batch arrives", () => {
+    const c = collector();
+    for (let i = 0; i < 60; i += 1) {
+      c.observe(event("forgeiq", "manufacturing.plan.generated", i * 2_000));
+    }
+    expect(deriveEngineHealth("forgeiq", c.get("forgeiq"), { now: NOW }).state).toBe("operational");
+  });
+});

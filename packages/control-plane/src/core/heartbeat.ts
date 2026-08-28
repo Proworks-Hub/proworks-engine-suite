@@ -152,7 +152,13 @@ export function createHeartbeatCollector(
 
       if (!window || window.timestamps.length === 0) return undefined;
 
-      const lastSeen = window.timestamps[window.timestamps.length - 1]!;
+      // The MAXIMUM, not the last one appended. Events do not arrive in
+      // chronological order — an at-least-once bus reorders them, and a host
+      // batching a minute of reports may send newest-first. Taking the last
+      // inserted made a busy engine read as silent for as long as its own
+      // batch spanned, which is the worst possible direction for this error:
+      // it invents an outage.
+      const lastSeen = Math.max(...window.timestamps);
       return {
         engineId,
         // Not "unknown" dressed as a version string — the versions panel shows
