@@ -76,7 +76,7 @@ export const HIVE_MAP: readonly HiveComponent[] = [
     id: "operations-core", name: "Operations Core", tier: "core", core: "operations", status: "partial",
     packageName: "@proworks-hub/operations-core",
     responsibility: "Work: workflows, work orders, scheduling, tasks, approvals, automation.",
-    gap: "The coordinator exists, including ordered sequences with honest partial-failure state. No host has registered WorkOrderIQ, Tracking or Order Ingestion against it, so production still calls them directly.",
+    gap: "ProWorks registers Order Ingestion and WorkOrderIQ against it and serves /api/operations, but the direct call sites into both engines still exist beside it, so the Core is an additional door rather than the only one. Tracking is not registered at all: it needs production and carrier sources this host has not wired, so locate_order is refused rather than answered emptily. Nothing claims schedule_work.",
   }),
   component({
     id: "workorderiq", name: "WorkOrderIQ", tier: "specialized", core: "operations", status: "existing",
@@ -104,7 +104,7 @@ export const HIVE_MAP: readonly HiveComponent[] = [
     id: "finance-core", name: "Finance Core", tier: "core", core: "finance", status: "partial",
     packageName: "@proworks-hub/finance-core",
     responsibility: "Monetary reasoning: cost, budget, price, quote, invoice, profitability.",
-    gap: "The coordinator exists — registry, routing, timeouts, fallback, partial answers, health. No host has registered CostIQ or ReceiptIQ against it yet, so production still calls them directly.",
+    gap: "ProWorks registers CostIQ and ReceiptIQ against it and serves /api/finance, but the direct call sites into both engines still exist beside it, so the Core is an additional door rather than the only one. No production flow has been moved onto it yet.",
   }),
   component({
     id: "costiq", name: "CostIQ", tier: "specialized", core: "finance", status: "existing",
