@@ -27,3 +27,5 @@ export * from "./alerts.js";
 export * from "./tracing.js";
 export * from "./release.js";
 export * from "./recovery.js";
+export * from "./diagnostics.js";
+export * from "./incident.js";
