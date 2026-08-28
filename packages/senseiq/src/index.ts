@@ -10,4 +10,6 @@ export * from "./ports.js";
 export * from "./discovery.js";
 export * from "./identification.js";
 export * from "./routine.js";
+export * from "./ingestion.js";
+export * from "./resourceUse.js";
 export * from "./simulated.js";
