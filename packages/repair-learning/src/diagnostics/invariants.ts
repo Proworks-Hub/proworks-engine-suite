@@ -398,3 +398,13 @@ export const BASELINE_DETECTORS: readonly InvariantDetector[] = Object.freeze([
   authorityDetector,
   primeOwnershipDetector,
 ]);
+
+/**
+ * Every detector this package ships: baseline plus extended.
+ *
+ * 21 of the catalog's 26 invariants. The remaining five are listed with their
+ * reasons in `UNDETECTABLE_INVARIANTS` — a catalog where 21 are checked and 5
+ * are openly unchecked is honest; one where all 26 report HELD because nobody
+ * looked is not.
+ */
+export { EXTENDED_DETECTORS, UNDETECTABLE_INVARIANTS } from "./detectors.js";

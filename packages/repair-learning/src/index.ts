@@ -13,6 +13,7 @@ export * from "./evidence/signature.js";
 
 // Phase B — Diagnose
 export * from "./diagnostics/invariants.js";
+export * from "./diagnostics/detectors.js";
 export * from "./diagnostics/causal.js";
 export * from "./diagnostics/diagnosis.js";
 export * from "./diagnostics/diagnosticBot.js";
