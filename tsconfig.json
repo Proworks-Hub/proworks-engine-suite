@@ -25,6 +25,7 @@
       "@proworks-hub/communication-core": ["./packages/communication-core/src/index.ts"],
       "@proworks-hub/sentineliq": ["./packages/sentineliq/src/index.ts"],
       "@proworks-hub/repair-learning": ["./packages/repair-learning/src/index.ts"],
+      "@proworks-hub/foundry-evolutioniq": ["./packages/foundry-evolutioniq/src/index.ts"],
       "@proworks-hub/auditiq": ["./packages/auditiq/src/index.ts"],
       "@proworks-hub/intelligence-core": ["./packages/intelligence-core/src/index.ts"],
       "@proworks-hub/model-runtime": ["./packages/model-runtime/src/index.ts"],

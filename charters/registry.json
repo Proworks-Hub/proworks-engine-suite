@@ -10,7 +10,7 @@
     "constitutionVersion": "1.0",
     "integrityHash": "sha256:f59032ecd1e2537f08f2c9756c03f77f6a01523424e8da368b46c9ba6f50969f",
     "sourceDocument": "03_Foundry_EvolutionIQ_Charter.docx",
-    "implementationLifecycle": "CHARTERED"
+    "implementationLifecycle": "EXPERIMENTAL"
   },
   {
     "charterId": "charter.overwatch.governance-engine",

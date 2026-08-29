@@ -164,6 +164,13 @@ export const HIVE_MAP: readonly HiveComponent[] = [
     gap: "All six phases exist as a loop and all five golden tests pass, including the mandatory one. What is NOT here: no RepairBot authors a candidate (the model exists, the author does not); no DriftBot, no scenario generation from real incidents, no ARIA integration, no AuditIQ or EventIQ wiring. Only five of the catalog's 26 invariants have detectors, so most assessments return NOT_ASSESSED — visible, and deliberately not HELD. Most corpus fault classes are constitutional and have no mechanical injection form, so those scenarios run INCONCLUSIVE until a host can produce the fault. Abstraction, adequacy and precondition judgements are all caller-supplied: this package refuses bad ones rather than making good ones. Production repair authority is not granted anywhere and V1 defaults to SIMULATION. The harness drives no engines — a host supplies the executor and the condition evaluators, so an unevaluated corpus condition counts as unheld rather than passed. Most corpus fault classes are constitutional (SOURCE_OF_TRUTH_THEFT) and have no mechanical injection form, so those scenarios run INCONCLUSIVE until a host can produce the fault.",
   }),
 
+  component({
+    id: "foundry-evolutioniq", name: "Foundry EvolutionIQ", tier: "platform", status: "partial",
+    packageName: "@proworks-hub/foundry-evolutioniq",
+    responsibility: "CONSTITUTIONAL_EVOLUTION. Owns the runtime that repair agents live inside: Mission Control, Agent Runtime with a live termination supervisor, Sandbox (which now owns workspaces), the Validation Orchestrator, and Evolution Control with the promotion wall. Holds NO production deployment authority.",
+    gap: "V1 runs the loop end to end in SIMULATION and VALIDATION — diagnose, create mission, spawn agent, author candidate, mutate a sandbox, test, validate, promote to a sandbox — and refuses STAGING and PRODUCTION with no override. What is absent: the supervisor must be driven by a host timer (nothing schedules `supervise()`); the TestBot and ContractBot are interfaces a host binds, so replay and regression evidence is supplied rather than produced; there is no cross-mission scheduler, no agent-to-agent coordination, and no EventIQ integration because EventIQ does not exist. Repair Learning remains a separate package that Foundry consumes rather than contains.",
+  }),
+
   // ── Resources Core ─────────────────────────────────────────────────────────
   component({
     id: "resources-core", name: "Resources Core", tier: "core", core: "resources", status: "partial",

@@ -1,0 +1,42 @@
+{
+  "name": "@proworks-hub/foundry-evolutioniq",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Foundry EvolutionIQ \u2014 constitutional architecture, engineering, repair and validation. Owns the runtime that repair agents live inside; holds no production deployment authority.",
+  "author": "Steven Kreutzer",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Proworks-Hub/proworks-engine-suite.git",
+    "directory": "packages/foundry-evolutioniq"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@proworks-hub/contracts": "*",
+    "@proworks-hub/auditiq": "0.1.0",
+    "@proworks-hub/repair-learning": "0.1.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "@types/node": "^22.10.2"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "prepare": "tsc -b"
+  }
+}
