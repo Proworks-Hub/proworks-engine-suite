@@ -22,6 +22,7 @@
       "@proworks-hub/resources-core": ["./packages/resources-core/src/index.ts"],
       "@proworks-hub/governance-engine": ["./packages/governance-engine/src/index.ts"],
       "@proworks-hub/foundation-core": ["./packages/foundation-core/src/index.ts"],
+      "@proworks-hub/auditiq": ["./packages/auditiq/src/index.ts"],
       "@proworks-hub/intelligence-core": ["./packages/intelligence-core/src/index.ts"],
       "@proworks-hub/model-runtime": ["./packages/model-runtime/src/index.ts"],
       "@proworks-hub/model-evals": ["./packages/model-evals/src/index.ts"],

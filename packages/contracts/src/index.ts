@@ -82,4 +82,5 @@ export * from "./governance.js";
 export * from "./identifiers.js";
 export * from "./runtimeManifest.js";
 export * from "./engineRegistry.js";
+export * from "./auditRecord.js";
 export * from "./hiveMap.js";

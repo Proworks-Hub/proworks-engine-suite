@@ -129,6 +129,14 @@ export const HIVE_MAP: readonly HiveComponent[] = [
     responsibility: "Budgets, allocation, variance and forecasting.",
   }),
 
+  // ── Shared Platform engines ────────────────────────────────────────────────
+  component({
+    id: "auditiq", name: "AuditIQ", tier: "platform", status: "partial",
+    packageName: "@proworks-hub/auditiq",
+    responsibility: "SHARED_PLATFORM. Tamper-evident evidence of consequential activity. Owns evidence and its chain; owns no adjudication.",
+    gap: "Baseline: append-only in-memory store with a SHA-256 hash chain, query, and verification. No durable storage, no retention or lawful-erasure path, no export-under-authority, no independent replication. Tamper-EVIDENT only — it cannot prevent a change to an underlying store, only make one visible.",
+  }),
+
   // ── Constitutional plane ───────────────────────────────────────────────────
   // These have NO capability tier (ADR-003, approved §23.3). The map is
   // tier-based, so `platform` is recorded as the least-wrong placeholder and the

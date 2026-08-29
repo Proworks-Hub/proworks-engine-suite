@@ -25,6 +25,7 @@ export default defineConfig({
       "@proworks-hub/resources-core": pkg("resources-core", "src/index.ts"),
       "@proworks-hub/governance-engine": pkg("governance-engine", "src/index.ts"),
       "@proworks-hub/foundation-core": pkg("foundation-core", "src/index.ts"),
+      "@proworks-hub/auditiq": pkg("auditiq", "src/index.ts"),
       "@proworks-hub/intelligence-core": pkg("intelligence-core", "src/index.ts"),
       "@proworks-hub/model-runtime": pkg("model-runtime", "src/index.ts"),
       "@proworks-hub/model-evals": pkg("model-evals", "src/index.ts"),

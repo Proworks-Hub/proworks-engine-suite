@@ -348,7 +348,7 @@
   "constitutionVersion": "1.0",
   "integrityHash": "sha256:1e626cc05adb0351908e6be3371b70762c54815b1a8a8820854aed2d4dac2ac3",
   "sourceDocument": "09_AuditIQ_Charter.docx",
-  "implementationLifecycle": "CHARTERED"
+  "implementationLifecycle": "EXPERIMENTAL"
  },
  {
   "charterId": "charter.platform.automationiq",
