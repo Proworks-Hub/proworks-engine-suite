@@ -72,6 +72,20 @@ export const decisionContextSchema = z.object({
   inventory: z.array(inventorySignalSchema).optional(),
   /** ISO 8601 — when these signals were true. */
   observedAt: z.string().optional(),
+  /**
+   * The unit of work these signals belong to.
+   *
+   * `decisionResultSchema` has carried an optional `trace` since it was
+   * written, described as "what makes a wrong answer traceable back through
+   * the engines that produced it". The context had no matching field, so there
+   * was nothing for a decision engine to propagate FROM — the result field was
+   * unwritable rather than merely unwritten, and E2E-05's correlation
+   * assertion had been quietly comparing a value to itself.
+   *
+   * Optional, so every existing caller is unaffected. Supplied, it is copied
+   * onto the result unchanged.
+   */
+  trace: traceContextSchema.optional(),
 });
 
 export const decisionReasonSchema = z.object({

@@ -11,6 +11,9 @@ import type {
 } from "@proworks-hub/contracts";
 import { WorkflowConflictError, isTransient, newCorrelationId } from "@proworks-hub/contracts";
 
+import { createPrimeNexus, type CandidateStep, type PrimeNexus } from "../nexus/nexus.js";
+import { primeExecutionContextSchema, type PrimeExecutionContext } from "../context.js";
+
 // ─────────────────────────────────────────────────────────────────────────────
 // PRIME's workflow runner.
 //
@@ -40,6 +43,21 @@ export interface WorkflowStepContext {
 export interface WorkflowStep {
   readonly stepId: string;
   /**
+   * What Nexus needs to decide whether this step may run.
+   *
+   * All optional, and absent means "no constraint" rather than "unknown" —
+   * which is the right default here and NOT the right default inside Nexus.
+   * Nexus distinguishes `false` from `null` on a validation because there the
+   * question has been asked; a step that never declares a validation has not
+   * asked, and gating on a question nobody posed would stop every existing
+   * workflow.
+   */
+  readonly dependsOn?: CandidateStep["dependsOn"];
+  /** Maps this step to a named operation, checked against the synchronous-only eight. */
+  readonly operation?: string;
+  readonly asynchronous?: boolean;
+  readonly requiresAuthorization?: boolean;
+  /**
    * Does the work. Whatever it returns is merged into the workflow context and
    * persisted, so a resumed run can skip it rather than repeat it.
    */
@@ -60,6 +78,12 @@ export interface WorkflowDefinition {
 }
 
 export interface WorkflowRunnerOptions {
+  /**
+   * The command chamber. Defaulted rather than required, so every existing
+   * caller keeps working — but the runner no longer chooses steps itself
+   * either way. There is one selector now, and this is it.
+   */
+  nexus?: PrimeNexus;
   store: WorkflowStateStore;
   /** Identifies this process, so a lease says who holds it. */
   instanceId: string;
@@ -67,6 +91,17 @@ export interface WorkflowRunnerOptions {
   leaseMs?: number;
   now?: () => Date;
   generateId?: () => string;
+  /**
+   * A pass that ended without completing, because Nexus refused, blocked or
+   * is waiting. Distinct from `onStepFailed`: nothing went wrong, the work is
+   * simply not permitted to proceed yet.
+   */
+  onStepBlocked?: (info: {
+    workflowId: string;
+    outcome: string;
+    reason: string;
+    evidence: readonly string[];
+  }) => void;
   onStepFailed?: (info: { workflowId: string; stepId: string; error: Error; willCompensate: boolean }) => void;
 }
 
@@ -99,6 +134,7 @@ export interface WorkflowRunner {
 
 export function createWorkflowRunner(options: WorkflowRunnerOptions): WorkflowRunner {
   const { store, instanceId } = options;
+  const nexus = options.nexus ?? createPrimeNexus();
   const leaseMs = options.leaseMs ?? DEFAULT_LEASE_MS;
   const now = options.now ?? (() => new Date());
   const generateId =
@@ -112,6 +148,33 @@ export function createWorkflowRunner(options: WorkflowRunnerOptions): WorkflowRu
 
   const stepRecord = (instance: WorkflowInstance, stepId: string): WorkflowStepRecord | undefined =>
     instance.steps.find((s) => s.stepId === stepId);
+
+  /**
+   * The execution context Nexus decides against, derived from the instance.
+   *
+   * Derived, never accepted from a caller — the same rule Pulse applies to
+   * scope keys. A workflow that could be handed a context claiming a different
+   * tenant would be a workflow whose authorization is whatever the last caller
+   * said it was.
+   *
+   * `authorizationRef` is read from the workflow's own accumulated context,
+   * which is where a step that obtained an authorization puts it. Absent is a
+   * real answer: Nexus blocks a step that requires one.
+   */
+  const executionContextFor = (
+    instance: WorkflowInstance,
+    definition: WorkflowDefinition,
+  ): PrimeExecutionContext => {
+    const authorizationRef = instance.context["authorizationRef"];
+    return primeExecutionContextSchema.parse({
+      executionId: instance.workflowId,
+      workflowType: definition.workflowType,
+      ...(instance.tenant ? { tenant: instance.tenant } : { systemScoped: true }),
+      actor: { kind: "system", id: instanceId },
+      ...(typeof authorizationRef === "string" ? { authorizationRef } : {}),
+      trace: instance.trace,
+    });
+  };
 
   async function persist(instance: WorkflowInstance, expectedVersion: number): Promise<WorkflowInstance> {
     const next = { ...instance, version: expectedVersion + 1, updatedAt: now().toISOString() };
@@ -132,9 +195,64 @@ export function createWorkflowRunner(options: WorkflowRunnerOptions): WorkflowRu
   ): Promise<WorkflowInstance> {
     let current = instance;
 
-    for (const step of definition.steps) {
+    // ── Nexus chooses. The runner executes. ──────────────────────────────
+    //
+    // This loop used to iterate `definition.steps` and skip completed ones,
+    // which meant the runner was its own sequencer and Prime Nexus was a
+    // second one that nothing called. Two sequencers with one set of rules
+    // between them is how the rules stop applying.
+    //
+    // Now the runner asks which step is next and does what it is told. A
+    // refusal, a block, or a wait ends the pass — the runner does not look for
+    // something else it could run instead, because choosing a different step
+    // than the authorized one is choosing a different workflow.
+    for (;;) {
+      const completedStepIds = current.steps
+        .filter((r) => r.status === "completed")
+        .map((r) => r.stepId);
+
+      const candidates: CandidateStep[] = definition.steps.map((step) => ({
+        stepId: step.stepId,
+        ...(step.dependsOn ? { dependsOn: step.dependsOn } : {}),
+        ...(step.operation !== undefined ? { operation: step.operation } : {}),
+        ...(step.asynchronous !== undefined ? { asynchronous: step.asynchronous } : {}),
+        ...(step.requiresAuthorization !== undefined
+          ? { requiresAuthorization: step.requiresAuthorization }
+          : {}),
+      }));
+
+      const decision = nexus.next({
+        context: executionContextFor(current, definition),
+        steps: candidates,
+        completedStepIds,
+      });
+
+      if (decision.outcome === "completed") break;
+
+      if (decision.outcome !== "proceed") {
+        // Blocked, waiting or refused. The workflow stays where it is, with
+        // the reason recorded, rather than being marked failed — none of these
+        // is a failure, and compensating a workflow that is merely waiting
+        // would undo work that is still wanted.
+        options.onStepBlocked?.({
+          workflowId: current.workflowId,
+          outcome: decision.outcome,
+          reason: decision.reason,
+          evidence: decision.evidence,
+        });
+        return persist(
+          { ...current, context: { ...current.context, nexusOutcome: decision.outcome, nexusReason: decision.reason } },
+          current.version,
+        );
+      }
+
+      const step = definition.steps.find((s) => s.stepId === decision.stepId);
+      if (!step) {
+        throw new Error(
+          `Nexus selected step ${decision.stepId}, which is not in workflow ${definition.workflowType}.`,
+        );
+      }
       const record = stepRecord(current, step.stepId);
-      if (record?.status === "completed") continue;
 
       const ctx: WorkflowStepContext = {
         context: current.context,

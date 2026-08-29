@@ -173,6 +173,20 @@ export function createPrimeEngine(config: PrimeConfig = {}): PrimeEngine {
         priority: context.commercial?.rush ? "expedite" : "normal",
         reasons,
         actions,
+        // ── The correlation, carried forward ────────────────────────────
+        //
+        // E2E-05 asserts the id survives every hop, and this hop used to drop
+        // it: `decisionResultSchema` declared `trace` and nothing populated it.
+        // The reason nothing did is that `decisionContextSchema` had no trace
+        // field either, so there was no value to carry — the field was
+        // unwritable, not merely unwritten.
+        //
+        // Spread conditionally rather than set to undefined, because the schema
+        // is `.optional()` and an explicit `trace: undefined` serializes into
+        // JSON differently from an absent key. A decision that says
+        // `"trace": null` looks like a trace that was considered and found
+        // empty, which is a different claim from not having one.
+        ...(context.trace ? { trace: context.trace } : {}),
       };
     },
   };

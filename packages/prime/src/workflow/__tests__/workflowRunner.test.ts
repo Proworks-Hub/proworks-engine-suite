@@ -302,3 +302,194 @@ describe("two instances at once", () => {
     expect((await store.load("wf_1"))!.context).toMatchObject({ v: 1 });
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Prime Phase 2 — the runner asks Nexus, and obeys the answer.
+//
+// The eleven tests above pass unchanged, which is the point: a workflow that
+// declares no constraints behaves exactly as it did. These prove the join is
+// real rather than decorative — that Nexus's refusals actually stop work.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("the runner runs on Nexus decisions", () => {
+  const store = () => createInMemoryWorkflowStateStore();
+
+  it("blocks a step that requires an authorization the workflow does not carry", async () => {
+    const ran = vi.fn();
+    const blocked = vi.fn();
+    const runner = createWorkflowRunner({
+      store: store(),
+      instanceId: "worker-a",
+      onStepBlocked: blocked,
+    });
+
+    const result = await runner.start({
+      definition: {
+        workflowType: "gated",
+        steps: [{ stepId: "promote", requiresAuthorization: true, run: ran }],
+      },
+      tenant,
+      trace,
+    });
+
+    // The step never ran, and the workflow is not marked failed — it is
+    // waiting for an authorization nobody has supplied.
+    expect(ran).not.toHaveBeenCalled();
+    expect(result.status).not.toBe("completed");
+    expect(blocked).toHaveBeenCalledOnce();
+    expect(blocked.mock.calls[0]![0].outcome).toBe("blocked");
+    expect(blocked.mock.calls[0]![0].reason).toContain("does not create it");
+  });
+
+  it("runs that same step once the workflow carries the authorization", async () => {
+    // The control. Without it, "blocked" is equally consistent with a runner
+    // that stopped running anything at all.
+    const ran = vi.fn();
+    const runner = createWorkflowRunner({ store: store(), instanceId: "worker-a" });
+
+    const result = await runner.start({
+      definition: {
+        workflowType: "gated",
+        steps: [{ stepId: "promote", requiresAuthorization: true, run: ran }],
+      },
+      tenant,
+      trace,
+      context: { authorizationRef: "gd-1" },
+    });
+
+    expect(ran).toHaveBeenCalledOnce();
+    expect(result.status).toBe("completed");
+  });
+
+  it("refuses a synchronous-only operation declared as an asynchronous step", async () => {
+    // The constitutional rule, now enforced on the path that actually runs
+    // work rather than only in a chamber nothing called.
+    const ran = vi.fn();
+    const blocked = vi.fn();
+    const runner = createWorkflowRunner({
+      store: store(),
+      instanceId: "worker-a",
+      onStepBlocked: blocked,
+    });
+
+    const result = await runner.start({
+      definition: {
+        workflowType: "sneaky",
+        steps: [
+          { stepId: "ask-governance", operation: "authorize", asynchronous: true, run: ran },
+        ],
+      },
+      tenant,
+      trace,
+    });
+
+    expect(ran).not.toHaveBeenCalled();
+    expect(result.status).not.toBe("completed");
+    expect(blocked.mock.calls[0]![0].outcome).toBe("refused");
+    expect(blocked.mock.calls[0]![0].reason).toContain("may never be performed asynchronously");
+  });
+
+  it("waits on a dependency it could not evaluate, without running later steps", async () => {
+    // Unchecked is not satisfied, and the runner does not skip ahead to the
+    // step that happens to be runnable.
+    const first = vi.fn();
+    const second = vi.fn();
+    const runner = createWorkflowRunner({ store: store(), instanceId: "worker-a" });
+
+    await runner.start({
+      definition: {
+        workflowType: "waiting",
+        steps: [
+          {
+            stepId: "reserve",
+            dependsOn: [{ stepId: "stock-check", satisfied: null, detail: "InventoryIQ unreachable" }],
+            run: first,
+          },
+          { stepId: "notify", run: second },
+        ],
+      },
+      tenant,
+      trace,
+    });
+
+    expect(first).not.toHaveBeenCalled();
+    expect(second).not.toHaveBeenCalled();
+  });
+
+  it("records why it stopped, on the workflow itself", async () => {
+    // So the reason survives the process that produced it. A blocked workflow
+    // whose reason lived only in a callback is one nobody can diagnose later.
+    const runner = createWorkflowRunner({ store: store(), instanceId: "worker-a" });
+    const result = await runner.start({
+      definition: {
+        workflowType: "gated",
+        steps: [{ stepId: "promote", requiresAuthorization: true, run: vi.fn() }],
+      },
+      tenant,
+      trace,
+    });
+
+    expect(result.context["nexusOutcome"]).toBe("blocked");
+    expect(String(result.context["nexusReason"])).toContain("promote");
+  });
+});
+
+describe("the runner obeys the step Nexus named, not one it inferred", () => {
+  it("runs Nexus's choice even when it is not the first incomplete step", async () => {
+    // Written after a mutation survived: swapping `find(by stepId)` for
+    // `find(first incomplete)` passed every test, because the real Nexus scans
+    // in declared order and blocks rather than skipping — so the two are
+    // indistinguishable for any workflow it produces.
+    //
+    // That equivalence is a property of TODAY's Nexus, not of the runner's
+    // contract. The moment Nexus gains a priority rule, an ordering policy
+    // re-implemented in the runner is a second policy that disagrees. This
+    // injects a Nexus that names the second step first and checks the runner
+    // does as it is told.
+    const order: string[] = [];
+    const nexus = {
+      chamber: "nexus" as const,
+      mayRunAsynchronously: () => true,
+      next: ({ completedStepIds }: { completedStepIds?: readonly string[] }) => {
+        const done = new Set(completedStepIds ?? []);
+        // Deliberately reversed: "second" before "first".
+        const pick = ["second", "first"].find((id) => !done.has(id));
+        return pick
+          ? {
+              outcome: "proceed" as const,
+              stepId: pick,
+              reason: "test",
+              evidence: [],
+              context: {} as never,
+            }
+          : {
+              outcome: "completed" as const,
+              stepId: null,
+              reason: "done",
+              evidence: [],
+              context: {} as never,
+            };
+      },
+    };
+
+    const runner = createWorkflowRunner({
+      store: createInMemoryWorkflowStateStore(),
+      instanceId: "worker-a",
+      nexus: nexus as never,
+    });
+
+    await runner.start({
+      definition: {
+        workflowType: "ordered",
+        steps: [
+          { stepId: "first", run: () => void order.push("first") },
+          { stepId: "second", run: () => void order.push("second") },
+        ],
+      },
+      tenant,
+      trace,
+    });
+
+    expect(order).toEqual(["second", "first"]);
+  });
+});

@@ -5,6 +5,7 @@
 import { createPrimeEngine, type PrimeConfig, type PrimeEngine } from "./primeEngine.js";
 import { createPrimeNexus, type PrimeNexus } from "./nexus/nexus.js";
 import { createPrimePulse, type ContinuityStore, type PrimePulse } from "./pulse/pulse.js";
+import { createWorkflowRunner, type WorkflowRunner } from "./workflow/workflowRunner.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // THE PRIME ENGINE — one engine, two chambers.
@@ -46,23 +47,55 @@ export interface Prime {
   readonly pulse: PrimePulse | null;
   /** The decision surface. Unchanged from the original engine. */
   readonly decide: PrimeEngine["decide"];
+  /**
+   * Runs a workflow, selecting each step through Nexus.
+   *
+   * Present only alongside a continuity store, because a runner needs
+   * somewhere to persist. `null` for the same reason `pulse` is null: a runner
+   * with nowhere to write would complete workflows whose state vanished, and a
+   * caller must be able to tell that apart from a working one.
+   *
+   * Phase 1 left this outside the facade, which meant Prime exposed two
+   * chambers and the code that actually ran workflows was somewhere else,
+   * sequencing steps by itself. One engine now, with one selector inside it.
+   */
+  readonly runner: WorkflowRunner | null;
 }
 
 export interface PrimeOptions extends PrimeConfig {
   /** Supplied by the host. Without one, Prime runs with no continuity chamber. */
   readonly continuity?: ContinuityStore;
   readonly now?: () => Date;
+  /**
+   * Identifies this process when it takes a workflow lease.
+   *
+   * Required alongside a continuity store: two instances sharing an id would
+   * each believe they hold the other's lease, which is the overlapping-recovery
+   * failure the lease exists to prevent.
+   */
+  readonly instanceId?: string;
 }
 
 export function createPrime(options: PrimeOptions = {}): Prime {
-  const { continuity, now, ...decisionConfig } = options;
+  const { continuity, now, instanceId, ...decisionConfig } = options;
   const engine = createPrimeEngine(decisionConfig);
+  // One Nexus, shared by the facade and by the runner. Two would be two
+  // sequencers again, with the same rules configured twice.
+  const nexus = createPrimeNexus();
 
   return {
     name: "prime",
-    nexus: createPrimeNexus(),
+    nexus,
     pulse: continuity
       ? createPrimePulse({ store: continuity, ...(now ? { now } : {}) })
+      : null,
+    runner: continuity
+      ? createWorkflowRunner({
+          store: continuity,
+          instanceId: instanceId ?? "prime",
+          nexus,
+          ...(now ? { now } : {}),
+        })
       : null,
     decide: engine.decide,
   };

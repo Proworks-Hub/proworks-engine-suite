@@ -92,6 +92,11 @@ function runChain(correlationId: string) {
     subject: { type: "order", reference: correlationId },
     manufacturing: plan,
     cost,
+    // The correlation, supplied as a trace rather than only as a subject
+    // reference. `subject.reference` says WHAT is being decided about; `trace`
+    // says which unit of work the decision belongs to, and it is the one the
+    // result carries forward.
+    trace: { correlationId },
   });
   const decision = createPrimeEngine().decide(context);
   return { validation, plan, cost, context, decision };
@@ -278,6 +283,10 @@ describe("E2E-01..12 — shop path GATE", () => {
     // — and they deserve different treatment. Minting a new id is the forbidden
     // repair action and is a hard failure. Omitting the id is a gap: the trace
     // stops rather than lying.
+    // Prime now propagates it. The previous version of this block recorded an
+    // engine defect here instead, because `decisionContextSchema` had no trace
+    // field for a caller to supply and `decisionResultSchema`'s trace was
+    // therefore unwritable rather than merely unwritten.
     const decided = chain.decision.trace?.correlationId ?? null;
 
     // Regeneration: a hard failure whichever way it happens.

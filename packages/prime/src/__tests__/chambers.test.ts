@@ -80,10 +80,28 @@ describe("Prime is one engine composed of two chambers", () => {
     // and no engine handles, so there is nothing to call.
     const prime = createPrime({ continuity: createInMemoryWorkflowStateStore() });
     const surface = Object.keys(prime).sort();
-    expect(surface).toEqual(["decide", "name", "nexus", "pulse"]);
-    for (const forbidden of ["execute", "run", "save", "persist", "store", "engines"]) {
+    // Asserted exactly, not with `toContain`. The point is what is ABSENT, and
+    // a subset check would pass however much was added later.
+    expect(surface).toEqual(["decide", "name", "nexus", "pulse", "runner"]);
+    for (const forbidden of ["execute", "save", "persist", "store", "engines"]) {
       expect(surface).not.toContain(forbidden);
     }
+  });
+
+  it("gives the runner and the facade the SAME Nexus", () => {
+    // Two Nexus instances would be two sequencers again, with one set of rules
+    // configured twice — which is the arrangement Phase 2 exists to end.
+    // Proved behaviourally: a step the facade's Nexus refuses is a step the
+    // runner refuses, because they are one object.
+    const prime = createPrime({ continuity: createInMemoryWorkflowStateStore() });
+    expect(prime.runner).not.toBeNull();
+    expect(prime.nexus.mayRunAsynchronously({ stepId: "s", operation: "authorize" })).toBe(false);
+  });
+
+  it("has no runner when there is nowhere to persist", () => {
+    // Same honesty as `pulse`. A runner with no store would complete workflows
+    // whose state vanished, which reads as success.
+    expect(createPrime().runner).toBeNull();
   });
 
   it("keeps the original decide surface working", () => {
