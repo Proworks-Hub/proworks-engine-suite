@@ -30,3 +30,6 @@ export * from "./validation/scoring.js";
 export * from "./knowledge/experience.js";
 export * from "./knowledge/generalization.js";
 export * from "./knowledge/patterns.js";
+
+// Health and fail-safe (§40)
+export * from "./health.js";
