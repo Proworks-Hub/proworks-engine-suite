@@ -6,6 +6,7 @@ import { createPrimeEngine, type PrimeConfig, type PrimeEngine } from "./primeEn
 import { createPrimeNexus, type PrimeNexus } from "./nexus/nexus.js";
 import { createPrimePulse, type ContinuityStore, type PrimePulse } from "./pulse/pulse.js";
 import { createWorkflowRunner, type WorkflowRunner } from "./workflow/workflowRunner.js";
+import { createEngineRegistry, type EnginePort } from "./routing/ports.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // THE PRIME ENGINE — one engine, two chambers.
@@ -60,6 +61,19 @@ export interface Prime {
    * sequencing steps by itself. One engine now, with one selector inside it.
    */
   readonly runner: WorkflowRunner | null;
+  /**
+   * What a host has bound, for a host to check its own wiring.
+   *
+   * READ-ONLY on purpose, and this was a mistake caught by a test rather than
+   * a decision made up front. Exposing the registry itself put `route()` in
+   * reach of any caller, which is a general-purpose execution surface: a way
+   * to invoke a capability without a workflow, without Nexus, and therefore
+   * without any of the checks Nexus performs. The facade's own surface test
+   * refuses exactly that, and it refused this.
+   *
+   * A host may ask WHAT is bound. Only the runner may route to it.
+   */
+  readonly boundCapabilities: () => readonly string[];
 }
 
 export interface PrimeOptions extends PrimeConfig {
@@ -74,14 +88,23 @@ export interface PrimeOptions extends PrimeConfig {
    * failure the lease exists to prevent.
    */
   readonly instanceId?: string;
+  /**
+   * Engines the host binds to capability names.
+   *
+   * Prime imports none of them — the dependency law is `prime: ["platform"]`
+   * — so this is the only way an engine reaches it, and the only place that
+   * knows which package answers which capability.
+   */
+  readonly engines?: readonly EnginePort[];
 }
 
 export function createPrime(options: PrimeOptions = {}): Prime {
-  const { continuity, now, instanceId, ...decisionConfig } = options;
+  const { continuity, now, instanceId, engines: _boundEngines, ...decisionConfig } = options;
   const engine = createPrimeEngine(decisionConfig);
   // One Nexus, shared by the facade and by the runner. Two would be two
   // sequencers again, with the same rules configured twice.
   const nexus = createPrimeNexus();
+  const engines = createEngineRegistry(options.engines ?? []);
 
   // One Pulse as well as one Nexus. The runner takes every claim through the
   // same chamber the facade exposes, so a caller inspecting `pulse.health()`
@@ -94,6 +117,7 @@ export function createPrime(options: PrimeOptions = {}): Prime {
     name: "prime",
     nexus,
     pulse,
+    boundCapabilities: () => engines.capabilities(),
     runner:
       continuity && pulse
         ? createWorkflowRunner({
@@ -101,6 +125,7 @@ export function createPrime(options: PrimeOptions = {}): Prime {
             instanceId: instanceId ?? "prime",
             nexus,
             pulse,
+            engines,
             ...(now ? { now } : {}),
           })
         : null,

@@ -7,6 +7,7 @@ import { WorkflowConflictError } from "@proworks-hub/contracts";
 import { createInMemoryWorkflowStateStore } from "../inMemoryWorkflowStateStore.js";
 import { createWorkflowRunner, type WorkflowDefinition } from "../workflowRunner.js";
 import { primeExecutionContextSchema } from "../../context.js";
+import { createEngineRegistry, routingGrantsEngineAuthority } from "../../routing/ports.js";
 
 const tenant = { organizationId: "acme", roles: [] };
 const trace = { correlationId: "cor_1" };
@@ -585,5 +586,184 @@ describe("the runner recovers through Pulse", () => {
     const rescuer = createWorkflowRunner({ store, instanceId: "worker-b", now: () => clock });
     const recovered = await rescuer.recoverAbandoned([definition]);
     expect(recovered.length).toBeGreaterThanOrEqual(0);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Engine routing.
+//
+// Prime imports no engine — the dependency law forbids it — so a workflow names
+// a CAPABILITY and the host binds something to it. These prove the routing
+// refuses by default and that every normalized outcome means what it says.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("routing to engines Prime cannot import", () => {
+  const routed = (capability: string): WorkflowDefinition => ({
+    workflowType: "routed",
+    steps: [{ stepId: "do-it", routeTo: capability }],
+  });
+
+  const runnerWith = (ports: Parameters<typeof createEngineRegistry>[0]) =>
+    createWorkflowRunner({
+      store: createInMemoryWorkflowStateStore(),
+      instanceId: "worker-a",
+      engines: createEngineRegistry(ports),
+    });
+
+  it("refuses an unbound capability rather than skipping it", async () => {
+    // The failure this prevents: a workflow continuing past a step nobody
+    // performed, which is how an order reaches a machine having missed its
+    // costing. Refused, not skipped, and not thrown.
+    const blocked = vi.fn();
+    const runner = createWorkflowRunner({
+      store: createInMemoryWorkflowStateStore(),
+      instanceId: "worker-a",
+      onStepBlocked: blocked,
+    });
+
+    const result = await runner.start({ definition: routed("cost.calculate"), tenant, trace });
+
+    expect(result.status).not.toBe("completed");
+    expect(blocked.mock.calls[0]![0].outcome).toBe("refused");
+    expect(blocked.mock.calls[0]![0].reason).toContain("No engine is bound");
+  });
+
+  it("completes and merges the output when a capability answers", async () => {
+    const runner = runnerWith([
+      {
+        capability: "cost.calculate",
+        perform: () => ({ kind: "completed" as const, output: { totalCents: 44400 } }),
+      },
+    ]);
+    const result = await runner.start({ definition: routed("cost.calculate"), tenant, trace });
+
+    expect(result.status).toBe("completed");
+    expect(result.context["totalCents"]).toBe(44400);
+  });
+
+  it("hands the capability the context to read, and nothing to change", async () => {
+    let seen: unknown;
+    const runner = runnerWith([
+      {
+        capability: "cost.calculate",
+        perform: (req) => {
+          seen = req.context;
+          return { kind: "completed" as const };
+        },
+      },
+    ]);
+    await runner.start({ definition: routed("cost.calculate"), tenant, trace });
+
+    const ctx = seen as { tenant?: { organizationId: string }; trace: { correlationId: string } };
+    expect(ctx.tenant?.organizationId).toBe("acme");
+    expect(ctx.trace.correlationId).toBe("cor_1");
+  });
+
+  it("waits rather than failing when an engine says it is waiting", async () => {
+    const runner = runnerWith([
+      {
+        capability: "stock.reserve",
+        perform: () => ({ kind: "waiting" as const, on: "stock-count", detail: "recount in progress" }),
+      },
+    ]);
+    const result = await runner.start({ definition: routed("stock.reserve"), tenant, trace });
+
+    expect(result.status).not.toBe("completed");
+    expect(String(result.context["nexusReason"])).toContain("recount in progress");
+  });
+
+  it("continues on a degraded outcome, and records it", async () => {
+    // The work succeeded; a notification did not. Failing a manufactured order
+    // because an email bounced would be the wrong trade — but it is recorded.
+    const runner = runnerWith([
+      {
+        capability: "notify.customer",
+        perform: () => ({ kind: "degraded" as const, detail: "SMTP unreachable" }),
+      },
+    ]);
+    const result = await runner.start({
+      definition: { workflowType: "routed", steps: [{ stepId: "do-it", routeTo: "notify.customer" }] },
+      tenant,
+      trace,
+    });
+
+    expect(result.status).toBe("completed");
+    expect(result.context["degraded"]).toBe("SMTP unreachable");
+  });
+
+  it("treats an engine that throws as non-retryable", async () => {
+    // A thrown error does not say whether the effect happened, and the safe
+    // reading of "I do not know" is the one that does not repeat it.
+    const registry = createEngineRegistry([
+      {
+        capability: "job.create",
+        perform: () => {
+          throw new Error("connection reset");
+        },
+      },
+    ]);
+    const outcome = await registry.route("job.create", {
+      context: primeExecutionContextSchema.parse({
+        executionId: "e1",
+        workflowType: "routed",
+        tenant,
+        actor: { kind: "system", id: "w" },
+        trace,
+      }),
+      stepId: "do-it",
+      input: {},
+    });
+
+    expect(outcome.kind).toBe("non-retryable-failure");
+    if (outcome.kind === "non-retryable-failure") {
+      expect(outcome.reason).toContain("not retried");
+    }
+  });
+
+  it("refuses two engines claiming one capability, at construction", () => {
+    // A host misconfiguration with no correct resolution. Picking the first or
+    // last would make shop behaviour depend on array order in a bootstrap file.
+    expect(() =>
+      createEngineRegistry([
+        { capability: "cost.calculate", perform: () => ({ kind: "completed" as const }) },
+        { capability: "cost.calculate", perform: () => ({ kind: "completed" as const }) },
+      ]),
+    ).toThrow(/no correct resolution/);
+  });
+
+  it("refuses a step that declares both routeTo and run", async () => {
+    // Ends "compensated", not "failed" — the definition error throws, the saga
+    // unwinds (there is nothing to undo), and the workflow stops there. The
+    // status is incidental; what matters is that it did not complete and the
+    // reason is on the step for whoever has to read it.
+    const runner = runnerWith([]);
+    const result = await runner.start({
+      definition: {
+        workflowType: "confused",
+        steps: [{ stepId: "do-it", routeTo: "cost.calculate", run: () => undefined }],
+      },
+      tenant,
+      trace,
+    });
+
+    expect(result.status).not.toBe("completed");
+    const step = result.steps.find((r) => r.stepId === "do-it");
+    expect(step?.status).toBe("failed");
+    expect(step?.error).toContain("must do exactly one");
+  });
+
+  it("refuses a step that declares neither", async () => {
+    const runner = runnerWith([]);
+    const result = await runner.start({
+      definition: { workflowType: "empty", steps: [{ stepId: "do-it" }] },
+      tenant,
+      trace,
+    });
+    expect(result.status).not.toBe("completed");
+    expect(result.steps.find((r) => r.stepId === "do-it")?.error).toContain("neither");
+  });
+
+  it("grants Prime no engine authority by routing to one", () => {
+    expect(routingGrantsEngineAuthority()).toBe(false);
   });
 });

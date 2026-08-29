@@ -14,6 +14,7 @@ import { WorkflowConflictError, isTransient, newCorrelationId } from "@proworks-
 import { createPrimeNexus, type CandidateStep, type PrimeNexus } from "../nexus/nexus.js";
 import { primeExecutionContextSchema, type PrimeExecutionContext } from "../context.js";
 import { createPrimePulse, type ContinuityStore, type PrimePulse } from "../pulse/pulse.js";
+import { createEngineRegistry, type EngineOutcome, type EngineRegistry } from "../routing/ports.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PRIME's workflow runner.
@@ -59,10 +60,23 @@ export interface WorkflowStep {
   readonly asynchronous?: boolean;
   readonly requiresAuthorization?: boolean;
   /**
+   * Routes this step to a bound capability instead of running a closure.
+   *
+   * A workflow written this way names WHAT must happen and leaves WHO does it
+   * to the host's bindings, which is the difference between a workflow Prime
+   * can run for any shop and one compiled against a particular set of engines.
+   *
+   * `run` remains for steps that are genuinely local. A step that declares
+   * both is a definition error and is refused rather than resolved by
+   * precedence — picking one silently would make the behaviour depend on which
+   * line somebody read first.
+   */
+  readonly routeTo?: string;
+  /**
    * Does the work. Whatever it returns is merged into the workflow context and
    * persisted, so a resumed run can skip it rather than repeat it.
    */
-  run(ctx: WorkflowStepContext): Promise<Record<string, unknown> | void> | Record<string, unknown> | void;
+  run?(ctx: WorkflowStepContext): Promise<Record<string, unknown> | void> | Record<string, unknown> | void;
   /**
    * Undoes it, if it needs undoing.
    *
@@ -94,6 +108,14 @@ export interface WorkflowRunnerOptions {
    * the second recovery path this change exists to remove.
    */
   pulse?: PrimePulse;
+  /**
+   * Capabilities the host has bound engines to.
+   *
+   * Empty by default, which means every `routeTo` step is refused. That is the
+   * correct default: an unconfigured host should not silently run workflows
+   * with their engine steps skipped.
+   */
+  engines?: EngineRegistry;
   store: WorkflowStateStore;
   /** Identifies this process, so a lease says who holds it. */
   instanceId: string;
@@ -156,6 +178,7 @@ export interface WorkflowRunner {
 export function createWorkflowRunner(options: WorkflowRunnerOptions): WorkflowRunner {
   const { store, instanceId } = options;
   const nexus = options.nexus ?? createPrimeNexus();
+  const engines = options.engines ?? createEngineRegistry();
   // Built from the store when it declares durability. `createInMemoryWorkflowStateStore`
   // does; a host's own store must too, or it does not get recovery.
   const pulse =
@@ -186,6 +209,66 @@ export function createWorkflowRunner(options: WorkflowRunnerOptions): WorkflowRu
 
   const stepRecord = (instance: WorkflowInstance, stepId: string): WorkflowStepRecord | undefined =>
     instance.steps.find((s) => s.stepId === stepId);
+
+  /**
+   * Turns a normalized engine outcome into what this runner does next.
+   *
+   * Written as one function so the mapping is in a single readable place
+   * rather than spread across a switch inside the execution loop. Every arm is
+   * a deliberate choice about whether work stops, retries, or is undone:
+   *
+   *   completed              continue, merging the output
+   *   degraded               continue. The work succeeded; a notification did
+   *                          not. Failing a manufactured order because an
+   *                          email bounced would be the wrong trade — but it
+   *                          is recorded, because dropping it silently is how
+   *                          nobody finds out.
+   *   refused / waiting /    stop where we are. Nothing is compensated,
+   *   validation-required    because nothing happened.
+   *   retryable-failure      throw. Compensation runs and Pulse may resume.
+   *   non-retryable-failure  throw. Compensation runs; Pulse refuses to retry.
+   */
+  const applyOutcome = (
+    outcome: EngineOutcome,
+  ): {
+    stop: boolean;
+    reason: string;
+    output?: Record<string, unknown>;
+    error?: Error;
+  } => {
+    switch (outcome.kind) {
+      case "completed":
+        return { stop: false, reason: "completed", ...(outcome.output ? { output: outcome.output } : {}) };
+      case "degraded":
+        return {
+          stop: false,
+          reason: outcome.detail,
+          output: { degraded: outcome.detail },
+        };
+      case "refused":
+        return { stop: true, reason: outcome.reason };
+      case "waiting":
+        return {
+          stop: true,
+          reason: `Waiting on ${outcome.on}${outcome.detail ? `: ${outcome.detail}` : ""}.`,
+        };
+      case "validation-required":
+        return {
+          stop: true,
+          reason: `A synchronous validation by ${outcome.validator} must run before this step is judged.`,
+        };
+      case "retryable-failure":
+        return { stop: false, reason: outcome.reason, error: new Error(outcome.reason) };
+      case "non-retryable-failure":
+        return {
+          stop: false,
+          reason: outcome.reason,
+          // Marked so Pulse refuses it. An irreversible failure retried is one
+          // effect happening twice.
+          error: Object.assign(new Error(outcome.reason), { retryable: false }),
+        };
+    }
+  };
 
   /**
    * The execution context Nexus decides against, derived from the instance.
@@ -301,7 +384,57 @@ export function createWorkflowRunner(options: WorkflowRunnerOptions): WorkflowRu
 
       const startedAt = now().toISOString();
       try {
-        const output = await step.run(ctx);
+        // ── Route, or run ────────────────────────────────────────────────
+        //
+        // A step that declares both is refused. Resolving it by precedence
+        // would make the behaviour depend on which line somebody read first,
+        // and a workflow whose meaning depends on that is not a contract.
+        if (step.routeTo !== undefined && step.run !== undefined) {
+          throw new Error(
+            `Step ${step.stepId} declares both routeTo and run. It must do exactly one.`,
+          );
+        }
+        if (step.routeTo === undefined && step.run === undefined) {
+          throw new Error(`Step ${step.stepId} declares neither routeTo nor run.`);
+        }
+
+        let output: Record<string, unknown> | void;
+
+        if (step.routeTo !== undefined) {
+          const outcome = await engines.route(step.routeTo, {
+            context: executionContextFor(current, definition),
+            stepId: step.stepId,
+            input: current.context,
+          });
+
+          const handled = applyOutcome(outcome);
+          if (handled.stop) {
+            // Refused, waiting, or a validation is required. The workflow
+            // stops where it is and nothing is compensated, because from the
+            // workflow's point of view the step did not happen.
+            options.onStepBlocked?.({
+              workflowId: current.workflowId,
+              outcome: outcome.kind,
+              reason: handled.reason,
+              evidence: [`capability ${step.routeTo}`],
+            });
+            return persist(
+              {
+                ...current,
+                context: {
+                  ...current.context,
+                  nexusOutcome: outcome.kind,
+                  nexusReason: handled.reason,
+                },
+              },
+              current.version,
+            );
+          }
+          if (handled.error) throw handled.error;
+          output = handled.output;
+        } else {
+          output = await step.run!(ctx);
+        }
         const merged = output && typeof output === "object" ? { ...current.context, ...output } : current.context;
         current = await persist(
           {

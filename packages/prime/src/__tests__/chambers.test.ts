@@ -82,8 +82,13 @@ describe("Prime is one engine composed of two chambers", () => {
     const surface = Object.keys(prime).sort();
     // Asserted exactly, not with `toContain`. The point is what is ABSENT, and
     // a subset check would pass however much was added later.
-    expect(surface).toEqual(["decide", "name", "nexus", "pulse", "runner"]);
-    for (const forbidden of ["execute", "save", "persist", "store", "engines"]) {
+    expect(surface).toEqual(["boundCapabilities", "decide", "name", "nexus", "pulse", "runner"]);
+    // "engines" is on this list because an earlier version of this file put the
+    // whole registry on the facade, which handed every caller `route()` — a way
+    // to invoke a capability with no workflow and no Nexus. This assertion
+    // caught it. `boundCapabilities` is what remains: a host may ask what is
+    // bound, and only the runner may route to it.
+    for (const forbidden of ["execute", "save", "persist", "store", "engines", "route"]) {
       expect(surface).not.toContain(forbidden);
     }
   });
