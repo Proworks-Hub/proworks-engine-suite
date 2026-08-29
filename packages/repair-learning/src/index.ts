@@ -39,3 +39,6 @@ export * from "./health.js";
 
 // AuditIQ wiring (§38)
 export * from "./audit.js";
+
+// Drift detection (§32) and scenario generation (§33)
+export * from "./drift/drift.js";
