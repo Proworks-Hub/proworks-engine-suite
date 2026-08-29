@@ -7,6 +7,14 @@ import { WorkflowConflictError } from "@proworks-hub/contracts";
 import { createInMemoryWorkflowStateStore } from "../inMemoryWorkflowStateStore.js";
 import { createWorkflowRunner, type WorkflowDefinition } from "../workflowRunner.js";
 import { primeExecutionContextSchema } from "../../context.js";
+import { createAllowAllGovernanceForTests, createDenyAllGovernance } from "@proworks-hub/contracts";
+
+/** Permissive Governance, for the tests that are about something else. */
+const allowAll = () =>
+  createAllowAllGovernanceForTests({
+    reason: "Prime workflow runner tests",
+    env: { NODE_ENV: "test" },
+  });
 import { createEngineRegistry, routingGrantsEngineAuthority } from "../../routing/ports.js";
 
 const tenant = { organizationId: "acme", roles: [] };
@@ -343,11 +351,20 @@ describe("the runner runs on Nexus decisions", () => {
     expect(blocked.mock.calls[0]![0].reason).toContain("does not create it");
   });
 
-  it("runs that same step once the workflow carries the authorization", async () => {
+  it("runs that same step once the workflow carries the authorization AND Governance permits", async () => {
     // The control. Without it, "blocked" is equally consistent with a runner
     // that stopped running anything at all.
+    //
+    // Governance is supplied here and was not before. This test used to pass
+    // on a present `authorizationRef` alone, which is exactly the gap the
+    // runner now closes: having a reference is not the same as the reference
+    // being good, and only one of those was ever checked.
     const ran = vi.fn();
-    const runner = createWorkflowRunner({ store: store(), instanceId: "worker-a" });
+    const runner = createWorkflowRunner({
+      store: store(),
+      instanceId: "worker-a",
+      governance: allowAll(),
+    });
 
     const result = await runner.start({
       definition: {
@@ -765,5 +782,148 @@ describe("routing to engines Prime cannot import", () => {
 
   it("grants Prime no engine authority by routing to one", () => {
     expect(routingGrantsEngineAuthority()).toBe(false);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Governance is asked, not assumed.
+//
+// Nexus checks that an authorization reference is PRESENT. That is all it can
+// check: `next()` is synchronous and `Governance.authorize` is not — and
+// `authorize` is one of the eight operations that may never be performed
+// asynchronously, so the answer must be in hand before the step runs.
+//
+// The gap this closes is one I introduced: "a reference exists" was standing in
+// for "authorization happened", which is the same declared-but-unread shape
+// that produced four defects elsewhere in this repository.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("the runner asks Governance before an authorized step", () => {
+  const gated: WorkflowDefinition = {
+    workflowType: "gated",
+    steps: [{ stepId: "promote", requiresAuthorization: true, run: () => ({ done: true }) }],
+  };
+
+  it("refuses when Governance is unconfigured", async () => {
+    // Deny-all is the default. Unconfigured must mean nobody is authorized,
+    // never everybody — the opposite of the pattern that lets a missing
+    // dependency authorize everything by accident.
+    const ran = vi.fn();
+    const runner = createWorkflowRunner({
+      store: createInMemoryWorkflowStateStore(),
+      instanceId: "worker-a",
+    });
+
+    const result = await runner.start({
+      definition: { workflowType: "gated", steps: [{ stepId: "promote", requiresAuthorization: true, run: ran }] },
+      tenant,
+      trace,
+      context: { authorizationRef: "gd-anything" },
+    });
+
+    expect(ran).not.toHaveBeenCalled();
+    expect(String(result.context["nexusReason"])).toContain("No Governance is configured");
+  });
+
+  it("refuses a reference Governance will not stand behind", async () => {
+    // The heart of it. The workflow carries a perfectly well-formed
+    // `authorizationRef` and Governance says no. Before this, the reference
+    // alone was enough.
+    const ran = vi.fn();
+    const runner = createWorkflowRunner({
+      store: createInMemoryWorkflowStateStore(),
+      instanceId: "worker-a",
+      governance: createDenyAllGovernance("this actor may not promote"),
+    });
+
+    const result = await runner.start({
+      definition: { workflowType: "gated", steps: [{ stepId: "promote", requiresAuthorization: true, run: ran }] },
+      tenant,
+      trace,
+      context: { authorizationRef: "gd-looks-real" },
+    });
+
+    expect(ran).not.toHaveBeenCalled();
+    expect(String(result.context["nexusReason"])).toContain("may not promote");
+  });
+
+  it("treats unreachable Governance as a refusal, not a pass", async () => {
+    // Fails closed. A check that reads "I could not ask" as "yes" fails open
+    // exactly when the system is already in trouble.
+    const ran = vi.fn();
+    const runner = createWorkflowRunner({
+      store: createInMemoryWorkflowStateStore(),
+      instanceId: "worker-a",
+      governance: {
+        authorize: () => {
+          throw new Error("governance unreachable");
+        },
+      },
+    });
+
+    const result = await runner.start({
+      definition: { workflowType: "gated", steps: [{ stepId: "promote", requiresAuthorization: true, run: ran }] },
+      tenant,
+      trace,
+      context: { authorizationRef: "gd-1" },
+    });
+
+    expect(ran).not.toHaveBeenCalled();
+    expect(String(result.context["nexusReason"])).toContain("could not be reached");
+  });
+
+  it("does not ask Governance about a step that does not require it", async () => {
+    // Governance decides whether consequential activity is permitted, not
+    // whether every function may be called. An ordinary workflow asks nothing,
+    // which is why deny-all Governance does not stop the world.
+    let asked = 0;
+    const runner = createWorkflowRunner({
+      store: createInMemoryWorkflowStateStore(),
+      instanceId: "worker-a",
+      governance: {
+        authorize: async () => {
+          asked += 1;
+          return { decision: "DENIED" as const, reason: "no", conditions: [], decidedAt: "2026-08-29T10:00:00.000Z" };
+        },
+      },
+    });
+
+    const result = await runner.start({
+      definition: { workflowType: "plain", steps: [{ stepId: "only", run: () => ({ ok: true }) }] },
+      tenant,
+      trace,
+    });
+
+    expect(asked).toBe(0);
+    expect(result.status).toBe("completed");
+  });
+
+  it("names the step and the tenant in what it asks", async () => {
+    // Purpose-bound authority: access for one purpose does not authorize
+    // another, so the envelope has to say which step and for whom.
+    const seen: unknown[] = [];
+    const runner = createWorkflowRunner({
+      store: createInMemoryWorkflowStateStore(),
+      instanceId: "worker-a",
+      governance: {
+        authorize: async (envelope) => {
+          seen.push(envelope);
+          return {
+            decision: "PERMITTED" as const,
+            reason: "ok",
+            conditions: [],
+            decisionId: "gd-1",
+            decidedAt: "2026-08-29T10:00:00.000Z",
+          };
+        },
+      },
+    });
+
+    await runner.start({ definition: gated, tenant, trace, context: { authorizationRef: "gd-1" } });
+
+    const envelope = seen[0] as { purpose: string; tenant: { organizationId: string }; requestedAction: string };
+    expect(envelope.purpose).toContain("promote");
+    expect(envelope.tenant.organizationId).toBe("acme");
+    expect(envelope.requestedAction).toBe("promote");
   });
 });

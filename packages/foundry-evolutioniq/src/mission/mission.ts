@@ -4,6 +4,8 @@
 
 import { z } from "zod";
 
+import { createDenyAllGovernance, isPermitted, type AuthorityEnvelope, type Governance } from "@proworks-hub/contracts";
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Mission Control.
 //
@@ -246,6 +248,32 @@ export interface MissionControl {
    */
   authorize(missionId: string, governanceDecisionId: string, by: string): MissionResult<Mission>;
 
+  /**
+   * PROPOSED → AUTHORIZED, by ASKING Governance rather than being told.
+   *
+   * `authorize` above takes a decision reference on trust: it checks the
+   * string is non-empty and records it. That is the right shape for a HUMAN
+   * authorization, where a person decided and Foundry is recording what they
+   * decided — and it is the wrong shape for Foundry authorizing itself,
+   * because the only thing standing between Foundry and its own approval is a
+   * non-empty string Foundry can supply.
+   *
+   * §11 says Foundry "shall not approve its own authority expansion". This is
+   * what makes that structural: the decision comes back from an injected
+   * Governance, Foundry records the id Governance issued, and a DENIED or
+   * unconfigured Governance produces no authorization at all.
+   *
+   * There is no `verify(decisionId)` alternative because the Governance
+   * contract has no way to look a decision up after the fact — `authorize` is
+   * the whole interface. Asking is not a workaround for that; it is the only
+   * honest reading of a contract with no registry.
+   */
+  requestAuthorization(
+    missionId: string,
+    envelope: AuthorityEnvelope,
+    by: string,
+  ): Promise<MissionResult<Mission>>;
+
   /** AUTHORIZED → PROVISIONED. Binds the agent that will do the work. */
   provision(missionId: string, agentId: string, by: string): MissionResult<Mission>;
 
@@ -289,10 +317,19 @@ export interface MissionControlOptions {
   now?: () => Date;
   /** Announced on every transition. The audit seam. */
   onTransition?: (mission: Mission, transition: MissionTransition) => void;
+  /**
+   * Governance, for `requestAuthorization`.
+   *
+   * Defaults to deny-all. Unconfigured must mean nobody is authorized — the
+   * same rule `createDenyAllGovernance` states and the opposite of the pattern
+   * that lets a missing dependency authorize everything by accident.
+   */
+  governance?: Governance;
 }
 
 export function createMissionControl(options: MissionControlOptions = {}): MissionControl {
   const now = options.now ?? (() => new Date());
+  const governance = options.governance ?? createDenyAllGovernance();
   const missions = new Map<string, Mission>();
 
   const apply = (
@@ -378,6 +415,50 @@ export function createMissionControl(options: MissionControlOptions = {}): Missi
       }
       return apply(mission, "AUTHORIZED", by, `Authorized by ${governanceDecisionId}.`, {
         governanceDecisionId,
+      });
+    },
+
+    async requestAuthorization(missionId, envelope, by) {
+      const mission = require_(missionId);
+      if (!mission) return { ok: false, reason: `No mission ${missionId}.` };
+
+      let decision;
+      try {
+        decision = await governance.authorize(envelope);
+      } catch (cause) {
+        // Governance being unreachable is a refusal, never a pass. An
+        // authorization check that treats "I could not ask" as "yes" is worse
+        // than having no check, because it fails open exactly when the system
+        // is already in trouble.
+        return {
+          ok: false,
+          reason: `Governance could not be reached, so nothing is authorized: ${
+            cause instanceof Error ? cause.message : String(cause)
+          }`,
+        };
+      }
+
+      if (!isPermitted(decision)) {
+        return {
+          ok: false,
+          reason: `Governance ${decision.decision}: ${decision.reason}`,
+        };
+      }
+
+      // A permitted decision with no id cannot be traced back to the rule that
+      // permitted it, which is the same objection AuditIQ raises to a denial
+      // without one.
+      if (!decision.decisionId) {
+        return {
+          ok: false,
+          reason:
+            "Governance permitted the mission but issued no decisionId. An authorization nobody can trace " +
+            "to a decision cannot be reviewed or withdrawn.",
+        };
+      }
+
+      return apply(mission, "AUTHORIZED", by, `Authorized by ${decision.decisionId}.`, {
+        governanceDecisionId: decision.decisionId,
       });
     },
 

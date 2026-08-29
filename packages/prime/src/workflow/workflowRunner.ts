@@ -9,7 +9,14 @@ import type {
   WorkflowStateStore,
   WorkflowStepRecord,
 } from "@proworks-hub/contracts";
-import { WorkflowConflictError, isTransient, newCorrelationId } from "@proworks-hub/contracts";
+import {
+  WorkflowConflictError,
+  createDenyAllGovernance,
+  isPermitted,
+  isTransient,
+  newCorrelationId,
+} from "@proworks-hub/contracts";
+import type { Governance } from "@proworks-hub/contracts";
 
 import { createPrimeNexus, type CandidateStep, type PrimeNexus } from "../nexus/nexus.js";
 import { primeExecutionContextSchema, type PrimeExecutionContext } from "../context.js";
@@ -126,6 +133,24 @@ export interface WorkflowRunnerOptions {
    * distinguishable.
    */
   evidence?: PrimeEvidence;
+  /**
+   * Governance, consulted before a step that requires authorization.
+   *
+   * Nexus checks that an `authorizationRef` is PRESENT; it cannot check that
+   * it is valid, because `next()` is synchronous and `Governance.authorize` is
+   * not — and `authorize` is one of the eight operations that may never be
+   * performed asynchronously, so it must be awaited before the step runs.
+   *
+   * That is the division: Nexus decides on the declared state, and the runner
+   * is where the asking happens. Without it, "an authorization reference
+   * exists" was silently standing in for "authorization happened", which is
+   * the same field-declared-but-unread shape that produced four defects
+   * elsewhere in this repository.
+   *
+   * Defaults to deny-all, so a step that requires authorization is refused
+   * until a host binds real Governance.
+   */
+  governance?: Governance;
   store: WorkflowStateStore;
   /** Identifies this process, so a lease says who holds it. */
   instanceId: string;
@@ -190,6 +215,7 @@ export function createWorkflowRunner(options: WorkflowRunnerOptions): WorkflowRu
   const nexus = options.nexus ?? createPrimeNexus();
   const engines = options.engines ?? createEngineRegistry();
   const evidence = options.evidence ?? createPrimeEvidence();
+  const governance = options.governance ?? createDenyAllGovernance();
   // Built from the store when it declares durability. `createInMemoryWorkflowStateStore`
   // does; a host's own store must too, or it does not get recovery.
   const pulse =
@@ -390,6 +416,62 @@ export function createWorkflowRunner(options: WorkflowRunnerOptions): WorkflowRu
         );
       }
       const record = stepRecord(current, step.stepId);
+
+      // ── The asking ────────────────────────────────────────────────────
+      //
+      // Nexus already confirmed a reference is present. This is where it is
+      // checked against Governance, and it happens HERE rather than in Nexus
+      // because `authorize` is synchronous-only: the answer must be in hand
+      // before the step runs, and Nexus cannot await.
+      //
+      // Only for steps that declare they require it. A workflow of ordinary
+      // steps asks Governance nothing, which is correct — Governance decides
+      // whether consequential activity is permitted, not whether every
+      // function may be called.
+      if (step.requiresAuthorization === true) {
+        const envelope = {
+          requestId: `${current.workflowId}.${step.stepId}`,
+          actorId: instanceId,
+          tenant: current.tenant ?? { organizationId: "system", roles: [] },
+          purpose: `Run step ${step.stepId} of ${definition.workflowType}.`,
+          requestedAction: step.routeTo ?? step.stepId,
+          delegationChain: [],
+          riskClass: "routine" as const,
+          trace: current.trace,
+          issuedAt: now().toISOString(),
+        };
+
+        let permitted = false;
+        let refusal = "";
+        try {
+          const verdict = await governance.authorize(envelope);
+          permitted = isPermitted(verdict);
+          refusal = `Governance ${verdict.decision}: ${verdict.reason}`;
+        } catch (cause) {
+          // Unreachable Governance is a refusal. An authorization check that
+          // reads "I could not ask" as "yes" fails open exactly when the
+          // system is already in trouble.
+          refusal = `Governance could not be reached, so nothing is authorized: ${
+            cause instanceof Error ? cause.message : String(cause)
+          }`;
+        }
+
+        if (!permitted) {
+          options.onStepBlocked?.({
+            workflowId: current.workflowId,
+            outcome: "blocked",
+            reason: refusal,
+            evidence: [`governance: ${step.stepId}`],
+          });
+          return persist(
+            {
+              ...current,
+              context: { ...current.context, nexusOutcome: "blocked", nexusReason: refusal },
+            },
+            current.version,
+          );
+        }
+      }
 
       const ctx: WorkflowStepContext = {
         context: current.context,
