@@ -297,6 +297,25 @@ export function assertMustFailDidNotHappen(
   }
 }
 
+/**
+ * A real defect found outside this scenario's stated `mustFail`.
+ *
+ * `assertMustFailDidNotHappen` answers the corpus's question and throws. This
+ * answers a different one: the scenario's own conditions held, AND something
+ * else is wrong. Recorded rather than thrown so the remaining scenarios still
+ * run -- a finding that halts the suite hides the findings behind it.
+ *
+ * It shows in the report as ENGINE-DEFECT, which is the loud part.
+ */
+export function engineDefect(s: MultiCompanyScenario, reason: string): void {
+  outcomes.push({
+    scenarioId: s.scenarioId,
+    family: s.family,
+    outcome: "engine-defect",
+    reason,
+  });
+}
+
 export function printReport(): void {
   if (outcomes.length === 0) return;
   const by = (o: Outcome) => outcomes.filter((r) => r.outcome === o);
