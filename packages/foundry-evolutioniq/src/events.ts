@@ -70,20 +70,12 @@ export type FoundryEventType = (typeof FOUNDRY_EVENT_TYPES)[number];
 /**
  * Operations that must never travel as events.
  *
- * Exported and tested rather than left as a convention. Each of these is a
- * decision a caller acts on immediately; publishing one would mean either
- * blocking on a bus or proceeding without an answer.
+ * The list itself moved to @proworks-hub/contracts, because it is a fact about
+ * the Hive rather than about Foundry: Prime must enforce it too, and the only
+ * ways to share it were Prime importing Foundry or the Hive keeping two copies
+ * that drift. Re-exported here so every existing caller is unchanged.
  */
-export const SYNCHRONOUS_ONLY = [
-  "leasePermits",
-  "changeWithinScope",
-  "validate",
-  "promote",
-  "supervise",
-  "authorize",
-  "admit",
-  "classifyChange",
-] as const;
+export { SYNCHRONOUS_ONLY, type SynchronousOnlyOperation } from "@proworks-hub/contracts";
 
 export interface FoundryEventContext {
   readonly tenant: { organizationId: string; roles: readonly string[] } | null;
@@ -332,11 +324,10 @@ export function foundryEventSeams(
 /**
  * Whether an operation may be performed by publishing an event.
  *
- * Always false for anything in `SYNCHRONOUS_ONLY`. Exported so a caller
- * wondering whether to move a decision onto the bus finds a function that says
- * no — the answer is the same for every one of them, and the reason is EventIQ's
- * own doctrine: events say what happened, not what is authorized next.
+ * Always false for anything in `SYNCHRONOUS_ONLY`. Re-exported alongside the
+ * list rather than reimplemented here: two copies of "is this allowed to be
+ * async" is precisely the drift that moving the list to contracts was meant to
+ * prevent, and the reason is unchanged — events say what happened, not what is
+ * authorized next.
  */
-export function mayBePerformedAsynchronously(operation: string): boolean {
-  return !(SYNCHRONOUS_ONLY as readonly string[]).includes(operation);
-}
+export { mayBePerformedAsynchronously } from "@proworks-hub/contracts";

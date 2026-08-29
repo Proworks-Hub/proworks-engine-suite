@@ -19,6 +19,11 @@ import { WorkflowConflictError } from "@proworks-hub/contracts";
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface InMemoryWorkflowStateStore extends WorkflowStateStore {
+  /**
+   * Always "in-memory". Satisfies Pulse's ContinuityStore, which requires a
+   * store to state what it survives rather than leaving callers to assume.
+   */
+  readonly durability: "in-memory";
   /** Everything held, for tests and debugging. */
   all(): WorkflowInstance[];
   size(): number;
@@ -33,6 +38,10 @@ export function createInMemoryWorkflowStateStore(options: { now?: () => Date } =
     !instance.claimedUntil || new Date(instance.claimedUntil).getTime() <= now().getTime();
 
   return {
+    // Stated as a value, not a comment. The code deciding whether a restart is
+    // safe cannot read a comment, and this store is exactly the one that would
+    // be believed if it claimed otherwise.
+    durability: "in-memory" as const,
     create(instance) {
       if (instances.has(instance.workflowId)) {
         throw new Error(`Workflow ${instance.workflowId} already exists`);

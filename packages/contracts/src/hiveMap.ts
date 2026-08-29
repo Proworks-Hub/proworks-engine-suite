@@ -26,7 +26,10 @@ export const HIVE_MAP: readonly HiveComponent[] = [
     id: "prime", name: "Prime", tier: "prime", status: "existing",
     packageName: "@proworks-hub/prime",
     responsibility:
-      "Establishes context, decides which domain answers, and coordinates work across Cores. Executes no domain logic.",
+      "Establishes context, decides which domain answers, and coordinates work across Cores. Executes no domain logic. " +
+      "One engine, two chambers: Nexus commands authorized progression, Pulse preserves authorized continuity. " +
+      "The chambers are internal structure and are deliberately NOT registered here — registering one would make them " +
+      "peers, and peers in this architecture communicate through events rather than imports.",
   }),
 
   // ── Platform ───────────────────────────────────────────────────────────────

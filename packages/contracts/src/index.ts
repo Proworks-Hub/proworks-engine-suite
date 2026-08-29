@@ -86,3 +86,6 @@ export * from "./auditRecord.js";
 export * from "./hiveMessage.js";
 export * from "./delivery.js";
 export * from "./hiveMap.js";
+
+// The eight operations that may never be performed asynchronously.
+export * from "./synchronousOnly.js";

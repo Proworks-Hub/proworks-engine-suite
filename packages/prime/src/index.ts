@@ -26,3 +26,12 @@ export * from "./primeEngine.js";
 // ── Durable workflows: the state machine here, the storage in a host ─────
 export * from "./workflow/workflowRunner.js";
 export * from "./workflow/inMemoryWorkflowStateStore.js";
+
+// ── The two chambers, and the engine they compose ────────────────────────
+//
+// Prime Nexus commands authorized progression; Prime Pulse preserves
+// authorized continuity. Neither is a sovereign engine — see prime.ts.
+export * from "./context.js";
+export * from "./nexus/nexus.js";
+export * from "./pulse/pulse.js";
+export * from "./prime.js";
