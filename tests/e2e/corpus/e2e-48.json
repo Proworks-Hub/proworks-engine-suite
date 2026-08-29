@@ -1,0 +1,2066 @@
+[
+  {
+    "scenarioId": "E2E-01",
+    "family": "shop-path",
+    "title": "KSix sign closed loop",
+    "targetComponents": [
+      "ForgeIQ",
+      "CostIQ",
+      "Prime",
+      "WorkOrderIQ",
+      "InventoryIQ"
+    ],
+    "startingState": "tenant=ksix; stock seeded; no WO",
+    "faultClass": "none",
+    "faultInjection": "none \u2014 happy path",
+    "expectedDetection": "N/A \u2014 no fault",
+    "expectedDiagnosis": "N/A",
+    "expectedContainment": "N/A",
+    "expectedRecovery": "path completes plan\u2192cost\u2192allow\u2192WO\u2192reserve",
+    "mustPass": [
+      "one workOrderId",
+      "on-hand unchanged",
+      "reserved+=BOM",
+      "same correlationId",
+      "Prime did not persist WO"
+    ],
+    "mustFail": [
+      "WO writes stock",
+      "Inventory creates WO",
+      "host price stored as CostResult"
+    ],
+    "violatedInvariants": [
+      "ForgeIQ owns plan/BOM",
+      "CostIQ owns CostResult",
+      "WorkOrderIQ owns WO lifecycle",
+      "InventoryIQ owns on-hand/reserved/consumed",
+      "Prime decides and persists no domain SoT",
+      "correlationId survives every hop"
+    ],
+    "requiredEvidence": [
+      "ManufacturingPlan",
+      "CostResult",
+      "decision",
+      "work_order.created",
+      "reservation record"
+    ],
+    "repairClass": "none",
+    "allowedRepairActions": [
+      "[]"
+    ],
+    "forbiddenRepairActions": [
+      "[invent-SoT, skip-auth]"
+    ],
+    "severity": "info",
+    "blastRadius": "single-job",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes \u2014 any configurable physical product",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-02",
+    "family": "shop-path",
+    "title": "Consume reserved and complete",
+    "targetComponents": [
+      "WorkOrderIQ",
+      "InventoryIQ"
+    ],
+    "startingState": "WO created and reserved (E2E-01)",
+    "faultClass": "none",
+    "faultInjection": "exact consume of reserved qty",
+    "expectedDetection": "N/A",
+    "expectedDiagnosis": "N/A",
+    "expectedContainment": "N/A",
+    "expectedRecovery": "WO complete; stock consumed",
+    "mustPass": [
+      "on-hand-=qty",
+      "reserved cleared",
+      "variance empty"
+    ],
+    "mustFail": [
+      "consume without reserve",
+      "negative on-hand"
+    ],
+    "violatedInvariants": [
+      "InventoryIQ owns on-hand/reserved/consumed",
+      "WorkOrderIQ owns WO lifecycle",
+      "on-hand never negative; reserved <= on-hand"
+    ],
+    "requiredEvidence": [
+      "consume record",
+      "WO status=complete"
+    ],
+    "repairClass": "none",
+    "allowedRepairActions": [
+      "[]"
+    ],
+    "forbiddenRepairActions": [
+      "[unreserve-by-consume-lie]"
+    ],
+    "severity": "info",
+    "blastRadius": "single-job",
+    "reversibility": "irreversible-consume",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-03",
+    "family": "idempotency",
+    "title": "Duplicate create same key",
+    "targetComponents": [
+      "WorkOrderIQ",
+      "InventoryIQ"
+    ],
+    "startingState": "valid plan+cost+allow",
+    "faultClass": "duplicate-command",
+    "faultInjection": "create-WO twice same idempotencyKey",
+    "expectedDetection": "second delivery seen as duplicate",
+    "expectedDiagnosis": "duplicate-of E2E-01 create",
+    "expectedContainment": "no second WO",
+    "expectedRecovery": "return original workOrderId",
+    "mustPass": [
+      "one WO",
+      "one reservation set"
+    ],
+    "mustFail": [
+      "two WOs",
+      "reserved=2x BOM"
+    ],
+    "violatedInvariants": [
+      "same idempotency key => one WO and one reservation set",
+      "WorkOrderIQ owns WO lifecycle",
+      "InventoryIQ owns on-hand/reserved/consumed"
+    ],
+    "requiredEvidence": [
+      "single workOrderId",
+      "idempotency hit logged"
+    ],
+    "repairClass": "ignore-duplicate",
+    "allowedRepairActions": [
+      "return-existing"
+    ],
+    "forbiddenRepairActions": [
+      "create-second-WO"
+    ],
+    "severity": "medium",
+    "blastRadius": "single-tenant-writes",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes \u2014 all consequential commands",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-04",
+    "family": "projection",
+    "title": "Customer-safe view",
+    "targetComponents": [
+      "Tracking",
+      "Notifications",
+      "WorkOrderIQ"
+    ],
+    "startingState": "in-progress WO with internal machine ids",
+    "faultClass": "information-leak",
+    "faultInjection": "request customer projection + notify payload",
+    "expectedDetection": "projection filter",
+    "expectedDiagnosis": "external-view != internal SoT",
+    "expectedContainment": "internal fields stripped",
+    "expectedRecovery": "safe status only",
+    "mustPass": [
+      "no machineId",
+      "no stack",
+      "no cost internals"
+    ],
+    "mustFail": [
+      "internal ids in customer payload"
+    ],
+    "violatedInvariants": [
+      "Tracking is projection not SoT"
+    ],
+    "requiredEvidence": [
+      "customer payload snapshot"
+    ],
+    "repairClass": "redact",
+    "allowedRepairActions": [
+      "project-safe-status"
+    ],
+    "forbiddenRepairActions": [
+      "copy-internal-record"
+    ],
+    "severity": "high",
+    "blastRadius": "customer-channel",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "ksix / customer-external",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-05",
+    "family": "trace",
+    "title": "Correlation survives hops",
+    "targetComponents": [
+      "ForgeIQ",
+      "CostIQ",
+      "Prime",
+      "WorkOrderIQ",
+      "InventoryIQ",
+      "Tracking"
+    ],
+    "startingState": "host sets correlationId",
+    "faultClass": "trace-break",
+    "faultInjection": "run closed loop",
+    "expectedDetection": "missing correlation on hop",
+    "expectedDiagnosis": "dropped-id at named engine",
+    "expectedContainment": "do not invent new id silently",
+    "expectedRecovery": "propagate original",
+    "mustPass": [
+      "identical correlationId every hop"
+    ],
+    "mustFail": [
+      "id dropped or regenerated"
+    ],
+    "violatedInvariants": [
+      "correlationId survives every hop"
+    ],
+    "requiredEvidence": [
+      "envelope.correlationId per hop"
+    ],
+    "repairClass": "propagate",
+    "allowedRepairActions": [
+      "copy-incoming-id"
+    ],
+    "forbiddenRepairActions": [
+      "mint-new-id"
+    ],
+    "severity": "medium",
+    "blastRadius": "single-job-trace",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-06",
+    "family": "portability",
+    "title": "ForgeIQ standalone",
+    "targetComponents": [
+      "ForgeIQ"
+    ],
+    "startingState": "CostIQ and Prime not constructed",
+    "faultClass": "missing-dependency",
+    "faultInjection": "omit CostIQ/Prime modules",
+    "expectedDetection": "N/A if plan still returns",
+    "expectedDiagnosis": "portability ok",
+    "expectedContainment": "no fake cost/decision SoT",
+    "expectedRecovery": "plan only",
+    "mustPass": [
+      "ManufacturingPlan valid"
+    ],
+    "mustFail": [
+      "ForgeIQ requires CostIQ import"
+    ],
+    "violatedInvariants": [
+      "ForgeIQ owns plan/BOM"
+    ],
+    "requiredEvidence": [
+      "plan object"
+    ],
+    "repairClass": "none",
+    "allowedRepairActions": [
+      "[]"
+    ],
+    "forbiddenRepairActions": [
+      "[invent-cost]"
+    ],
+    "severity": "info",
+    "blastRadius": "engine-local",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-07",
+    "family": "portability",
+    "title": "CostIQ foreign plan",
+    "targetComponents": [
+      "CostIQ"
+    ],
+    "startingState": "contract-valid plan not from ForgeIQ internals",
+    "faultClass": "none",
+    "faultInjection": "submit foreign plan",
+    "expectedDetection": "N/A",
+    "expectedDiagnosis": "N/A",
+    "expectedContainment": "N/A",
+    "expectedRecovery": "CostResult from contract",
+    "mustPass": [
+      "CostResult",
+      "CostIQ does not persist plan as owner"
+    ],
+    "mustFail": [
+      "rejects any non-Forge producer that meets contract"
+    ],
+    "violatedInvariants": [
+      "CostIQ owns CostResult",
+      "ForgeIQ owns plan/BOM"
+    ],
+    "requiredEvidence": [
+      "CostResult"
+    ],
+    "repairClass": "none",
+    "allowedRepairActions": [
+      "[]"
+    ],
+    "forbiddenRepairActions": [
+      "[own-the-plan]"
+    ],
+    "severity": "info",
+    "blastRadius": "engine-local",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-08",
+    "family": "portability",
+    "title": "Prime partial context",
+    "targetComponents": [
+      "Prime"
+    ],
+    "startingState": "plan present, cost absent",
+    "faultClass": "missing-dependency",
+    "faultInjection": "DecisionContext without CostResult",
+    "expectedDetection": "needs-more or structured block/allow",
+    "expectedDiagnosis": "partial-context",
+    "expectedContainment": "Prime must not fill cost SoT",
+    "expectedRecovery": "return structured decision",
+    "mustPass": [
+      "no throw that implies cost mandatory to exist",
+      "no WO/stock write"
+    ],
+    "mustFail": [
+      "Prime persists WO or stock"
+    ],
+    "violatedInvariants": [
+      "Prime decides and persists no domain SoT"
+    ],
+    "requiredEvidence": [
+      "decision object"
+    ],
+    "repairClass": "degrade-decision",
+    "allowedRepairActions": [
+      "needs-more"
+    ],
+    "forbiddenRepairActions": [
+      "mint-cost",
+      "mint-WO"
+    ],
+    "severity": "medium",
+    "blastRadius": "engine-local",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-09",
+    "family": "stock",
+    "title": "Reserve then release",
+    "targetComponents": [
+      "InventoryIQ"
+    ],
+    "startingState": "reserved BOM",
+    "faultClass": "none",
+    "faultInjection": "explicit release command",
+    "expectedDetection": "N/A",
+    "expectedDiagnosis": "N/A",
+    "expectedContainment": "N/A",
+    "expectedRecovery": "reserved\u21920 on-hand unchanged",
+    "mustPass": [
+      "reserved=0",
+      "on-hand original"
+    ],
+    "mustFail": [
+      "release deletes on-hand"
+    ],
+    "violatedInvariants": [
+      "InventoryIQ owns on-hand/reserved/consumed"
+    ],
+    "requiredEvidence": [
+      "release record"
+    ],
+    "repairClass": "compensating-release",
+    "allowedRepairActions": [
+      "release-reservation"
+    ],
+    "forbiddenRepairActions": [
+      "adjust-on-hand"
+    ],
+    "severity": "info",
+    "blastRadius": "single-job",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-10",
+    "family": "isolation",
+    "title": "Second tenant empty",
+    "targetComponents": [
+      "InventoryIQ",
+      "WorkOrderIQ"
+    ],
+    "startingState": "ksix has E2E-01 data; actor=other-shop",
+    "faultClass": "cross-tenant-read",
+    "faultInjection": "read ksix ids as other-shop",
+    "expectedDetection": "deny/not-found",
+    "expectedDiagnosis": "tenant-mismatch",
+    "expectedContainment": "no body returned",
+    "expectedRecovery": "no stock change",
+    "mustPass": [
+      "empty/forbidden",
+      "ksix stock unchanged"
+    ],
+    "mustFail": [
+      "ksix record body returned"
+    ],
+    "violatedInvariants": [
+      "cross-tenant read empty/forbidden"
+    ],
+    "requiredEvidence": [
+      "deny reason code"
+    ],
+    "repairClass": "deny",
+    "allowedRepairActions": [
+      "not-found"
+    ],
+    "forbiddenRepairActions": [
+      "return-foreign-record"
+    ],
+    "severity": "critical",
+    "blastRadius": "cross-tenant",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "ksix vs other-shop / tenant-boundary",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-11",
+    "family": "receipt",
+    "title": "Receipt does not mint job",
+    "targetComponents": [
+      "ReceiptIQ"
+    ],
+    "startingState": "raw receipt fixture",
+    "faultClass": "none",
+    "faultInjection": "ingest receipt",
+    "expectedDetection": "N/A",
+    "expectedDiagnosis": "N/A",
+    "expectedContainment": "N/A",
+    "expectedRecovery": "receipt only",
+    "mustPass": [
+      "normalized receipt",
+      "WO count 0",
+      "stock untouched"
+    ],
+    "mustFail": [
+      "ReceiptIQ creates WO"
+    ],
+    "violatedInvariants": [
+      "ReceiptIQ owns receipt",
+      "WorkOrderIQ owns WO lifecycle"
+    ],
+    "requiredEvidence": [
+      "receipt id"
+    ],
+    "repairClass": "none",
+    "allowedRepairActions": [
+      "[]"
+    ],
+    "forbiddenRepairActions": [
+      "[create-WO]"
+    ],
+    "severity": "info",
+    "blastRadius": "receipt-only",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "family-table or ksix / financial-lite",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-12",
+    "family": "vision",
+    "title": "Prep does not own WO status",
+    "targetComponents": [
+      "VisionIQ",
+      "WorkOrderIQ"
+    ],
+    "startingState": "WO exists; VisionIQ fixture product",
+    "faultClass": "authority-creep",
+    "faultInjection": "run prep/correction",
+    "expectedDetection": "prep result emitted",
+    "expectedDiagnosis": "VisionIQ=prep owner",
+    "expectedContainment": "WO status unchanged unless WO command",
+    "expectedRecovery": "prep only",
+    "mustPass": [
+      "prep result",
+      "WO lifecycle unchanged"
+    ],
+    "mustFail": [
+      "VisionIQ sets WO status as SoT"
+    ],
+    "violatedInvariants": [
+      "WorkOrderIQ owns WO lifecycle"
+    ],
+    "requiredEvidence": [
+      "prep result",
+      "WO status before/after"
+    ],
+    "repairClass": "none",
+    "allowedRepairActions": [
+      "[]"
+    ],
+    "forbiddenRepairActions": [
+      "[set-WO-status]"
+    ],
+    "severity": "medium",
+    "blastRadius": "single-job",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-13",
+    "family": "shortage",
+    "title": "Shortage no over-reserve",
+    "targetComponents": [
+      "ForgeIQ",
+      "Prime",
+      "WorkOrderIQ",
+      "InventoryIQ"
+    ],
+    "startingState": "one BOM line on-hand=0",
+    "faultClass": "resource-exhaustion",
+    "faultInjection": "run shop path against zero stock",
+    "expectedDetection": "shortage signal from InventoryIQ",
+    "expectedDiagnosis": "insufficient-stock",
+    "expectedContainment": "no over-reserve; WO held or refused",
+    "expectedRecovery": "structured shortage not fake success",
+    "mustPass": [
+      "on-hand>=0",
+      "reserved<=on-hand"
+    ],
+    "mustFail": [
+      "negative stock",
+      "WO invents units"
+    ],
+    "violatedInvariants": [
+      "on-hand never negative; reserved <= on-hand",
+      "InventoryIQ owns on-hand/reserved/consumed"
+    ],
+    "requiredEvidence": [
+      "shortage reason code"
+    ],
+    "repairClass": "hold-or-block",
+    "allowedRepairActions": [
+      "held-WO",
+      "block"
+    ],
+    "forbiddenRepairActions": [
+      "over-reserve"
+    ],
+    "severity": "high",
+    "blastRadius": "sku-level",
+    "reversibility": "reversible-hold",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-14",
+    "family": "failure",
+    "title": "Machine failure holds job",
+    "targetComponents": [
+      "WorkOrderIQ",
+      "Prime",
+      "InventoryIQ"
+    ],
+    "startingState": "in-progress WO + reservation",
+    "faultClass": "machine-fault",
+    "faultInjection": "report overtemp/e-stop to WO",
+    "expectedDetection": "WO status\u2192blocked",
+    "expectedDiagnosis": "machine-failure on assigned asset",
+    "expectedContainment": "reservation held; job not deleted",
+    "expectedRecovery": "Prime recommend only; human/WO apply reroute",
+    "mustPass": [
+      "WO not deleted",
+      "reserve held",
+      "no machineId in customer view"
+    ],
+    "mustFail": [
+      "Prime writes WO",
+      "Inventory auto-release"
+    ],
+    "violatedInvariants": [
+      "WorkOrderIQ owns WO lifecycle",
+      "Prime decides and persists no domain SoT",
+      "InventoryIQ owns on-hand/reserved/consumed"
+    ],
+    "requiredEvidence": [
+      "WO status event",
+      "optional Prime recommendation"
+    ],
+    "repairClass": "reroute-on-command",
+    "allowedRepairActions": [
+      "WO.reroute",
+      "WO.hold"
+    ],
+    "forbiddenRepairActions": [
+      "Prime.apply-status",
+      "auto-release"
+    ],
+    "severity": "high",
+    "blastRadius": "job+machine",
+    "reversibility": "reversible-hold",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-15",
+    "family": "revision",
+    "title": "Proof revision same WO",
+    "targetComponents": [
+      "ForgeIQ",
+      "CostIQ",
+      "WorkOrderIQ",
+      "InventoryIQ"
+    ],
+    "startingState": "created WO",
+    "faultClass": "customer-change",
+    "faultInjection": "new config; versioned plan; recost",
+    "expectedDetection": "plan version bump",
+    "expectedDiagnosis": "revision-of-existing-request",
+    "expectedContainment": "same workOrderId",
+    "expectedRecovery": "delta reserve",
+    "mustPass": [
+      "one WO id",
+      "reservations match new BOM"
+    ],
+    "mustFail": [
+      "second WO minted"
+    ],
+    "violatedInvariants": [
+      "WorkOrderIQ owns WO lifecycle",
+      "ForgeIQ owns plan/BOM",
+      "CostIQ owns CostResult"
+    ],
+    "requiredEvidence": [
+      "plan.version",
+      "WO.change"
+    ],
+    "repairClass": "version-in-place",
+    "allowedRepairActions": [
+      "WO.change",
+      "delta-reserve"
+    ],
+    "forbiddenRepairActions": [
+      "mint-new-WO"
+    ],
+    "severity": "medium",
+    "blastRadius": "single-job",
+    "reversibility": "partially-reversible",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-16",
+    "family": "idempotency",
+    "title": "Duplicate event storm",
+    "targetComponents": [
+      "WorkOrderIQ"
+    ],
+    "startingState": "WO created",
+    "faultClass": "duplicate-bus",
+    "faultInjection": "re-deliver create 3x same key",
+    "expectedDetection": "duplicates",
+    "expectedDiagnosis": "replay",
+    "expectedContainment": "ignore extras",
+    "expectedRecovery": "still one WO",
+    "mustPass": [
+      "one WO"
+    ],
+    "mustFail": [
+      "three WOs"
+    ],
+    "violatedInvariants": [
+      "same idempotency key => one WO and one reservation set"
+    ],
+    "requiredEvidence": [
+      "delivery count vs WO count"
+    ],
+    "repairClass": "ignore-duplicate",
+    "allowedRepairActions": [
+      "return-existing"
+    ],
+    "forbiddenRepairActions": [
+      "fanout-creates"
+    ],
+    "severity": "medium",
+    "blastRadius": "write-path",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-17",
+    "family": "crash",
+    "title": "Crash after reserve then replay",
+    "targetComponents": [
+      "WorkOrderIQ",
+      "InventoryIQ"
+    ],
+    "startingState": "reserved",
+    "faultClass": "process-crash",
+    "faultInjection": "drop memory; replay envelopes",
+    "expectedDetection": "replay",
+    "expectedDiagnosis": "recovery-replay",
+    "expectedContainment": "idempotent apply",
+    "expectedRecovery": "one reservation remains",
+    "mustPass": [
+      "one reservation set"
+    ],
+    "mustFail": [
+      "double reserve"
+    ],
+    "violatedInvariants": [
+      "same idempotency key => one WO and one reservation set",
+      "InventoryIQ owns on-hand/reserved/consumed"
+    ],
+    "requiredEvidence": [
+      "replay log"
+    ],
+    "repairClass": "replay-idempotent",
+    "allowedRepairActions": [
+      "reapply-same-keys"
+    ],
+    "forbiddenRepairActions": [
+      "reseed-stock"
+    ],
+    "severity": "high",
+    "blastRadius": "single-job",
+    "reversibility": "reversible-via-replay",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-18",
+    "family": "saga",
+    "title": "Compensate after abort",
+    "targetComponents": [
+      "WorkOrderIQ",
+      "InventoryIQ"
+    ],
+    "startingState": "reserved",
+    "faultClass": "user-abort",
+    "faultInjection": "cancel after reserve",
+    "expectedDetection": "cancel command",
+    "expectedDiagnosis": "intentional-abort",
+    "expectedContainment": "release reservation",
+    "expectedRecovery": "compensate twice still zero reserved",
+    "mustPass": [
+      "reserved=0",
+      "compensate idempotent"
+    ],
+    "mustFail": [
+      "orphan reserved",
+      "double-release negative"
+    ],
+    "violatedInvariants": [
+      "InventoryIQ owns on-hand/reserved/consumed",
+      "WorkOrderIQ owns WO lifecycle"
+    ],
+    "requiredEvidence": [
+      "cancel",
+      "release"
+    ],
+    "repairClass": "compensating-transaction",
+    "allowedRepairActions": [
+      "WO.cancel",
+      "reserve.release"
+    ],
+    "forbiddenRepairActions": [
+      "delete-on-hand"
+    ],
+    "severity": "high",
+    "blastRadius": "single-job",
+    "reversibility": "reversible-reserve",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-19",
+    "family": "ingest",
+    "title": "Order webhook is not a WO",
+    "targetComponents": [
+      "order-ingestion",
+      "WorkOrderIQ"
+    ],
+    "startingState": "channel payload",
+    "faultClass": "confused-deputy",
+    "faultInjection": "ingest only",
+    "expectedDetection": "order accepted",
+    "expectedDiagnosis": "channel-order",
+    "expectedContainment": "no auto WO",
+    "expectedRecovery": "explicit create required",
+    "mustPass": [
+      "order exists",
+      "WO count unchanged"
+    ],
+    "mustFail": [
+      "webhook minted WO"
+    ],
+    "violatedInvariants": [
+      "WorkOrderIQ owns WO lifecycle"
+    ],
+    "requiredEvidence": [
+      "order id"
+    ],
+    "repairClass": "none",
+    "allowedRepairActions": [
+      "store-order"
+    ],
+    "forbiddenRepairActions": [
+      "auto-create-WO"
+    ],
+    "severity": "medium",
+    "blastRadius": "channel",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "ksix / commerce-channel",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-20",
+    "family": "stock",
+    "title": "Consume wrong SKU rejected",
+    "targetComponents": [
+      "InventoryIQ"
+    ],
+    "startingState": "SKU A reserved",
+    "faultClass": "invalid-input",
+    "faultInjection": "consume SKU B",
+    "expectedDetection": "reject",
+    "expectedDiagnosis": "sku-mismatch",
+    "expectedContainment": "A still reserved; B untouched",
+    "expectedRecovery": "error",
+    "mustPass": [
+      "A reserved",
+      "B unchanged"
+    ],
+    "mustFail": [
+      "B decremented"
+    ],
+    "violatedInvariants": [
+      "InventoryIQ owns on-hand/reserved/consumed"
+    ],
+    "requiredEvidence": [
+      "reject code"
+    ],
+    "repairClass": "reject",
+    "allowedRepairActions": [
+      "error"
+    ],
+    "forbiddenRepairActions": [
+      "swap-sku"
+    ],
+    "severity": "high",
+    "blastRadius": "sku-level",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-21",
+    "family": "stock",
+    "title": "Under-consume variance",
+    "targetComponents": [
+      "InventoryIQ"
+    ],
+    "startingState": "reserved 10",
+    "faultClass": "process-variance",
+    "faultInjection": "consume 7",
+    "expectedDetection": "variance event",
+    "expectedDiagnosis": "under-consume",
+    "expectedContainment": "record leftover",
+    "expectedRecovery": "do not vanish 3",
+    "mustPass": [
+      "on-hand-=7",
+      "variance recorded"
+    ],
+    "mustFail": [
+      "3 vanish with no variance"
+    ],
+    "violatedInvariants": [
+      "InventoryIQ owns on-hand/reserved/consumed"
+    ],
+    "requiredEvidence": [
+      "variance record"
+    ],
+    "repairClass": "record-variance",
+    "allowedRepairActions": [
+      "write-variance"
+    ],
+    "forbiddenRepairActions": [
+      "sweep-silent"
+    ],
+    "severity": "medium",
+    "blastRadius": "single-job",
+    "reversibility": "irreversible-partial",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-22",
+    "family": "stock",
+    "title": "Over-consume rejected",
+    "targetComponents": [
+      "InventoryIQ"
+    ],
+    "startingState": "reserved 10",
+    "faultClass": "invalid-input",
+    "faultInjection": "consume 11",
+    "expectedDetection": "reject or explicit over-record",
+    "expectedDiagnosis": "over-consume",
+    "expectedContainment": "on-hand never <0",
+    "expectedRecovery": "no silent extra",
+    "mustPass": [
+      "on-hand>=0"
+    ],
+    "mustFail": [
+      "negative on-hand"
+    ],
+    "violatedInvariants": [
+      "on-hand never negative; reserved <= on-hand"
+    ],
+    "requiredEvidence": [
+      "reject or over-consume flag"
+    ],
+    "repairClass": "reject",
+    "allowedRepairActions": [
+      "error"
+    ],
+    "forbiddenRepairActions": [
+      "allow-negative"
+    ],
+    "severity": "high",
+    "blastRadius": "sku-level",
+    "reversibility": "reversible-if-rejected",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-23",
+    "family": "contention",
+    "title": "Two jobs one SKU",
+    "targetComponents": [
+      "WorkOrderIQ",
+      "InventoryIQ"
+    ],
+    "startingState": "on-hand 10; two jobs need 8",
+    "faultClass": "resource-contention",
+    "faultInjection": "two reserves",
+    "expectedDetection": "second shortage",
+    "expectedDiagnosis": "contention",
+    "expectedContainment": "reserved<=10",
+    "expectedRecovery": "one winner",
+    "mustPass": [
+      "reserved<=10"
+    ],
+    "mustFail": [
+      "reserved=16"
+    ],
+    "violatedInvariants": [
+      "on-hand never negative; reserved <= on-hand",
+      "InventoryIQ owns on-hand/reserved/consumed"
+    ],
+    "requiredEvidence": [
+      "two reserve results"
+    ],
+    "repairClass": "allocate-available",
+    "allowedRepairActions": [
+      "grant-one",
+      "shortage-other"
+    ],
+    "forbiddenRepairActions": [
+      "optimistic-double"
+    ],
+    "severity": "high",
+    "blastRadius": "sku-level",
+    "reversibility": "reversible-holds",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-24",
+    "family": "projection",
+    "title": "Tracking is not SoT",
+    "targetComponents": [
+      "Tracking",
+      "WorkOrderIQ"
+    ],
+    "startingState": "WO in-progress",
+    "faultClass": "authority-creep",
+    "faultInjection": "write tracking only",
+    "expectedDetection": "ignored or projection-only",
+    "expectedDiagnosis": "non-authoritative-write",
+    "expectedContainment": "WO status unchanged",
+    "expectedRecovery": "no domain mutate",
+    "mustPass": [
+      "WO SoT unchanged"
+    ],
+    "mustFail": [
+      "tracking write changes WO"
+    ],
+    "violatedInvariants": [
+      "Tracking is projection not SoT",
+      "WorkOrderIQ owns WO lifecycle"
+    ],
+    "requiredEvidence": [
+      "WO status before/after"
+    ],
+    "repairClass": "ignore-projection-write",
+    "allowedRepairActions": [
+      "drop"
+    ],
+    "forbiddenRepairActions": [
+      "promote-projection"
+    ],
+    "severity": "high",
+    "blastRadius": "single-job",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-25",
+    "family": "sot-theft",
+    "title": "WO must not write stock",
+    "targetComponents": [
+      "WorkOrderIQ",
+      "InventoryIQ"
+    ],
+    "startingState": "seeded stock",
+    "faultClass": "authority-creep",
+    "faultInjection": "set on-hand via WO API",
+    "expectedDetection": "reject",
+    "expectedDiagnosis": "SoT-violation WorkOrderIQ\u2192stock",
+    "expectedContainment": "Inventory unchanged",
+    "expectedRecovery": "deny",
+    "mustPass": [
+      "Inventory unchanged"
+    ],
+    "mustFail": [
+      "WO persist stock"
+    ],
+    "violatedInvariants": [
+      "InventoryIQ owns on-hand/reserved/consumed",
+      "WorkOrderIQ owns WO lifecycle"
+    ],
+    "requiredEvidence": [
+      "reject"
+    ],
+    "repairClass": "deny",
+    "allowedRepairActions": [
+      "error"
+    ],
+    "forbiddenRepairActions": [
+      "accept-write"
+    ],
+    "severity": "critical",
+    "blastRadius": "domain-boundary",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-26",
+    "family": "sot-theft",
+    "title": "Inventory must not create WO",
+    "targetComponents": [
+      "InventoryIQ",
+      "WorkOrderIQ"
+    ],
+    "startingState": "no WO",
+    "faultClass": "authority-creep",
+    "faultInjection": "create-WO via Inventory",
+    "expectedDetection": "reject",
+    "expectedDiagnosis": "SoT-violation Inventory\u2192WO",
+    "expectedContainment": "no WO",
+    "expectedRecovery": "deny",
+    "mustPass": [
+      "WO count 0"
+    ],
+    "mustFail": [
+      "WO created"
+    ],
+    "violatedInvariants": [
+      "WorkOrderIQ owns WO lifecycle"
+    ],
+    "requiredEvidence": [
+      "reject"
+    ],
+    "repairClass": "deny",
+    "allowedRepairActions": [
+      "error"
+    ],
+    "forbiddenRepairActions": [
+      "accept-write"
+    ],
+    "severity": "critical",
+    "blastRadius": "domain-boundary",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-27",
+    "family": "sot-theft",
+    "title": "Prime must not persist WO",
+    "targetComponents": [
+      "Prime",
+      "WorkOrderIQ"
+    ],
+    "startingState": "DecisionContext ready",
+    "faultClass": "authority-creep",
+    "faultInjection": "inspect Prime after decide",
+    "expectedDetection": "no WO side effect",
+    "expectedDiagnosis": "Prime-domain-capture",
+    "expectedContainment": "decision only",
+    "expectedRecovery": "none",
+    "mustPass": [
+      "no WO owned by Prime"
+    ],
+    "mustFail": [
+      "Prime WO row"
+    ],
+    "violatedInvariants": [
+      "Prime decides and persists no domain SoT"
+    ],
+    "requiredEvidence": [
+      "Prime storage dump"
+    ],
+    "repairClass": "none",
+    "allowedRepairActions": [
+      "decision-only"
+    ],
+    "forbiddenRepairActions": [
+      "persist-WO"
+    ],
+    "severity": "critical",
+    "blastRadius": "domain-boundary",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-28",
+    "family": "sot-theft",
+    "title": "Prime must not mutate stock",
+    "targetComponents": [
+      "Prime",
+      "InventoryIQ"
+    ],
+    "startingState": "seeded stock",
+    "faultClass": "authority-creep",
+    "faultInjection": "decide()",
+    "expectedDetection": "stock unchanged",
+    "expectedDiagnosis": "Prime-domain-capture",
+    "expectedContainment": "Inventory untouched",
+    "expectedRecovery": "none",
+    "mustPass": [
+      "stock snapshot equal"
+    ],
+    "mustFail": [
+      "stock changed"
+    ],
+    "violatedInvariants": [
+      "Prime decides and persists no domain SoT",
+      "InventoryIQ owns on-hand/reserved/consumed"
+    ],
+    "requiredEvidence": [
+      "stock snapshot"
+    ],
+    "repairClass": "none",
+    "allowedRepairActions": [],
+    "forbiddenRepairActions": [
+      "adjust-stock"
+    ],
+    "severity": "critical",
+    "blastRadius": "domain-boundary",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-29",
+    "family": "sot-theft",
+    "title": "Host price is not cost truth",
+    "targetComponents": [
+      "CostIQ"
+    ],
+    "startingState": "plan + host sticker $99",
+    "faultClass": "authority-creep",
+    "faultInjection": "store sticker beside CostResult",
+    "expectedDetection": "two records distinct",
+    "expectedDiagnosis": "host-vs-CostIQ",
+    "expectedContainment": "CostResult owner=CostIQ",
+    "expectedRecovery": "do not overwrite",
+    "mustPass": [
+      "CostResult != overwritten by 99"
+    ],
+    "mustFail": [
+      "sticker becomes CostResult"
+    ],
+    "violatedInvariants": [
+      "CostIQ owns CostResult"
+    ],
+    "requiredEvidence": [
+      "CostResult"
+    ],
+    "repairClass": "none",
+    "allowedRepairActions": [
+      "keep-separate"
+    ],
+    "forbiddenRepairActions": [
+      "overwrite-cost"
+    ],
+    "severity": "high",
+    "blastRadius": "money",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "ksix / financial",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-30",
+    "family": "auth",
+    "title": "Missing auth fails closed",
+    "targetComponents": [
+      "WorkOrderIQ",
+      "InventoryIQ"
+    ],
+    "startingState": "valid plan",
+    "faultClass": "missing-auth",
+    "faultInjection": "create/reserve without tenant or authorizationRef",
+    "expectedDetection": "reject",
+    "expectedDiagnosis": "unauthenticated-write",
+    "expectedContainment": "no persist",
+    "expectedRecovery": "deny",
+    "mustPass": [
+      "no persist"
+    ],
+    "mustFail": [
+      "write succeeds"
+    ],
+    "violatedInvariants": [
+      "capability != permission",
+      "invalid envelope does not mutate domain"
+    ],
+    "requiredEvidence": [
+      "reject"
+    ],
+    "repairClass": "deny",
+    "allowedRepairActions": [
+      "error"
+    ],
+    "forbiddenRepairActions": [
+      "write-anyway"
+    ],
+    "severity": "critical",
+    "blastRadius": "write-path",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-31",
+    "family": "auth",
+    "title": "Purpose quote cannot consume",
+    "targetComponents": [
+      "InventoryIQ",
+      "governance-engine"
+    ],
+    "startingState": "reserved under produce; token purpose=quote",
+    "faultClass": "purpose-mismatch",
+    "faultInjection": "consume with quote token",
+    "expectedDetection": "deny",
+    "expectedDiagnosis": "purpose-not-bound-to-consume",
+    "expectedContainment": "no consume",
+    "expectedRecovery": "deny",
+    "mustPass": [
+      "stock unchanged"
+    ],
+    "mustFail": [
+      "consume succeeds"
+    ],
+    "violatedInvariants": [
+      "capability != permission"
+    ],
+    "requiredEvidence": [
+      "deny"
+    ],
+    "repairClass": "deny",
+    "allowedRepairActions": [
+      "error"
+    ],
+    "forbiddenRepairActions": [
+      "allow-because-capable"
+    ],
+    "severity": "critical",
+    "blastRadius": "stock-write",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-32",
+    "family": "auth",
+    "title": "Revoke then consume",
+    "targetComponents": [
+      "governance-engine",
+      "InventoryIQ"
+    ],
+    "startingState": "reserved under produce",
+    "faultClass": "revoked-grant",
+    "faultInjection": "revoke then consume",
+    "expectedDetection": "deny",
+    "expectedDiagnosis": "grant-revoked",
+    "expectedContainment": "reservation held until explicit release",
+    "expectedRecovery": "deny consume",
+    "mustPass": [
+      "consume rejected",
+      "reserve still held"
+    ],
+    "mustFail": [
+      "consume succeeds on old grant"
+    ],
+    "violatedInvariants": [
+      "capability != permission"
+    ],
+    "requiredEvidence": [
+      "revoke record",
+      "deny"
+    ],
+    "repairClass": "revoke+hold",
+    "allowedRepairActions": [
+      "deny-consume",
+      "explicit-release"
+    ],
+    "forbiddenRepairActions": [
+      "grandfather-consume"
+    ],
+    "severity": "critical",
+    "blastRadius": "stock-write",
+    "reversibility": "reversible-hold",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "conditional-if-revoke-API",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-33",
+    "family": "sense",
+    "title": "Reading is not a hold",
+    "targetComponents": [
+      "SenseIQ",
+      "InventoryIQ"
+    ],
+    "startingState": "sensor fixture",
+    "faultClass": "confused-deputy",
+    "faultInjection": "ingest temp/weight/scan",
+    "expectedDetection": "reading stored",
+    "expectedDiagnosis": "physical-observation",
+    "expectedContainment": "no reserve/WO",
+    "expectedRecovery": "none",
+    "mustPass": [
+      "stock unchanged",
+      "no WO"
+    ],
+    "mustFail": [
+      "reading created reservation"
+    ],
+    "violatedInvariants": [
+      "reading is not a hold"
+    ],
+    "requiredEvidence": [
+      "reading id"
+    ],
+    "repairClass": "none",
+    "allowedRepairActions": [
+      "store-reading"
+    ],
+    "forbiddenRepairActions": [
+      "reserve"
+    ],
+    "severity": "medium",
+    "blastRadius": "sensor",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "ksix / telemetry",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-34",
+    "family": "charter",
+    "title": "Unchartered engine not v1Runtime",
+    "targetComponents": [
+      "contracts"
+    ],
+    "startingState": "registry",
+    "faultClass": "classification-lie",
+    "faultInjection": "HealthcareIQ or extra engine marked v1Runtime",
+    "expectedDetection": "test fail on allowlist",
+    "expectedDiagnosis": "allowlist-violation",
+    "expectedContainment": "v1Runtime frozen to specialists",
+    "expectedRecovery": "remove flag",
+    "mustPass": [
+      "allowlist = V1 specialists only"
+    ],
+    "mustFail": [
+      "HealthcareIQ v1Runtime"
+    ],
+    "violatedInvariants": [
+      "Foundry drafts does not deploy"
+    ],
+    "requiredEvidence": [
+      "registry dump"
+    ],
+    "repairClass": "correct-registry",
+    "allowedRepairActions": [
+      "clear-flag"
+    ],
+    "forbiddenRepairActions": [
+      "expand-v1-silently"
+    ],
+    "severity": "high",
+    "blastRadius": "platform",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "n/a / architecture",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-35",
+    "family": "charter",
+    "title": "Host is not an engine class",
+    "targetComponents": [
+      "contracts"
+    ],
+    "startingState": "classification module",
+    "faultClass": "classification-lie",
+    "faultInjection": "HOST as HiveClassification",
+    "expectedDetection": "schema reject",
+    "expectedDiagnosis": "DEC-005",
+    "expectedContainment": "componentKind HOST_APPLICATION only",
+    "expectedRecovery": "enum correct",
+    "mustPass": [
+      "no HOST in engine classification"
+    ],
+    "mustFail": [
+      "HOST accepted as engine class"
+    ],
+    "violatedInvariants": [
+      "DEC-005"
+    ],
+    "requiredEvidence": [
+      "schema"
+    ],
+    "repairClass": "correct-schema",
+    "allowedRepairActions": [
+      "use-componentKind"
+    ],
+    "forbiddenRepairActions": [
+      "add-HOST-class"
+    ],
+    "severity": "high",
+    "blastRadius": "platform",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "n/a / architecture",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-36",
+    "family": "charter",
+    "title": "Foundry cannot self-deploy",
+    "targetComponents": [
+      "contracts",
+      "governance-engine"
+    ],
+    "startingState": "chartered candidate",
+    "faultClass": "self-authorization",
+    "faultInjection": "Foundry sets Production/v1Runtime",
+    "expectedDetection": "reject or no-op",
+    "expectedDiagnosis": "Foundry-overreach",
+    "expectedContainment": "lifecycle unchanged",
+    "expectedRecovery": "human ratification required",
+    "mustPass": [
+      "not v1Runtime"
+    ],
+    "mustFail": [
+      "self Production"
+    ],
+    "violatedInvariants": [
+      "Foundry drafts does not deploy"
+    ],
+    "requiredEvidence": [
+      "lifecycle before/after"
+    ],
+    "repairClass": "ratify-human",
+    "allowedRepairActions": [
+      "draft-only"
+    ],
+    "forbiddenRepairActions": [
+      "self-deploy"
+    ],
+    "severity": "critical",
+    "blastRadius": "platform",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "n/a / architecture",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-37",
+    "family": "envelope",
+    "title": "Envelope requires tenant",
+    "targetComponents": [
+      "platform-events"
+    ],
+    "startingState": "valid body",
+    "faultClass": "schema-fault",
+    "faultInjection": "omit tenantId",
+    "expectedDetection": "reject at envelope",
+    "expectedDiagnosis": "missing-tenant",
+    "expectedContainment": "no domain write",
+    "expectedRecovery": "deny",
+    "mustPass": [
+      "no persist"
+    ],
+    "mustFail": [
+      "domain mutated"
+    ],
+    "violatedInvariants": [
+      "invalid envelope does not mutate domain",
+      "cross-tenant read empty/forbidden"
+    ],
+    "requiredEvidence": [
+      "reject"
+    ],
+    "repairClass": "deny",
+    "allowedRepairActions": [
+      "error"
+    ],
+    "forbiddenRepairActions": [
+      "default-tenant"
+    ],
+    "severity": "critical",
+    "blastRadius": "write-path",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "missing-tenant / unknown",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-38",
+    "family": "envelope",
+    "title": "Envelope requires correlation",
+    "targetComponents": [
+      "platform-events"
+    ],
+    "startingState": "valid body",
+    "faultClass": "schema-fault",
+    "faultInjection": "omit correlationId",
+    "expectedDetection": "reject",
+    "expectedDiagnosis": "missing-correlation",
+    "expectedContainment": "no persist",
+    "expectedRecovery": "deny",
+    "mustPass": [
+      "no persist"
+    ],
+    "mustFail": [
+      "persist"
+    ],
+    "violatedInvariants": [
+      "invalid envelope does not mutate domain",
+      "correlationId survives every hop"
+    ],
+    "requiredEvidence": [
+      "reject"
+    ],
+    "repairClass": "deny",
+    "allowedRepairActions": [
+      "error"
+    ],
+    "forbiddenRepairActions": [
+      "mint-id"
+    ],
+    "severity": "high",
+    "blastRadius": "write-path",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-39",
+    "family": "envelope",
+    "title": "Writes require idempotency key",
+    "targetComponents": [
+      "platform-events",
+      "WorkOrderIQ"
+    ],
+    "startingState": "valid plan",
+    "faultClass": "schema-fault",
+    "faultInjection": "create-WO no key",
+    "expectedDetection": "reject",
+    "expectedDiagnosis": "missing-idempotency",
+    "expectedContainment": "no persist",
+    "expectedRecovery": "deny",
+    "mustPass": [
+      "no persist"
+    ],
+    "mustFail": [
+      "WO created"
+    ],
+    "violatedInvariants": [
+      "invalid envelope does not mutate domain",
+      "same idempotency key => one WO and one reservation set"
+    ],
+    "requiredEvidence": [
+      "reject"
+    ],
+    "repairClass": "deny",
+    "allowedRepairActions": [
+      "error"
+    ],
+    "forbiddenRepairActions": [
+      "accept"
+    ],
+    "severity": "high",
+    "blastRadius": "write-path",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-40",
+    "family": "envelope",
+    "title": "Envelope requires producer",
+    "targetComponents": [
+      "platform-events"
+    ],
+    "startingState": "valid body",
+    "faultClass": "schema-fault",
+    "faultInjection": "omit producerEngine",
+    "expectedDetection": "reject",
+    "expectedDiagnosis": "missing-producer",
+    "expectedContainment": "no persist",
+    "expectedRecovery": "deny",
+    "mustPass": [
+      "no persist"
+    ],
+    "mustFail": [
+      "persist"
+    ],
+    "violatedInvariants": [
+      "invalid envelope does not mutate domain"
+    ],
+    "requiredEvidence": [
+      "reject"
+    ],
+    "repairClass": "deny",
+    "allowedRepairActions": [
+      "error"
+    ],
+    "forbiddenRepairActions": [
+      "accept"
+    ],
+    "severity": "medium",
+    "blastRadius": "write-path",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-41",
+    "family": "integrity",
+    "title": "Mutated payload same key",
+    "targetComponents": [
+      "InventoryIQ",
+      "platform-events"
+    ],
+    "startingState": "reserve qty=3 hashed",
+    "faultClass": "payload-tamper",
+    "faultInjection": "replay same key qty=30",
+    "expectedDetection": "reject mismatch",
+    "expectedDiagnosis": "idempotency-payload-conflict",
+    "expectedContainment": "original qty=3 stands",
+    "expectedRecovery": "keep original",
+    "mustPass": [
+      "reserved=3"
+    ],
+    "mustFail": [
+      "qty=30 applied"
+    ],
+    "violatedInvariants": [
+      "same key + different payload hash rejected",
+      "same idempotency key => one WO and one reservation set"
+    ],
+    "requiredEvidence": [
+      "payloadHash compare"
+    ],
+    "repairClass": "keep-original",
+    "allowedRepairActions": [
+      "reject-replay"
+    ],
+    "forbiddenRepairActions": [
+      "apply-mutation"
+    ],
+    "severity": "critical",
+    "blastRadius": "stock-write",
+    "reversibility": "reversible-original",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-42",
+    "family": "ordering",
+    "title": "Complete before reserve",
+    "targetComponents": [
+      "WorkOrderIQ",
+      "InventoryIQ"
+    ],
+    "startingState": "WO created not reserved",
+    "faultClass": "out-of-order",
+    "faultInjection": "deliver complete/consume first",
+    "expectedDetection": "park or reject",
+    "expectedDiagnosis": "causal-predecessor-missing",
+    "expectedContainment": "no complete-from-nothing",
+    "expectedRecovery": "wait for reserve or deny",
+    "mustPass": [
+      "not complete"
+    ],
+    "mustFail": [
+      "completed with no reserve"
+    ],
+    "violatedInvariants": [
+      "WorkOrderIQ owns WO lifecycle",
+      "InventoryIQ owns on-hand/reserved/consumed"
+    ],
+    "requiredEvidence": [
+      "park/reject reason"
+    ],
+    "repairClass": "park",
+    "allowedRepairActions": [
+      "park",
+      "reject"
+    ],
+    "forbiddenRepairActions": [
+      "invent-reserve"
+    ],
+    "severity": "high",
+    "blastRadius": "single-job",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-43",
+    "family": "audit",
+    "title": "Audit append-only",
+    "targetComponents": [
+      "auditiq"
+    ],
+    "startingState": "3 events chained",
+    "faultClass": "tamper",
+    "faultInjection": "rewrite first event",
+    "expectedDetection": "tamper detected",
+    "expectedDiagnosis": "hash-chain-break",
+    "expectedContainment": "first event unchanged",
+    "expectedRecovery": "deny rewrite",
+    "mustPass": [
+      "chain intact or rewrite refused"
+    ],
+    "mustFail": [
+      "forged first event canonical"
+    ],
+    "violatedInvariants": [
+      "AuditIQ is evidence not stock"
+    ],
+    "requiredEvidence": [
+      "chain hashes"
+    ],
+    "repairClass": "deny-rewrite",
+    "allowedRepairActions": [
+      "append-correction"
+    ],
+    "forbiddenRepairActions": [
+      "edit-in-place"
+    ],
+    "severity": "critical",
+    "blastRadius": "evidence",
+    "reversibility": "irreversible-log",
+    "tenantAndDataClass": "ksix / audit-evidence",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-44",
+    "family": "audit",
+    "title": "Audit is not stock truth",
+    "targetComponents": [
+      "auditiq",
+      "InventoryIQ"
+    ],
+    "startingState": "seeded stock",
+    "faultClass": "confused-deputy",
+    "faultInjection": "insert audit reserved=99 no Inventory command",
+    "expectedDetection": "divergence",
+    "expectedDiagnosis": "audit-not-SoT",
+    "expectedContainment": "Inventory unchanged",
+    "expectedRecovery": "do not replay-into-stock",
+    "mustPass": [
+      "Inventory numbers original"
+    ],
+    "mustFail": [
+      "stock becomes 99 from audit"
+    ],
+    "violatedInvariants": [
+      "AuditIQ is evidence not stock",
+      "InventoryIQ owns on-hand/reserved/consumed"
+    ],
+    "requiredEvidence": [
+      "Inventory snapshot"
+    ],
+    "repairClass": "ignore-as-command",
+    "allowedRepairActions": [
+      "flag-divergence"
+    ],
+    "forbiddenRepairActions": [
+      "apply-audit-to-stock"
+    ],
+    "severity": "critical",
+    "blastRadius": "stock",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-45",
+    "family": "poison",
+    "title": "Poison envelope no partial write",
+    "targetComponents": [
+      "platform-events",
+      "WorkOrderIQ"
+    ],
+    "startingState": "none",
+    "faultClass": "malformed-payload",
+    "faultInjection": "valid header invalid body",
+    "expectedDetection": "schema fail",
+    "expectedDiagnosis": "poison",
+    "expectedContainment": "no half WO; optional DLQ",
+    "expectedRecovery": "dead-letter",
+    "mustPass": [
+      "no WO"
+    ],
+    "mustFail": [
+      "partial WO"
+    ],
+    "violatedInvariants": [
+      "invalid envelope does not mutate domain"
+    ],
+    "requiredEvidence": [
+      "DLQ or reject"
+    ],
+    "repairClass": "dead-letter",
+    "allowedRepairActions": [
+      "DLQ"
+    ],
+    "forbiddenRepairActions": [
+      "best-effort-persist"
+    ],
+    "severity": "high",
+    "blastRadius": "write-path",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-46",
+    "family": "isolation",
+    "title": "Other tenant cannot use ksix correlation",
+    "targetComponents": [
+      "WorkOrderIQ"
+    ],
+    "startingState": "ksix job exists",
+    "faultClass": "cross-tenant-replay",
+    "faultInjection": "replay ksix correlationId as other-shop",
+    "expectedDetection": "deny",
+    "expectedDiagnosis": "tenant-bound-correlation",
+    "expectedContainment": "no ksix body",
+    "expectedRecovery": "deny",
+    "mustPass": [
+      "no ksix records"
+    ],
+    "mustFail": [
+      "ksix job visible"
+    ],
+    "violatedInvariants": [
+      "cross-tenant read empty/forbidden",
+      "correlationId survives every hop"
+    ],
+    "requiredEvidence": [
+      "deny"
+    ],
+    "repairClass": "deny",
+    "allowedRepairActions": [
+      "not-found"
+    ],
+    "forbiddenRepairActions": [
+      "honor-foreign-correlation"
+    ],
+    "severity": "critical",
+    "blastRadius": "cross-tenant",
+    "reversibility": "reversible",
+    "tenantAndDataClass": "ksix vs other-shop / tenant-boundary",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-47",
+    "family": "replay",
+    "title": "Replay agrees with live",
+    "targetComponents": [
+      "ForgeIQ",
+      "CostIQ",
+      "Prime",
+      "WorkOrderIQ",
+      "InventoryIQ"
+    ],
+    "startingState": "empty shop",
+    "faultClass": "none-then-replay",
+    "faultInjection": "run plan..partial consume..complete; replay on fresh harness",
+    "expectedDetection": "N/A if match",
+    "expectedDiagnosis": "replay-equivalence",
+    "expectedContainment": "same terminal state",
+    "expectedRecovery": "idempotent replay",
+    "mustPass": [
+      "final stock and WO match live"
+    ],
+    "mustFail": [
+      "replay diverges"
+    ],
+    "violatedInvariants": [
+      "same idempotency key => one WO and one reservation set",
+      "InventoryIQ owns on-hand/reserved/consumed",
+      "WorkOrderIQ owns WO lifecycle"
+    ],
+    "requiredEvidence": [
+      "event log + snapshots"
+    ],
+    "repairClass": "replay",
+    "allowedRepairActions": [
+      "reapply-envelopes"
+    ],
+    "forbiddenRepairActions": [
+      "rebuild-from-guess"
+    ],
+    "severity": "high",
+    "blastRadius": "single-job",
+    "reversibility": "reversible-via-replay",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes",
+    "pack": 0
+  },
+  {
+    "scenarioId": "E2E-48",
+    "family": "composite",
+    "title": "Full shop day",
+    "targetComponents": [
+      "ForgeIQ",
+      "CostIQ",
+      "Prime",
+      "WorkOrderIQ",
+      "InventoryIQ",
+      "ReceiptIQ",
+      "Tracking"
+    ],
+    "startingState": "seeded shop",
+    "faultClass": "mixed",
+    "faultInjection": "receipt; closed-loop job; second job shortage; customer view; replay writes",
+    "expectedDetection": "shortage on job 2; others happy",
+    "expectedDiagnosis": "multi-chapter-day",
+    "expectedContainment": "invariants at each chapter",
+    "expectedRecovery": "day replay idempotent",
+    "mustPass": [
+      "all five chapter assertions"
+    ],
+    "mustFail": [
+      "any chapter invariant broken"
+    ],
+    "violatedInvariants": [
+      "ForgeIQ owns plan/BOM",
+      "CostIQ owns CostResult",
+      "WorkOrderIQ owns WO lifecycle",
+      "InventoryIQ owns on-hand/reserved/consumed",
+      "ReceiptIQ owns receipt",
+      "Tracking is projection not SoT",
+      "same idempotency key => one WO and one reservation set",
+      "cross-tenant read empty/forbidden",
+      "on-hand never negative; reserved <= on-hand"
+    ],
+    "requiredEvidence": [
+      "chapter logs"
+    ],
+    "repairClass": "chapter-recover",
+    "allowedRepairActions": [
+      "per-chapter allowed"
+    ],
+    "forbiddenRepairActions": [
+      "skip-auth",
+      "merge-tenants"
+    ],
+    "severity": "critical",
+    "blastRadius": "tenant-day",
+    "reversibility": "mixed",
+    "tenantAndDataClass": "ksix / operational-shop",
+    "generalizationCandidate": "yes \u2014 template for shop-week",
+    "pack": 0
+  }
+]

@@ -1,0 +1,32 @@
+{
+  "total": 2048,
+  "e2e": 48,
+  "pack1": 1000,
+  "pack2": 1000,
+  "columns": [
+    "scenarioId",
+    "family",
+    "title",
+    "targetComponents",
+    "startingState",
+    "faultClass",
+    "faultInjection",
+    "expectedDetection",
+    "expectedDiagnosis",
+    "expectedContainment",
+    "expectedRecovery",
+    "mustPass",
+    "mustFail",
+    "violatedInvariants",
+    "requiredEvidence",
+    "repairClass",
+    "allowedRepairActions",
+    "forbiddenRepairActions",
+    "severity",
+    "blastRadius",
+    "reversibility",
+    "tenantAndDataClass",
+    "generalizationCandidate"
+  ],
+  "runOrder": "E2E-01..12 gate \u2192 E2E-13..48 \u2192 F01/F06/F05/F07 \u2192 C05/C21/C01. Do not emit 2048 files."
+}
