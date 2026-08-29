@@ -197,7 +197,17 @@ describe("the store cannot be edited through what it hands out", () => {
     // possible moment. Retention and lawful erasure are real and need a
     // separately authorized compensating operation with its own evidence.
     const log = audit();
-    expect(Object.keys(log).sort()).toEqual(["count", "query", "record", "verify"]);
+    // An exact surface, so an addition is a decision somebody makes here
+    // rather than something that appears. `durability` was added when the
+    // store became a port: it is a read-only accessor saying whether the
+    // bound store survives a restart, which is the opposite of a mutation —
+    // and the list below is what keeps that distinction from being assumed.
+    expect(Object.keys(log).sort()).toEqual(["count", "durability", "query", "record", "verify"]);
+
+    // The claim that actually matters, stated independently of the list.
+    for (const forbidden of ["update", "delete", "redact", "remove", "purge", "truncate"]) {
+      expect(Object.keys(log)).not.toContain(forbidden);
+    }
   });
 });
 

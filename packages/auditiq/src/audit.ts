@@ -81,6 +81,53 @@ export interface AuditIq {
 
   /** How many records are held. */
   count(): number;
+
+  /** Whether the bound store survives a restart. */
+  durability(): "in-memory" | "durable";
+}
+
+/**
+ * Where sealed evidence lives.
+ *
+ * A port, and the reason is blunt: every guarantee this engine makes — the
+ * chain is intact, the dead entry is still there, nothing was removed — is a
+ * guarantee about state, and until now that state was a module-local array
+ * that did not survive the process. An append-only store nobody can persist is
+ * append-only for the lifetime of a node process.
+ *
+ * SYNCHRONOUS, deliberately, for the reason EventIQ's store is: `record` and
+ * `verify` return values rather than promises and every caller depends on
+ * that. `better-sqlite3` is synchronous and is what a host binds. A
+ * network-latency store would need an async variant of this engine, which is
+ * named as debt rather than discovered by whoever tries it.
+ *
+ * NO `delete` AND NO `update`, here as in the engine above. A port that
+ * offered them would put the method back within reach of somebody during an
+ * incident, which is the worst possible moment.
+ */
+export interface AuditStore {
+  /** Whether entries survive a restart. A claim tests read. */
+  readonly durability: "in-memory" | "durable";
+  append(entry: SealedAuditRecord): void;
+  /** Every entry, in sequence order. Ordering is not optional for a chain. */
+  all(): readonly SealedAuditRecord[];
+  count(): number;
+  /** The last hash, so a restarted engine continues the chain rather than restarting it. */
+  lastHash(): string | null;
+}
+
+/** The in-memory adapter. Honest about being in-memory. */
+export function createInMemoryAuditStore(): AuditStore {
+  const entries: SealedAuditRecord[] = [];
+  return {
+    durability: "in-memory",
+    append: (entry) => {
+      entries.push(entry);
+    },
+    all: () => entries,
+    count: () => entries.length,
+    lastHash: () => entries[entries.length - 1]?.hash ?? null,
+  };
 }
 
 export interface AuditIqOptions {
@@ -96,6 +143,14 @@ export interface AuditIqOptions {
    * label rather than evidence.
    */
   instance: InstanceIdentity;
+  /**
+   * Where evidence is kept. Defaults to the in-memory adapter.
+   *
+   * A default rather than a requirement, because in-memory is correct for a
+   * test — but `durability()` says which is bound, so a host cannot believe
+   * its audit chain survived a restart when it did not.
+   */
+  store?: AuditStore;
   /** Injectable for deterministic tests. */
   now?: () => Date;
   generateId?: () => string;
@@ -145,9 +200,10 @@ export function createAuditIq(options: AuditIqOptions): AuditIq {
     options.generateId ??
     (() => `aud_${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`);
 
-  // Private. Not exposed, not returned by reference, not mutable from outside —
-  // an append-only store that hands out its array is append-only by convention.
-  const entries: SealedAuditRecord[] = [];
+  // Behind a port now. Still not exposed and still not handed out by
+  // reference: an append-only store that returns its array is append-only by
+  // convention.
+  const store = options.store ?? createInMemoryAuditStore();
 
   return {
     record(input) {
@@ -167,8 +223,12 @@ export function createAuditIq(options: AuditIqOptions): AuditIq {
         return { accepted: false, reason };
       }
 
-      const sequence = entries.length;
-      const previousHash = entries[sequence - 1]?.hash ?? AUDIT_CHAIN_GENESIS;
+      const sequence = store.count();
+      // From the STORE, not from a local variable. A restarted engine continues
+      // the chain it inherited rather than starting a second one from genesis —
+      // and two chains in one store is a break that `verify` would report at
+      // the seam, correctly but confusingly.
+      const previousHash = store.lastHash() ?? AUDIT_CHAIN_GENESIS;
       const sealed: SealedAuditRecord = {
         record: parsed.data,
         globalInstanceId: instanceId,
@@ -177,7 +237,7 @@ export function createAuditIq(options: AuditIqOptions): AuditIq {
         hash: sealHash(parsed.data, instanceId, sequence, previousHash),
       };
 
-      entries.push(sealed);
+      store.append(sealed);
       // Frozen on the way out. A caller holding a reference it can mutate is a
       // caller that can alter evidence without the chain noticing, because the
       // hash was computed before the mutation.
@@ -185,7 +245,7 @@ export function createAuditIq(options: AuditIqOptions): AuditIq {
     },
 
     query(filter = {}) {
-      const matches = entries.filter((e) => {
+      const matches = store.all().filter((e) => {
         const r = e.record;
         if (filter.tenant && r.tenant.organizationId !== filter.tenant) return false;
         if (filter.actorId && r.actor.actorId !== filter.actorId) return false;
@@ -206,7 +266,30 @@ export function createAuditIq(options: AuditIqOptions): AuditIq {
     verify() {
       let previousHash = AUDIT_CHAIN_GENESIS;
 
-      for (const entry of entries) {
+      let expectedSequence = 0;
+
+      for (const entry of store.all()) {
+        // ── Sequence, checked separately from the hash chain ──────────────
+        //
+        // The hash covers the sequence, so a tampered sequence produces a
+        // tampered hash and is caught below — but only if the ORIGINAL was
+        // written correctly. A writer that stamped every entry with sequence 0
+        // produces a store that is internally consistent and chains perfectly,
+        // and the chain check passes it.
+        //
+        // Found by a surviving mutation. The error message here has always
+        // claimed to detect a record "removed, reordered or inserted"; without
+        // this, it detected only the ones that broke the linking.
+        if (entry.sequence !== expectedSequence) {
+          return {
+            intact: false,
+            brokenAt: entry.sequence,
+            reason: `Record at position ${expectedSequence} claims sequence ${entry.sequence}. Sequences must be consecutive from zero; a gap or a repeat means a record was removed, inserted, or written by something that was not counting.`,
+            recordsChecked: expectedSequence,
+          };
+        }
+        expectedSequence += 1;
+
         if (entry.previousHash !== previousHash) {
           return {
             intact: false,
@@ -234,9 +317,10 @@ export function createAuditIq(options: AuditIqOptions): AuditIq {
         previousHash = entry.hash;
       }
 
-      return { intact: true, recordsChecked: entries.length };
+      return { intact: true, recordsChecked: store.count() };
     },
 
-    count: () => entries.length,
+    count: () => store.count(),
+    durability: () => store.durability,
   };
 }

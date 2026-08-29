@@ -50,6 +50,8 @@ export interface WebhookDispatcherOptions {
   transport: WebhookTransport;
   /** Consecutive failures before an endpoint is switched off. */
   disableAfterFailures?: number;
+  /** Where endpoints and delivery history live. Defaults to in-memory. */
+  store?: WebhookStore;
   now?: () => Date;
   generateId?: () => string;
 }
@@ -138,9 +140,46 @@ export function verifyWebhook(
   return expected === provided ? { valid: true } : { valid: false, reason: "signature mismatch" };
 }
 
+/**
+ * Where endpoints and delivery history live.
+ *
+ * Both belong in a host's database rather than a process. The registry is
+ * CONFIGURATION — which partners we send to, and their secrets — and a
+ * dispatcher that forgot it on restart would simply stop delivering to
+ * everybody. The log is the answer to "did you send it?", and this file's own
+ * opening argument is that "probably" is not one; a log that dies with the
+ * process makes "probably" the only available answer after any restart.
+ */
+export interface WebhookStore {
+  readonly durability: "in-memory" | "durable";
+  endpoints(): readonly WebhookEndpoint[];
+  endpoint(endpointId: string): WebhookEndpoint | null;
+  putEndpoint(endpoint: WebhookEndpoint): void;
+  deliveries(): readonly WebhookDelivery[];
+  recordDelivery(delivery: WebhookDelivery): void;
+}
+
+export function createInMemoryWebhookStore(): WebhookStore {
+  const registry = new Map<string, WebhookEndpoint>();
+  const log: WebhookDelivery[] = [];
+  return {
+    durability: "in-memory",
+    endpoints: () => [...registry.values()],
+    endpoint: (id) => registry.get(id) ?? null,
+    putEndpoint: (e) => {
+      registry.set(e.endpointId, e);
+    },
+    deliveries: () => log,
+    recordDelivery: (d) => {
+      log.push(d);
+    },
+  };
+}
+
 export function createWebhookDispatcher(
   options: WebhookDispatcherOptions,
 ): InMemoryWebhookDispatcher {
+  const store = options.store ?? createInMemoryWebhookStore();
   const now = options.now ?? (() => new Date());
   const generateId = options.generateId ?? randomId;
   const disableAfter = options.disableAfterFailures ?? 10;
@@ -189,10 +228,10 @@ export function createWebhookDispatcher(
         attemptedAt: now().toISOString(),
         ...(ok ? {} : { error: `endpoint returned ${response.status}` }),
       };
-      log.push(settled);
+      store.recordDelivery(settled);
 
       const failures = ok ? 0 : endpoint.consecutiveFailures + 1;
-      registry.set(endpoint.endpointId, {
+      store.putEndpoint({
         ...endpoint,
         consecutiveFailures: failures,
         ...(failures >= disableAfter
@@ -213,10 +252,10 @@ export function createWebhookDispatcher(
         error: error.message,
         attemptedAt: now().toISOString(),
       };
-      log.push(settled);
+      store.recordDelivery(settled);
 
       const failures = endpoint.consecutiveFailures + 1;
-      registry.set(endpoint.endpointId, {
+      store.putEndpoint({
         ...endpoint,
         consecutiveFailures: failures,
         ...(failures >= disableAfter
@@ -239,12 +278,12 @@ export function createWebhookDispatcher(
         consecutiveFailures: 0,
         createdAt: now().toISOString(),
       });
-      registry.set(endpoint.endpointId, endpoint);
+      store.putEndpoint(endpoint);
       return endpoint;
     },
 
     endpointsFor: (tenantId, eventType) =>
-      [...registry.values()].filter(
+      [...store.endpoints()].filter(
         (e) =>
           e.active &&
           e.tenant.organizationId === tenantId &&
@@ -254,16 +293,16 @@ export function createWebhookDispatcher(
     dispatch: (endpoint, event) => send(endpoint, event, 1),
 
     deliveries(filter) {
-      let all = [...log];
+      let all = [...store.deliveries()];
       if (filter?.endpointId) all = all.filter((d) => d.endpointId === filter.endpointId);
       if (filter?.status) all = all.filter((d) => d.status === filter.status);
       return filter?.limit ? all.slice(-filter.limit) : all;
     },
 
     async replay(deliveryId) {
-      const original = log.find((d) => d.deliveryId === deliveryId);
+      const original = store.deliveries().find((d) => d.deliveryId === deliveryId);
       if (!original) return null;
-      const endpoint = registry.get(original.endpointId);
+      const endpoint = store.endpoint(original.endpointId);
       if (!endpoint) return null;
       // Replays the ORIGINAL payload, not a regenerated one. The fact being
       // reported happened when it happened; re-deriving it could produce
@@ -275,7 +314,7 @@ export function createWebhookDispatcher(
       );
     },
 
-    endpoints: () => [...registry.values()],
+    endpoints: () => [...store.endpoints()],
   };
 }
 

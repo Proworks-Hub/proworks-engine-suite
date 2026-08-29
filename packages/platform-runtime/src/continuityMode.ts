@@ -60,6 +60,47 @@ export type ModeTransition =
   | { readonly changed: true; readonly from: OperatingMode; readonly to: OperatingMode; readonly reason: string }
   | { readonly changed: false; readonly reason: string };
 
+/**
+ * Where the mode and the queue live.
+ *
+ * The mode most of all. An instance that restarts into NORMAL because its
+ * operating mode was in a variable has just undone a SAFE_MODE decision by
+ * crashing — which makes crashing the way out of containment, and containment
+ * is exactly the state most likely to be accompanied by a crash.
+ */
+export interface OperatingModeStore {
+  readonly durability: "in-memory" | "durable";
+  mode(): OperatingMode;
+  setMode(mode: OperatingMode): void;
+  queued(): readonly QueuedContribution[];
+  enqueue(contribution: QueuedContribution): void;
+  drain(): void;
+  nextContributionId(): string;
+}
+
+export function createInMemoryOperatingModeStore(
+  initialMode: OperatingMode = "NORMAL",
+): OperatingModeStore {
+  let current = initialMode;
+  const pending: QueuedContribution[] = [];
+  let counter = 0;
+  return {
+    durability: "in-memory",
+    mode: () => current,
+    setMode: (m) => {
+      current = m;
+    },
+    queued: () => [...pending],
+    enqueue: (c) => {
+      pending.push(c);
+    },
+    drain: () => {
+      pending.length = 0;
+    },
+    nextContributionId: () => `contrib_${(counter += 1)}`,
+  };
+}
+
 export interface ContinuityController {
   readonly instance: InstanceIdentity;
 
@@ -103,11 +144,22 @@ export interface ContinuityController {
 
   /** The declared RPO/RTO tiers, and which of them have never been tested. */
   untestedTiers(): readonly RecoveryTier[];
+
+  /** Whether the mode and queue survive a restart. */
+  durability(): "in-memory" | "durable";
 }
 
 export interface ContinuityControllerOptions {
   readonly instance: InstanceIdentity;
   readonly initialMode?: OperatingMode;
+  /**
+   * Where the mode and queue live. Defaults to in-memory.
+   *
+   * `initialMode` is only consulted when no store is supplied: a store that
+   * already holds a mode is the authority on it, and letting a constructor
+   * argument override that would make a restart able to reset containment.
+   */
+  readonly store?: OperatingModeStore;
   readonly tiers?: readonly RecoveryTier[];
   readonly now?: () => Date;
   readonly onTransition?: (transition: ModeTransition) => void;
@@ -133,9 +185,8 @@ export function createContinuityController(
   options: ContinuityControllerOptions,
 ): ContinuityController {
   const now = options.now ?? (() => new Date());
-  let mode: OperatingMode = options.initialMode ?? "NORMAL";
-  const queue: QueuedContribution[] = [];
-  let counter = 0;
+  const store =
+    options.store ?? createInMemoryOperatingModeStore(options.initialMode ?? "NORMAL");
 
   const settle = (t: ModeTransition): ModeTransition => {
     options.onTransition?.(t);
@@ -144,9 +195,10 @@ export function createContinuityController(
 
   return {
     instance: options.instance,
-    mode: () => mode,
+    mode: () => store.mode(),
 
     degrade(to, reason) {
+      const mode = store.mode();
       if (to === "RECOVERY" || mode === "RECOVERY") {
         return settle({
           changed: false,
@@ -161,13 +213,13 @@ export function createContinuityController(
           reason: `${to} is not more restrictive than ${mode}. Use recover() to move back toward NORMAL.`,
         });
       }
-      const from = mode;
-      mode = to;
-      return settle({ changed: true, from, to, reason });
+      store.setMode(to);
+      return settle({ changed: true, from: mode, to, reason });
     },
 
     recover(input) {
       const { to, reason, reconciliation, authorizedBy } = input;
+      const mode = store.mode();
 
       if (!transitionIsPermitted(mode, to)) {
         return settle({
@@ -221,24 +273,24 @@ export function createContinuityController(
         // was drained. This checks. A reconciliation that took the claim at
         // its word would let an instance rejoin holding unsent work and
         // silently stop queueing it.
-        if (queue.length > 0) {
+        const remaining = store.queued().length;
+        if (remaining > 0) {
           return settle({
             changed: false,
-            reason: `Reconciliation claims the queue is drained and ${queue.length} contribution(s) remain.`,
+            reason: `Reconciliation claims the queue is drained and ${remaining} contribution(s) remain.`,
           });
         }
       }
 
-      const from = mode;
-      mode = to;
-      return settle({ changed: true, from, to, reason });
+      store.setMode(to);
+      return settle({ changed: true, from: mode, to, reason });
     },
 
-    admits: (cls) => classesRunningIn(mode).includes(cls),
+    admits: (cls) => classesRunningIn(store.mode()).includes(cls),
 
     contribute(input) {
       const parsed = queuedContributionSchema.safeParse({
-        contributionId: `contrib_${(counter += 1)}`,
+        contributionId: store.nextContributionId(),
         globalInstanceId: options.instance.globalInstanceId,
         queuedAt: now().toISOString(),
         ...(typeof input === "object" && input !== null ? input : {}),
@@ -254,21 +306,22 @@ export function createContinuityController(
         };
       }
 
-      if (mayWriteToCollective(mode)) {
+      if (mayWriteToCollective(store.mode())) {
         return { sent: true, queued: false, reason: "Sent." };
       }
 
-      queue.push(parsed.data);
+      store.enqueue(parsed.data);
       return {
         sent: false,
         queued: true,
-        reason: `Queued locally: this instance is ${mode} and may not write to the collective.`,
+        reason: `Queued locally: this instance is ${store.mode()} and may not write to the collective.`,
       };
     },
 
-    pendingContributions: () => [...queue],
+    pendingContributions: () => store.queued(),
 
     acceptFromCollective(input) {
+      const mode = store.mode();
       if (mode !== "NORMAL" && mode !== "RECOVERY") {
         return {
           accepted: false,
@@ -286,6 +339,7 @@ export function createContinuityController(
     },
 
     untestedTiers: () => (options.tiers ?? []).filter((t) => !t.restoreTested),
+    durability: () => store.durability,
   };
 }
 

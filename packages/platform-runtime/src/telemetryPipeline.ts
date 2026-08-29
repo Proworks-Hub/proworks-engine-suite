@@ -162,6 +162,35 @@ export interface AlertDeduplicatorOptions {
    * needed to know.
    */
   readonly notifyOnEscalation?: boolean;
+  /** Where the windows live. Defaults to in-memory. */
+  readonly store?: AlertStore;
+}
+
+/**
+ * Where the suppression windows live.
+ *
+ * The one whose loss is least alarming and most annoying: a restart with an
+ * empty deduplicator re-notifies everything currently firing, which is a
+ * notification storm caused by the thing that exists to prevent notification
+ * storms.
+ */
+export interface AlertStore {
+  readonly durability: "in-memory" | "durable";
+  get(fingerprint: string): { firstAt: number; count: number; highest: SignalClass } | null;
+  set(fingerprint: string, value: { firstAt: number; count: number; highest: SignalClass }): void;
+  all(): ReadonlyArray<readonly [string, { firstAt: number; count: number; highest: SignalClass }]>;
+}
+
+export function createInMemoryAlertStore(): AlertStore {
+  const seen = new Map<string, { firstAt: number; count: number; highest: SignalClass }>();
+  return {
+    durability: "in-memory",
+    get: (f) => seen.get(f) ?? null,
+    set: (f, v) => {
+      seen.set(f, v);
+    },
+    all: () => [...seen.entries()],
+  };
 }
 
 export interface AlertDeduplicator {
@@ -171,6 +200,9 @@ export interface AlertDeduplicator {
   }): AlertDecision;
   /** Occurrences suppressed since the last notification, per fingerprint. */
   pending(): Readonly<Record<string, number>>;
+
+  /** Whether the suppression windows survive a restart. */
+  durability(): "in-memory" | "durable";
 }
 
 const CLASS_RANK: Readonly<Record<SignalClass, number>> = Object.freeze({
@@ -194,15 +226,15 @@ export function createAlertDeduplicator(
   const now = options.now ?? (() => new Date());
   const escalate = options.notifyOnEscalation ?? true;
 
-  const seen = new Map<string, { firstAt: number; count: number; highest: SignalClass }>();
+  const store = options.store ?? createInMemoryAlertStore();
 
   return {
     consider({ fingerprint, signalClass }) {
       const at = now().getTime();
-      const prior = seen.get(fingerprint);
+      const prior = store.get(fingerprint);
 
       if (!prior || at - prior.firstAt > windowMs) {
-        seen.set(fingerprint, { firstAt: at, count: 1, highest: signalClass });
+        store.set(fingerprint, { firstAt: at, count: 1, highest: signalClass });
         return {
           notify: true,
           occurrences: 1,
@@ -213,7 +245,7 @@ export function createAlertDeduplicator(
 
       const count = prior.count + 1;
       const worse = CLASS_RANK[signalClass] > CLASS_RANK[prior.highest];
-      seen.set(fingerprint, {
+      store.set(fingerprint, {
         firstAt: prior.firstAt,
         count: worse ? 0 : count,
         highest: worse ? signalClass : prior.highest,
@@ -240,9 +272,11 @@ export function createAlertDeduplicator(
 
     pending() {
       const out: Record<string, number> = {};
-      for (const [key, value] of seen) if (value.count > 1) out[key] = value.count;
+      for (const [key, value] of store.all()) if (value.count > 1) out[key] = value.count;
       return out;
     },
+
+    durability: () => store.durability,
   };
 }
 

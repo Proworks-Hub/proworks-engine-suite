@@ -10,7 +10,7 @@ import {
   type SealedAuditRecord,
 } from "@proworks-hub/contracts";
 
-import { createAuditIq, type AuditQuery, type ChainVerification } from "./audit.js";
+import { createAuditIq, type AuditQuery, type AuditStore, type ChainVerification } from "./audit.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // THE EXECUTION LEDGER — two ledgers, and the wall between them.
@@ -188,6 +188,8 @@ export interface LedgerRead extends AuditQuery {
 export interface InstanceLedger {
   readonly scope: "instance";
   readonly instance: InstanceIdentity;
+  /** Whether this ledger survives a restart. */
+  durability(): "in-memory" | "durable";
 
   /** Appends operational evidence. */
   append(input: unknown): LedgerWriteResult;
@@ -213,6 +215,7 @@ export interface InstanceLedger {
 
 export interface CollectiveLedger {
   readonly scope: "collective";
+  durability(): "in-memory" | "durable";
 
   /**
    * Appends a collective-class entry.
@@ -250,6 +253,14 @@ export interface ReplayDecision {
 
 export interface LedgerOptions {
   readonly instance: InstanceIdentity;
+  /**
+   * Where the entries live. Defaults to in-memory.
+   *
+   * The instance and collective ledgers take SEPARATE stores, and a host that
+   * bound one store to both would have merged the two — which is the single
+   * thing this whole file exists to keep apart.
+   */
+  readonly store?: AuditStore;
   readonly now?: () => Date;
   readonly generateId?: () => string;
   readonly onRejected?: (reason: string, input: unknown) => void;
@@ -260,6 +271,7 @@ export interface LedgerOptions {
 export function createInstanceLedger(options: LedgerOptions): InstanceLedger {
   const audit = createAuditIq({
     instance: options.instance,
+    ...(options.store ? { store: options.store } : {}),
     ...(options.now ? { now: options.now } : {}),
     ...(options.generateId ? { generateId: options.generateId } : {}),
     ...(options.onRejected ? { onRejected: options.onRejected } : {}),
@@ -302,6 +314,7 @@ export function createInstanceLedger(options: LedgerOptions): InstanceLedger {
     },
 
     verify: () => audit.verify(),
+    durability: () => audit.durability(),
 
     recordReplay(input) {
       replayCount += 1;
@@ -346,12 +359,14 @@ export function createInstanceLedger(options: LedgerOptions): InstanceLedger {
  */
 export function createCollectiveLedger(options: {
   readonly collectiveId: InstanceIdentity;
+  readonly store?: AuditStore;
   readonly now?: () => Date;
   readonly generateId?: () => string;
   readonly onRejected?: (reason: string, input: unknown) => void;
 }): CollectiveLedger {
   const audit = createAuditIq({
     instance: options.collectiveId,
+    ...(options.store ? { store: options.store } : {}),
     ...(options.now ? { now: options.now } : {}),
     ...(options.generateId ? { generateId: options.generateId } : {}),
     ...(options.onRejected ? { onRejected: options.onRejected } : {}),
@@ -456,6 +471,7 @@ export function createCollectiveLedger(options: {
 
     read: (filter) => audit.query(filter),
     verify: () => audit.verify(),
+    durability: () => audit.durability(),
     count: () => audit.count(),
   };
 }

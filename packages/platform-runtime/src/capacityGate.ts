@@ -102,6 +102,61 @@ export interface Reservation {
   readonly reservedAt: string;
 }
 
+/**
+ * Where the capacity state lives.
+ *
+ * Reservations, spend and burst tokens all outlive a request, and a gate that
+ * forgot them on restart would come back believing nothing is held. That is
+ * the worst possible moment to believe it, because a restart under load is
+ * followed immediately by a rush of retries.
+ */
+export interface CapacityStore {
+  readonly durability: "in-memory" | "durable";
+  reservations(): readonly Reservation[];
+  put(reservation: Reservation): void;
+  take(reservationId: string): Reservation | null;
+  spentBy(tenantId: string): number;
+  setSpent(tenantId: string, amount: number): void;
+  burst(tenantId: string): { tokens: number; at: number } | null;
+  setBurst(tenantId: string, value: { tokens: number; at: number }): void;
+  level(): DegradationLevel;
+  setLevel(level: DegradationLevel): void;
+  nextReservationId(): string;
+}
+
+export function createInMemoryCapacityStore(): CapacityStore {
+  const heldMap = new Map<string, Reservation>();
+  const spendMap = new Map<string, number>();
+  const burstMap = new Map<string, { tokens: number; at: number }>();
+  let currentLevel: DegradationLevel = "normal";
+  let counter = 0;
+  return {
+    durability: "in-memory",
+    reservations: () => [...heldMap.values()],
+    put: (r) => {
+      heldMap.set(r.reservationId, r);
+    },
+    take: (id) => {
+      const r = heldMap.get(id) ?? null;
+      heldMap.delete(id);
+      return r;
+    },
+    spentBy: (t) => spendMap.get(t) ?? 0,
+    setSpent: (t, a) => {
+      spendMap.set(t, a);
+    },
+    burst: (t) => burstMap.get(t) ?? null,
+    setBurst: (t, v) => {
+      burstMap.set(t, v);
+    },
+    level: () => currentLevel,
+    setLevel: (l) => {
+      currentLevel = l;
+    },
+    nextReservationId: () => `res_${(counter += 1)}`,
+  };
+}
+
 export interface CapacityGate {
   readonly instance: InstanceIdentity;
 
@@ -127,11 +182,16 @@ export interface CapacityGate {
 
   /** What a tenant has spent. */
   spentBy(tenantId: string): number;
+
+  /** Whether the bound store survives a restart. */
+  durability(): "in-memory" | "durable";
 }
 
 export interface CapacityGateOptions {
   readonly instance: InstanceIdentity;
   readonly policy: CapacityPolicy;
+  /** Where reservations, spend and burst tokens live. Defaults to in-memory. */
+  readonly store?: CapacityStore;
   readonly now?: () => Date;
   /** Every verdict, so deferrals and preemptions are observable rather than silent. */
   readonly onVerdict?: (verdict: CapacityVerdict, request: WorkRequest) => void;
@@ -150,11 +210,7 @@ export function createCapacityGate(options: CapacityGateOptions): CapacityGate {
   const degradeAbove = p.degradeAbove ?? 0.85;
   const recoverBelow = p.recoverBelow ?? 0.65;
 
-  const held = new Map<string, Reservation>();
-  const spendByTenant = new Map<string, number>();
-  const burst = new Map<string, { tokens: number; at: number }>();
-  let level: DegradationLevel = "normal";
-  let counter = 0;
+  const store = options.store ?? createInMemoryCapacityStore();
 
   const limitOf = (d: ResourceDimension): number => p.limits[d] ?? Number.POSITIVE_INFINITY;
 
@@ -166,7 +222,7 @@ export function createCapacityGate(options: CapacityGateOptions): CapacityGate {
 
   const usedIn = (d: ResourceDimension, filter?: (r: Reservation) => boolean): number => {
     let sum = 0;
-    for (const r of held.values()) {
+    for (const r of store.reservations()) {
       if (filter && !filter(r)) continue;
       sum += r.demand[d] ?? 0;
     }
@@ -175,9 +231,9 @@ export function createCapacityGate(options: CapacityGateOptions): CapacityGate {
 
   const burstTokensFor = (tenantId: string): number => {
     const at = now().getTime();
-    const entry = burst.get(tenantId);
+    const entry = store.burst(tenantId);
     if (!entry) {
-      burst.set(tenantId, { tokens: burstMax, at });
+      store.setBurst(tenantId, { tokens: burstMax, at });
       return burstMax;
     }
     // Decay back toward full over time. Instantaneous refill would make the
@@ -185,7 +241,7 @@ export function createCapacityGate(options: CapacityGateOptions): CapacityGate {
     // absorb one spike.
     const elapsedSeconds = Math.max(0, (at - entry.at) / 1000);
     const tokens = Math.min(burstMax, entry.tokens + elapsedSeconds * refillPerSecond);
-    burst.set(tenantId, { tokens, at });
+    store.setBurst(tenantId, { tokens, at });
     return tokens;
   };
 
@@ -199,18 +255,19 @@ export function createCapacityGate(options: CapacityGateOptions): CapacityGate {
       }),
     );
 
+    const level = store.level();
     const rung = degradationRung(level);
     if (worst > degradeAbove && rung < degradationRung("protect_critical")) {
-      level = (["normal", "defer_evolution", "defer_background", "conserve", "shed_optional", "protect_critical"] as const)[
+      store.setLevel((["normal", "defer_evolution", "defer_background", "conserve", "shed_optional", "protect_critical"] as const)[
         rung + 1
-      ]!;
+      ]!);
     } else if (worst < recoverBelow && rung > 0) {
       // Automatic recovery, one rung at a time. Jumping straight to normal
       // would return every class at once into capacity that had just been
       // exhausted, which is how a recovery becomes the next incident.
-      level = (["normal", "defer_evolution", "defer_background", "conserve", "shed_optional", "protect_critical"] as const)[
+      store.setLevel((["normal", "defer_evolution", "defer_background", "conserve", "shed_optional", "protect_critical"] as const)[
         rung - 1
-      ]!;
+      ]!);
     }
   };
 
@@ -242,12 +299,12 @@ export function createCapacityGate(options: CapacityGateOptions): CapacityGate {
       // has stopped admitting should be told that rather than being told there
       // is no room — the fix for one is to wait and the fix for the other may
       // be to ask for less.
-      if (!admissibleAt(level).includes(cls)) {
+      if (!admissibleAt(store.level()).includes(cls)) {
         return report(
           {
             outcome: "deferred",
-            reason: `The system is at "${level}" and ${cls} work is not admitted at that rung.`,
-            retryAfterMs: 5_000 * (degradationRung(level) + 1),
+            reason: `The system is at "${store.level()}" and ${cls} work is not admitted at that rung.`,
+            retryAfterMs: 5_000 * (degradationRung(store.level()) + 1),
           },
           work,
         );
@@ -269,7 +326,7 @@ export function createCapacityGate(options: CapacityGateOptions): CapacityGate {
         );
       }
       if (tenantId && p.tenantSpendCeiling !== undefined) {
-        const already = spendByTenant.get(tenantId) ?? 0;
+        const already = store.spentBy(tenantId);
         if (already + spend > p.tenantSpendCeiling) {
           return report(
             {
@@ -304,13 +361,13 @@ export function createCapacityGate(options: CapacityGateOptions): CapacityGate {
           // Reclaim from classes this one outranks, lowest priority first, and
           // only as much as is needed. Taking more than required would evict
           // work for nothing.
-          const victims = [...held.values()]
+          const victims = [...store.reservations()]
             .filter((r) => mayPreempt(cls, r.schedulingClass) && (r.demand[dim] ?? 0) > 0)
             .sort((a, b) => priorityOf(b.schedulingClass) - priorityOf(a.schedulingClass));
 
           for (const victim of victims) {
             if (used + want <= ceiling) break;
-            held.delete(victim.reservationId);
+            store.take(victim.reservationId);
             preempted.push(victim.reservationId);
             used -= victim.demand[dim] ?? 0;
           }
@@ -354,15 +411,14 @@ export function createCapacityGate(options: CapacityGateOptions): CapacityGate {
                   work,
                 );
               }
-              burst.set(tenantId, { tokens: tokens - over, at: now().getTime() });
+              store.setBurst(tenantId, { tokens: tokens - over, at: now().getTime() });
             }
           }
         }
       }
 
-      counter += 1;
-      const reservationId = `res_${counter}`;
-      held.set(reservationId, {
+      const reservationId = store.nextReservationId();
+      store.put({
         reservationId,
         workId: work.workId,
         schedulingClass: cls,
@@ -372,7 +428,7 @@ export function createCapacityGate(options: CapacityGateOptions): CapacityGate {
         reservedAt: now().toISOString(),
       });
       if (tenantId && spend > 0) {
-        spendByTenant.set(tenantId, (spendByTenant.get(tenantId) ?? 0) + spend);
+        store.setSpent(tenantId, store.spentBy(tenantId) + spend);
       }
 
       recomputeLevel();
@@ -384,25 +440,24 @@ export function createCapacityGate(options: CapacityGateOptions): CapacityGate {
     },
 
     release(reservationId, actualSpend) {
-      const reservation = held.get(reservationId);
+      const reservation = store.take(reservationId);
       if (!reservation) return { released: false, reason: `No reservation ${reservationId}.` };
-
-      held.delete(reservationId);
 
       // Reconcile. Work that spent less than reserved gives the difference
       // back; work that spent MORE is charged the difference, because the
       // alternative is a ceiling that only holds when estimates were accurate.
       if (actualSpend !== undefined && reservation.tenantId) {
         const delta = actualSpend - reservation.spendCharged;
-        const current = spendByTenant.get(reservation.tenantId) ?? 0;
-        spendByTenant.set(reservation.tenantId, Math.max(0, current + delta));
+        const current = store.spentBy(reservation.tenantId);
+        store.setSpent(reservation.tenantId, Math.max(0, current + delta));
       }
 
       recomputeLevel();
       return { released: true, reason: `Released ${reservationId}.` };
     },
 
-    degradation: () => level,
+    degradation: () => store.level(),
+    durability: () => store.durability,
 
     pressure() {
       const out: Partial<Record<ResourceDimension, number>> = {};
@@ -416,8 +471,8 @@ export function createCapacityGate(options: CapacityGateOptions): CapacityGate {
       return out;
     },
 
-    reservations: () => [...held.values()],
-    spentBy: (tenantId) => spendByTenant.get(tenantId) ?? 0,
+    reservations: () => store.reservations(),
+    spentBy: (tenantId) => store.spentBy(tenantId),
   };
 }
 
