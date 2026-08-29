@@ -3,8 +3,9 @@
 // distribution of this file, via any medium, is strictly prohibited.
 
 import { describe, expect, it } from "vitest";
+import type { WorkflowDefinition } from "../workflow/workflowRunner.js";
 
-import { SYNCHRONOUS_ONLY, workflowInstanceSchema } from "@proworks-hub/contracts";
+import { SYNCHRONOUS_ONLY, auditRecordSchema, workflowInstanceSchema, type AuditRecord } from "@proworks-hub/contracts";
 
 import {
   chamberCreatesAuthority,
@@ -15,6 +16,8 @@ import {
   primeExecutionContextSchema,
   scopeKeyOf,
   createInMemoryWorkflowStateStore,
+  createPrimeEvidence,
+  evidenceGrantsAuthority,
   type PrimeExecutionContext,
 } from "../index.js";
 
@@ -82,7 +85,7 @@ describe("Prime is one engine composed of two chambers", () => {
     const surface = Object.keys(prime).sort();
     // Asserted exactly, not with `toContain`. The point is what is ABSENT, and
     // a subset check would pass however much was added later.
-    expect(surface).toEqual(["boundCapabilities", "decide", "name", "nexus", "pulse", "runner"]);
+    expect(surface).toEqual(["boundCapabilities", "decide", "name", "nexus", "pulse", "recordsEvidence", "runner"]);
     // "engines" is on this list because an earlier version of this file put the
     // whole registry on the facade, which handed every caller `route()` — a way
     // to invoke a capability with no workflow and no Nexus. This assertion
@@ -497,5 +500,154 @@ describe("Prime does not take back what WorkOrderIQ owns", () => {
     for (const forbidden of ["createWorkOrder", "reserve", "price", "workOrderNumber", "status"]) {
       expect(surface).not.toContain(forbidden);
     }
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Evidence.
+//
+// Nexus returned an `evidence[]` array and Pulse a reason, and nothing consumed
+// either — a decision that blocked a shop's work explained itself to a variable
+// that went out of scope. These prove it now goes somewhere, in a shape the
+// audit contract accepts, and that failing to write it never stops the work.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("Prime records what it decided", () => {
+  const collectingSink = () => {
+    const records: AuditRecord[] = [];
+    return { records, sink: { record: (r: AuditRecord) => void records.push(r) } };
+  };
+
+  const gated: WorkflowDefinition = {
+    workflowType: "gated",
+    steps: [{ stepId: "promote", requiresAuthorization: true, run: () => undefined }],
+  };
+
+  it("records a block, in a shape the audit contract accepts", async () => {
+    const { records, sink } = collectingSink();
+    const prime = createPrime({
+      continuity: createInMemoryWorkflowStateStore(),
+      audit: sink,
+      instanceId: "worker-a",
+    });
+
+    await prime.runner!.start({
+      definition: gated,
+      tenant: { organizationId: KSIX, roles: [] },
+      trace: { correlationId: "cor_1" },
+    });
+
+    expect(records.length).toBeGreaterThan(0);
+    const blocked = records.find((r) => r.reason.includes("does not create it"));
+    expect(blocked).toBeDefined();
+    // Every record went through auditRecordSchema.parse before the sink saw it.
+    expect(() => records.map((r) => auditRecordSchema.parse(r))).not.toThrow();
+  });
+
+  it("never records a block as `denied`", () => {
+    // `denied` means GOVERNANCE refused, and the schema requires a decision id
+    // to prove it. When Nexus blocks for a missing authorization, Governance
+    // never spoke — there is no decision because there was no decision. Using
+    // the word would be both wrong and unparseable.
+    const record = {
+      auditEventId: "prime.evt.1",
+      occurredAt: "2026-08-29T10:00:00.000Z",
+      actor: { kind: "service", actorId: "prime" },
+      tenant: { organizationId: KSIX, roles: [] },
+      component: "hive.prime.prime",
+      action: "prime.nexus.decided",
+      outcome: "denied",
+      reason: "blocked for a missing authorization",
+      trace: { correlationId: "cor_1" },
+    };
+    const parsed = auditRecordSchema.safeParse(record);
+    expect(parsed.success).toBe(false);
+    if (!parsed.success) {
+      expect(JSON.stringify(parsed.error.issues)).toContain("governanceDecisionId");
+    }
+  });
+
+  it("uses an identifier the schema accepts, with no slashes", () => {
+    // `identifierSchema` allows dot, colon, underscore and hyphen — not `/`.
+    const { records, sink } = collectingSink();
+    const evidence = createPrimeEvidence({ audit: sink, now: () => new Date("2026-08-29T10:00:00.000Z") });
+    return evidence
+      .nexusDecided({
+        outcome: "blocked",
+        stepId: null,
+        reason: "no authorization",
+        evidence: ["authorization: absent"],
+        context: ctx(),
+      })
+      .then(() => {
+        expect(records).toHaveLength(1);
+        expect(records[0]!.auditEventId).not.toContain("/");
+        expect(records[0]!.component).toBe("hive.prime.prime");
+        expect(records[0]!.outcome).toBe("partial");
+      });
+  });
+
+  it("does not let a broken sink stop the work", async () => {
+    // An audit backend being down does not change whether the work may
+    // proceed. The failure is surfaced, never propagated.
+    const failures: { action: string }[] = [];
+    const prime = createPrime({
+      continuity: createInMemoryWorkflowStateStore(),
+      audit: {
+        record: () => {
+          throw new Error("audit backend unreachable");
+        },
+      },
+      onEvidenceFailure: (info) => void failures.push(info),
+      instanceId: "worker-a",
+    });
+
+    const result = await prime.runner!.start({
+      definition: { workflowType: "plain", steps: [{ stepId: "only", run: () => ({ ok: true }) }] },
+      tenant: { organizationId: KSIX, roles: [] },
+      trace: { correlationId: "cor_1" },
+    });
+
+    expect(result.status).toBe("completed");
+    expect(result.context["ok"]).toBe(true);
+    // Reported, not swallowed. A silent audit failure is how a system stops
+    // being auditable without anybody noticing.
+    expect(failures.length).toBeGreaterThan(0);
+    expect(failures[0]!.action).toBe("prime.nexus.decided");
+  });
+
+  it("survives a malformed execution context rather than killing the workflow", async () => {
+    // Found by a test using a stub context: building the record happened
+    // outside the guard, so evidence could take down the work it only
+    // describes — and would do it precisely when the state is already strange.
+    const failures: { action: string }[] = [];
+    const { sink } = collectingSink();
+    const evidence = createPrimeEvidence({ audit: sink, onSinkFailure: (i) => void failures.push(i) });
+
+    await expect(
+      evidence.nexusDecided({
+        outcome: "proceed",
+        stepId: "s",
+        reason: "r",
+        evidence: [],
+        context: {} as never,
+      }),
+    ).resolves.toBeUndefined();
+    expect(failures).toHaveLength(1);
+  });
+
+  it("says whether it is recording anything", () => {
+    // "No records" and "records going nowhere" must be distinguishable.
+    expect(createPrime({ continuity: createInMemoryWorkflowStateStore() }).recordsEvidence).toBe(false);
+    expect(
+      createPrime({
+        continuity: createInMemoryWorkflowStateStore(),
+        audit: { record: () => undefined },
+      }).recordsEvidence,
+    ).toBe(true);
+  });
+
+  it("grants no authority by writing a record", () => {
+    expect(evidenceGrantsAuthority()).toBe(false);
   });
 });

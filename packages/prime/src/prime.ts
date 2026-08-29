@@ -7,6 +7,7 @@ import { createPrimeNexus, type PrimeNexus } from "./nexus/nexus.js";
 import { createPrimePulse, type ContinuityStore, type PrimePulse } from "./pulse/pulse.js";
 import { createWorkflowRunner, type WorkflowRunner } from "./workflow/workflowRunner.js";
 import { createEngineRegistry, type EnginePort } from "./routing/ports.js";
+import { createPrimeEvidence, type AuditSink } from "./evidence/evidence.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // THE PRIME ENGINE — one engine, two chambers.
@@ -74,6 +75,14 @@ export interface Prime {
    * A host may ask WHAT is bound. Only the runner may route to it.
    */
   readonly boundCapabilities: () => readonly string[];
+  /**
+   * Whether evidence is actually going anywhere.
+   *
+   * A boolean rather than the sink itself, for the reason `boundCapabilities`
+   * is a function rather than the registry: a host may ask whether it is
+   * configured; nothing outside Prime writes Prime's audit trail.
+   */
+  readonly recordsEvidence: boolean;
 }
 
 export interface PrimeOptions extends PrimeConfig {
@@ -96,15 +105,32 @@ export interface PrimeOptions extends PrimeConfig {
    * knows which package answers which capability.
    */
   readonly engines?: readonly EnginePort[];
+  /** Where decisions and continuity transitions are recorded. */
+  readonly audit?: AuditSink;
+  /** Reported when an evidence write fails. Never silent. */
+  readonly onEvidenceFailure?: (info: { action: string; error: Error }) => void;
 }
 
 export function createPrime(options: PrimeOptions = {}): Prime {
-  const { continuity, now, instanceId, engines: _boundEngines, ...decisionConfig } = options;
+  const {
+    continuity,
+    now,
+    instanceId,
+    engines: _boundEngines,
+    audit: _audit,
+    onEvidenceFailure: _onEvidenceFailure,
+    ...decisionConfig
+  } = options;
   const engine = createPrimeEngine(decisionConfig);
   // One Nexus, shared by the facade and by the runner. Two would be two
   // sequencers again, with the same rules configured twice.
   const nexus = createPrimeNexus();
   const engines = createEngineRegistry(options.engines ?? []);
+  const evidence = createPrimeEvidence({
+    ...(options.audit ? { audit: options.audit } : {}),
+    ...(options.onEvidenceFailure ? { onSinkFailure: options.onEvidenceFailure } : {}),
+    ...(now ? { now } : {}),
+  });
 
   // One Pulse as well as one Nexus. The runner takes every claim through the
   // same chamber the facade exposes, so a caller inspecting `pulse.health()`
@@ -118,6 +144,7 @@ export function createPrime(options: PrimeOptions = {}): Prime {
     nexus,
     pulse,
     boundCapabilities: () => engines.capabilities(),
+    recordsEvidence: evidence.enabled,
     runner:
       continuity && pulse
         ? createWorkflowRunner({
@@ -126,6 +153,7 @@ export function createPrime(options: PrimeOptions = {}): Prime {
             nexus,
             pulse,
             engines,
+            evidence,
             ...(now ? { now } : {}),
           })
         : null,

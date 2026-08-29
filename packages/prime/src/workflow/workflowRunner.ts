@@ -15,6 +15,7 @@ import { createPrimeNexus, type CandidateStep, type PrimeNexus } from "../nexus/
 import { primeExecutionContextSchema, type PrimeExecutionContext } from "../context.js";
 import { createPrimePulse, type ContinuityStore, type PrimePulse } from "../pulse/pulse.js";
 import { createEngineRegistry, type EngineOutcome, type EngineRegistry } from "../routing/ports.js";
+import { createPrimeEvidence, type PrimeEvidence } from "../evidence/evidence.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PRIME's workflow runner.
@@ -116,6 +117,15 @@ export interface WorkflowRunnerOptions {
    * with their engine steps skipped.
    */
   engines?: EngineRegistry;
+  /**
+   * Where decisions and continuity transitions are recorded.
+   *
+   * Defaults to a no-op. Writing nothing is a legitimate configuration — a
+   * shop without an audit backend still needs to run — but `evidence.enabled`
+   * says which it is, so "no records" and "records going nowhere" are
+   * distinguishable.
+   */
+  evidence?: PrimeEvidence;
   store: WorkflowStateStore;
   /** Identifies this process, so a lease says who holds it. */
   instanceId: string;
@@ -179,6 +189,7 @@ export function createWorkflowRunner(options: WorkflowRunnerOptions): WorkflowRu
   const { store, instanceId } = options;
   const nexus = options.nexus ?? createPrimeNexus();
   const engines = options.engines ?? createEngineRegistry();
+  const evidence = options.evidence ?? createPrimeEvidence();
   // Built from the store when it declares durability. `createInMemoryWorkflowStateStore`
   // does; a host's own store must too, or it does not get recovery.
   const pulse =
@@ -347,6 +358,11 @@ export function createWorkflowRunner(options: WorkflowRunnerOptions): WorkflowRu
         steps: candidates,
         completedStepIds,
       });
+
+      // Recorded before it is acted on, so a decision that stops the workflow
+      // leaves the same trail as one that advances it. Evidence written only
+      // on the happy path answers "what worked" and not "what happened".
+      await evidence.nexusDecided(decision);
 
       if (decision.outcome === "completed") break;
 
@@ -618,6 +634,12 @@ export function createWorkflowRunner(options: WorkflowRunnerOptions): WorkflowRu
         leaseMs,
       });
 
+      await evidence.pulseTransitioned(
+        context ?? executionContextFor(existing, definition),
+        workflowId,
+        verdict,
+      );
+
       if (verdict.outcome !== "resumed") {
         throw new Error(`Cannot resume ${workflowId}: ${verdict.reason}`);
       }
@@ -647,6 +669,15 @@ export function createWorkflowRunner(options: WorkflowRunnerOptions): WorkflowRu
           owner: instanceId,
           leaseMs,
         });
+        // Recorded whether or not it was recovered. A sweep that skipped an
+        // execution is as much a fact as one that resumed it, and the skips
+        // are what somebody investigating a stalled workflow needs to see.
+        await evidence.pulseTransitioned(
+          executionContextFor(candidate, definition),
+          candidate.workflowId,
+          verdict,
+        );
+
         // Another instance got there first, or the work is not recoverable.
         // Not an error — it is the lease doing exactly what it exists for.
         if (verdict.outcome !== "resumed") continue;

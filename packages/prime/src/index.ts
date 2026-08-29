@@ -35,4 +35,5 @@ export * from "./context.js";
 export * from "./nexus/nexus.js";
 export * from "./pulse/pulse.js";
 export * from "./routing/ports.js";
+export * from "./evidence/evidence.js";
 export * from "./prime.js";
