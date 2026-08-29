@@ -48,7 +48,18 @@ const VOLATILE_PATTERNS: readonly { pattern: RegExp; replacement: string }[] = [
   // Long hex digests.
   { pattern: /\b[0-9a-f]{32,}\b/gi, replacement: "<hash>" },
   // Prefixed generated ids: wo_8f3a, aud_41, msg_1, run-9.
-  { pattern: /\b[a-z][a-z0-9]{1,15}[_-][a-z0-9]{2,}\b/gi, replacement: "<id>" },
+  //
+  // The suffix must contain a digit. That is the honest line between a
+  // generated id and an ordinary hyphenated phrase — "at-least-once" and
+  // "cross-tenant" are English and must survive normalization; "wo_8f3a" is an
+  // identifier and must not.
+  //
+  // My first attempt required two-or-more characters after the separator,
+  // which normalized `wo_bb` but not `wo_a`. An inconsistent boundary is worse
+  // than either extreme: some occurrences of one failure hash together and some
+  // do not, so the reuse loop matches intermittently for reasons nobody can
+  // see from the outside. A golden test caught it.
+  { pattern: /\b[a-z][a-z0-9]{1,15}[_-][a-z0-9]*\d[a-z0-9]*\b/gi, replacement: "<id>" },
   // Bare numbers, including durations and counts.
   { pattern: /\b\d+(\.\d+)?(ms|s|m|h)?\b/g, replacement: "<n>" },
   // Quoted strings, which usually carry a value rather than a shape.

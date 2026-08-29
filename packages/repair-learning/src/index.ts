@@ -25,3 +25,8 @@ export * from "./repair/workspace.js";
 // Phase D — Validate
 export * from "./validation/validators.js";
 export * from "./validation/scoring.js";
+
+// Phases E-F — Learn and Reuse
+export * from "./knowledge/experience.js";
+export * from "./knowledge/generalization.js";
+export * from "./knowledge/patterns.js";

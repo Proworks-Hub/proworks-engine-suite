@@ -441,6 +441,24 @@ describe("the failure signature is stable across occurrences", () => {
     );
   });
 
+  it("normalizes a generated id of any length, consistently", () => {
+    // The boundary a golden test caught. My first pattern required two or more
+    // characters after the separator, so `wo_bb` normalized and `wo_a1` did
+    // not. An inconsistent boundary is worse than either extreme: occurrences
+    // of one failure hash together only sometimes, and the reuse loop matches
+    // intermittently for reasons invisible from the outside.
+    expect(normalizeMessage("order wo_a1 failed")).toBe(normalizeMessage("order wo_bbbb92 failed"));
+    expect(normalizeMessage("order wo_a1 failed")).toContain("<id>");
+  });
+
+  it("leaves ordinary hyphenated English alone", () => {
+    // The other side of the same line. "at-least-once" is a phrase, not an id,
+    // and a normalizer that ate it would collapse genuinely different failures.
+    const normalized = normalizeMessage("at-least-once delivery to a cross-tenant consumer");
+    expect(normalized).toContain("at-least-once");
+    expect(normalized).toContain("cross-tenant");
+  });
+
   it("hashes two occurrences of the same failure identically", () => {
     // The whole reuse loop depends on this. A signature that includes a
     // timestamp is unique per run, and §30's prior-case search never matches.
