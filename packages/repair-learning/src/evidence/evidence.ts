@@ -134,7 +134,12 @@ export interface EvidenceRecorder {
  * quietly passes everything it does not understand is worse than none.
  */
 const REQUIREMENT_KEYWORDS: readonly { pattern: RegExp; kind: EvidenceKind }[] = [
-  { pattern: /correlation|lineage|trace/i, kind: "trace" },
+  // Trace context. `causationId` and `correlationId` both live on the trace,
+  // so a requirement naming either is satisfied by trace evidence.
+  { pattern: /correlation|causation|lineage|trace/i, kind: "trace" },
+  // Message identity and de-duplication keys ride on the message, so the
+  // evidence that proves them is the event record.
+  { pattern: /message\s?id|idempotenc|dedup|delivery key/i, kind: "event" },
   { pattern: /governance|authority|authoriz/i, kind: "governance_decision" },
   { pattern: /sentinel|finding/i, kind: "sentinel_finding" },
   { pattern: /audit/i, kind: "audit_record" },

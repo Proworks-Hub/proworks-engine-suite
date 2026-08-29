@@ -6,6 +6,7 @@
 export * from "./scenario/scenario.js";
 export * from "./execution/environment.js";
 export * from "./execution/faults.js";
+export * from "./execution/injector.js";
 export * from "./execution/run.js";
 export * from "./execution/harness.js";
 export * from "./evidence/evidence.js";
