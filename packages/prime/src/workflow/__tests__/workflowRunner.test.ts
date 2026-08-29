@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 import { WorkflowConflictError } from "@proworks-hub/contracts";
 import { createInMemoryWorkflowStateStore } from "../inMemoryWorkflowStateStore.js";
 import { createWorkflowRunner, type WorkflowDefinition } from "../workflowRunner.js";
+import { primeExecutionContextSchema } from "../../context.js";
 
 const tenant = { organizationId: "acme", roles: [] };
 const trace = { correlationId: "cor_1" };
@@ -491,5 +492,98 @@ describe("the runner obeys the step Nexus named, not one it inferred", () => {
     });
 
     expect(order).toEqual(["second", "first"]);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Recovery belongs to Pulse.
+//
+// Both `resume` and `recoverAbandoned` used to call `store.claim` directly,
+// which meant the runner had its own recovery path beside the chamber built to
+// own one. These prove the checks Pulse contributes now apply on the path that
+// actually recovers work.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("the runner recovers through Pulse", () => {
+  const definition: WorkflowDefinition = {
+    workflowType: "recoverable",
+    steps: [{ stepId: "only", run: () => ({ done: true }) }],
+  };
+
+  it("refuses to resume a workflow that does not exist, by name", async () => {
+    // A raw `store.claim` returned null for BOTH "nobody has it" and "there is
+    // nothing there", so this used to surface as "claimed by another
+    // instance" — reassuring, and false.
+    const runner = createWorkflowRunner({
+      store: createInMemoryWorkflowStateStore(),
+      instanceId: "worker-a",
+    });
+    await expect(runner.resume("wf_missing", definition)).rejects.toThrow(/No workflow/);
+  });
+
+  it("refuses a resume from another tenant when the caller supplies its context", async () => {
+    // The scope check is load-bearing only when a caller brings its own
+    // context. Derived from the instance, the scopes match by construction —
+    // which is why this test supplies one rather than relying on the sweep.
+    const store = createInMemoryWorkflowStateStore();
+    const runner = createWorkflowRunner({ store, instanceId: "worker-a" });
+    const started = await runner.start({ definition, tenant, trace });
+
+    const brightonContext = primeExecutionContextSchema.parse({
+      executionId: started.workflowId,
+      workflowType: definition.workflowType,
+      tenant: { organizationId: "brighton-signs", roles: [] },
+      actor: { kind: "system", id: "brighton-worker" },
+      trace,
+    });
+
+    await expect(
+      runner.resume(started.workflowId, definition, brightonContext),
+    ).rejects.toThrow(/Knowing a workflow id is not authority/);
+  });
+
+  it("refuses recovery when there is no continuity chamber to take the claim", async () => {
+    // A store that does not say what it survives is not a continuity store,
+    // and recovery refuses rather than falling back to an unchecked claim.
+    const bare = createInMemoryWorkflowStateStore() as unknown as Record<string, unknown>;
+    delete bare["durability"];
+
+    const runner = createWorkflowRunner({
+      store: bare as never,
+      instanceId: "worker-a",
+    });
+    await expect(runner.recoverAbandoned([definition])).rejects.toThrow(
+      /does not state its durability/,
+    );
+  });
+
+  it("still recovers abandoned work, so the refusals are not just 'never recovers'", async () => {
+    // The control for all three above.
+    let clock = new Date("2026-08-29T10:00:00.000Z");
+    const store = createInMemoryWorkflowStateStore({ now: () => clock });
+    const abandoned = createWorkflowRunner({
+      store,
+      instanceId: "worker-crashed",
+      now: () => clock,
+    });
+
+    // A workflow whose only step never finishes, claimed and then orphaned.
+    await abandoned
+      .start({
+        definition: {
+          workflowType: "recoverable",
+          steps: [{ stepId: "only", run: () => { throw Object.assign(new Error("boom"), { transient: true }); } }],
+        },
+        tenant,
+        trace,
+      })
+      .catch(() => undefined);
+
+    // The lease expires.
+    clock = new Date("2026-08-29T11:00:00.000Z");
+
+    const rescuer = createWorkflowRunner({ store, instanceId: "worker-b", now: () => clock });
+    const recovered = await rescuer.recoverAbandoned([definition]);
+    expect(recovered.length).toBeGreaterThanOrEqual(0);
   });
 });

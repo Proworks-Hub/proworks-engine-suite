@@ -83,20 +83,27 @@ export function createPrime(options: PrimeOptions = {}): Prime {
   // sequencers again, with the same rules configured twice.
   const nexus = createPrimeNexus();
 
+  // One Pulse as well as one Nexus. The runner takes every claim through the
+  // same chamber the facade exposes, so a caller inspecting `pulse.health()`
+  // is reading the state of the thing that actually holds the leases.
+  const pulse = continuity
+    ? createPrimePulse({ store: continuity, ...(now ? { now } : {}) })
+    : null;
+
   return {
     name: "prime",
     nexus,
-    pulse: continuity
-      ? createPrimePulse({ store: continuity, ...(now ? { now } : {}) })
-      : null,
-    runner: continuity
-      ? createWorkflowRunner({
-          store: continuity,
-          instanceId: instanceId ?? "prime",
-          nexus,
-          ...(now ? { now } : {}),
-        })
-      : null,
+    pulse,
+    runner:
+      continuity && pulse
+        ? createWorkflowRunner({
+            store: continuity,
+            instanceId: instanceId ?? "prime",
+            nexus,
+            pulse,
+            ...(now ? { now } : {}),
+          })
+        : null,
     decide: engine.decide,
   };
 }

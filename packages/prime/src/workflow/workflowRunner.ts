@@ -13,6 +13,7 @@ import { WorkflowConflictError, isTransient, newCorrelationId } from "@proworks-
 
 import { createPrimeNexus, type CandidateStep, type PrimeNexus } from "../nexus/nexus.js";
 import { primeExecutionContextSchema, type PrimeExecutionContext } from "../context.js";
+import { createPrimePulse, type ContinuityStore, type PrimePulse } from "../pulse/pulse.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PRIME's workflow runner.
@@ -84,6 +85,15 @@ export interface WorkflowRunnerOptions {
    * either way. There is one selector now, and this is it.
    */
   nexus?: PrimeNexus;
+  /**
+   * The continuity chamber, which owns every claim this runner takes.
+   *
+   * Defaulted from the store when the store states its durability. A store
+   * that does not is not a continuity store, and recovery then refuses rather
+   * than falling back to an unchecked `store.claim` — the fallback would be
+   * the second recovery path this change exists to remove.
+   */
+  pulse?: PrimePulse;
   store: WorkflowStateStore;
   /** Identifies this process, so a lease says who holds it. */
   instanceId: string;
@@ -123,7 +133,18 @@ const DEFAULT_LEASE_MS = 30_000;
 export interface WorkflowRunner {
   start(input: StartWorkflowInput): Promise<WorkflowInstance>;
   /** Continues a workflow this process has claimed. */
-  resume(workflowId: string, definition: WorkflowDefinition): Promise<WorkflowInstance>;
+  /**
+   * Resumes one workflow.
+   *
+   * `context` is optional and matters: supplied, Pulse enforces the caller's
+   * tenant scope against the workflow's. Omitted, it is derived from the
+   * instance and the scope check is trivially satisfied.
+   */
+  resume(
+    workflowId: string,
+    definition: WorkflowDefinition,
+    context?: PrimeExecutionContext,
+  ): Promise<WorkflowInstance>;
   /**
    * Picks up workflows abandoned by a crashed instance. Returns those it
    * actually claimed — another instance may have won the race, which is fine
@@ -135,6 +156,23 @@ export interface WorkflowRunner {
 export function createWorkflowRunner(options: WorkflowRunnerOptions): WorkflowRunner {
   const { store, instanceId } = options;
   const nexus = options.nexus ?? createPrimeNexus();
+  // Built from the store when it declares durability. `createInMemoryWorkflowStateStore`
+  // does; a host's own store must too, or it does not get recovery.
+  const pulse =
+    options.pulse ??
+    ("durability" in store
+      ? createPrimePulse({ store: store as ContinuityStore, ...(options.now ? { now: options.now } : {}) })
+      : null);
+
+  const requirePulse = (): PrimePulse => {
+    if (!pulse) {
+      throw new Error(
+        "Recovery needs a continuity chamber. The store supplied to this runner does not state its " +
+          "durability, so it is not a ContinuityStore. Supply `pulse`, or a store that says what it survives.",
+      );
+    }
+    return pulse;
+  };
   const leaseMs = options.leaseMs ?? DEFAULT_LEASE_MS;
   const now = options.now ?? (() => new Date());
   const generateId =
@@ -419,19 +457,44 @@ export function createWorkflowRunner(options: WorkflowRunnerOptions): WorkflowRu
       return advance(instance, input.definition);
     },
 
-    async resume(workflowId, definition) {
-      const claimed = await store.claim(workflowId, instanceId, leaseMs);
-      if (!claimed) {
-        throw new Error(
-          `Workflow ${workflowId} is claimed by another instance. This is normal under ` +
-            `concurrency — let the holder finish rather than forcing it.`,
-        );
+    // ── Every claim goes through Pulse ───────────────────────────────────
+    //
+    // Both of these used to call `store.claim` directly, which meant the
+    // runner had its own recovery path running beside the continuity chamber
+    // that was built to own one. Two recovery paths that do not know about
+    // each other is worse than one, because the checks each performs are the
+    // ones the other is missing.
+    //
+    // Pulse adds what the raw claim never did: it distinguishes "no such
+    // execution" from "somebody else holds it", refuses a resume under an
+    // authorization that has changed, and reports honestly whether the state
+    // it recovered ever survived anything.
+    async resume(workflowId, definition, context) {
+      const chamber = requirePulse();
+      const existing = await store.load(workflowId);
+      if (!existing) throw new Error(`No workflow ${workflowId} to resume.`);
+
+      // A caller may supply its own context, and when it does the scope check
+      // is load-bearing: Pulse refuses a resume from the wrong tenant. Derived
+      // from the instance it is not — the scopes match by construction. Said
+      // plainly rather than counted as protection it does not give.
+      const verdict = await chamber.resume({
+        context: context ?? executionContextFor(existing, definition),
+        workflowId,
+        owner: instanceId,
+        leaseMs,
+      });
+
+      if (verdict.outcome !== "resumed") {
+        throw new Error(`Cannot resume ${workflowId}: ${verdict.reason}`);
       }
+      const claimed = verdict.instance!;
       if (claimed.status !== "running") return claimed;
       return advance(claimed, definition);
     },
 
     async recoverAbandoned(definitions, limit = 10) {
+      const chamber = requirePulse();
       const byType = new Map(definitions.map((d) => [d.workflowType, d]));
       const candidates = await store.listResumable(limit);
       const recovered: WorkflowInstance[] = [];
@@ -439,12 +502,24 @@ export function createWorkflowRunner(options: WorkflowRunnerOptions): WorkflowRu
       for (const candidate of candidates) {
         const definition = byType.get(candidate.workflowType);
         if (!definition) continue;
-        const claimed = await store.claim(candidate.workflowId, instanceId, leaseMs);
-        // Another instance got there first. Not an error — it is the lease
-        // doing exactly what it exists for.
-        if (!claimed) continue;
+
+        // A sweep acts on behalf of the system, so the context is derived from
+        // the candidate and the scope comparison inside Pulse is satisfied by
+        // construction. What Pulse still contributes here is the exclusive
+        // lease and the authority check — a sweep must not resume work whose
+        // authorization changed while it was abandoned.
+        const verdict = await chamber.resume({
+          context: executionContextFor(candidate, definition),
+          workflowId: candidate.workflowId,
+          owner: instanceId,
+          leaseMs,
+        });
+        // Another instance got there first, or the work is not recoverable.
+        // Not an error — it is the lease doing exactly what it exists for.
+        if (verdict.outcome !== "resumed") continue;
+
         try {
-          recovered.push(await advance(claimed, definition));
+          recovered.push(await advance(verdict.instance!, definition));
         } catch (cause) {
           if (cause instanceof WorkflowConflictError || isTransient(cause)) continue;
           throw cause;
