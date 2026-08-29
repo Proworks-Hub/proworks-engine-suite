@@ -17,7 +17,7 @@ import {
 import { createReceiptIqEngine } from "@proworks-hub/receiptiq";
 import { createInMemoryEventBus } from "@proworks-hub/platform-events";
 import { createInMemoryJobQueue } from "@proworks-hub/platform-runtime";
-import { formatResult, measure, scalingProfile } from "./harness.js";
+import { costPerItemGrowth, formatResult, measure, scalingProfile, workCountProfile } from "./harness.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Scale and isolation.
@@ -49,21 +49,91 @@ const intake = (org: string, n: number) => ({
 });
 
 describe("work-order creation at volume", () => {
-  it("stays linear as the log grows", async () => {
-    // The failure this catches: an append that scans what is already there.
-    // Fine at ten work orders, ruinous at ten thousand, and invisible until a
-    // real shop has been running for a year.
+  it("stays linear as the log grows — measured deterministically", async () => {
+    // ── NO CLOCK. THIS COUNTS WORK. ──────────────────────────────────────
+    //
+    // This assertion used a wall-clock scaling ratio against a 2.5 limit and
+    // flaked: I observed ×3.06 on a loaded machine and green on every quiet
+    // run. A previous fix had already increased the sample size rather than
+    // relax the threshold, which was the right instinct and still left the
+    // measurement dependent on how busy the box was.
+    //
+    // Raising the limit would have been the easy fix and the wrong one: it
+    // would weaken a real requirement to accommodate a measurement problem.
+    // What the test actually wants to know is whether cost per work order is
+    // constant as the log grows — a property of the algorithm. That is
+    // countable.
+    //
+    // The event log is an injected port, so a counting wrapper sees every read
+    // the use case performs. If appending were secretly O(n) in log size it
+    // would have to read the log, and reads-per-item would climb. Nothing else
+    // can move that number: not GC, not the scheduler, not another process.
+    const profile = await workCountProfile(async (size, countOperation) => {
+      const inner = createInMemoryEventLog();
+      // Spread rather than hand-listing: the interface has optional members
+      // (`subscribe` is not on the in-memory implementation), and a wrapper
+      // that enumerated methods would break whenever one was added.
+      const counting = {
+        ...inner,
+        // Appends are counted too. Counting only reads measured nothing here:
+        // creating a work order appends and never reads, so the counter stayed
+        // at zero and the test passed while proving nothing.
+        async append(...args: Parameters<typeof inner.append>) {
+          countOperation();
+          return inner.append(...args);
+        },
+        async listByWorkOrder(...args: Parameters<typeof inner.listByWorkOrder>) {
+          countOperation();
+          return inner.listByWorkOrder(...args);
+        },
+        async listByType(...args: Parameters<typeof inner.listByType>) {
+          countOperation();
+          return inner.listByType(...args);
+        },
+        async listSince(...args: Parameters<typeof inner.listSince>) {
+          countOperation();
+          return inner.listSince(...args);
+        },
+        async size() {
+          countOperation();
+          return inner.size();
+        },
+      };
+
+      const create = createCreateWorkOrderUseCase({ eventLog: counting });
+      for (let i = 0; i < size; i += 1) await create.execute(intake("org-a", i), actor);
+    }, [500, 1000, 2000]);
+
+    for (const row of profile) {
+      console.log(
+        `  ${row.size} work orders: ${row.operations} port operations (${row.operationsPerItem.toFixed(3)} per item)`,
+      );
+    }
+
+    // Exactly flat. These are integer call counts, so linear work gives 1.0 and
+    // anything super-linear gives a number that grows with every doubling. The
+    // bound is 1.5 rather than 2.5 because it can be — there is no machine
+    // noise to absorb.
+    // The baseline is asserted first. A counter that recorded nothing would
+    // make the growth ratio meaningless, and this is the check that would have
+    // caught my own vacuous first version.
+    expect(profile[0]!.operations).toBeGreaterThan(0);
+    expect(profile[0]!.operationsPerItem).toBeCloseTo(1, 1);
+
+    expect(costPerItemGrowth(profile)).toBeLessThan(1.5);
+  });
+
+  it("reports wall-clock alongside, as a benchmark rather than a gate", async () => {
+    // Kept because a human reading CI output wants to know it is milliseconds
+    // and not minutes. It asserts only that the work completed — the
+    // complexity requirement is enforced by the deterministic test above, so
+    // nothing here can flake the suite.
     const profile = await scalingProfile(
       async (size) => {
         const log = createInMemoryEventLog();
         const create = createCreateWorkOrderUseCase({ eventLog: log });
         for (let i = 0; i < size; i += 1) await create.execute(intake("org-a", i), actor);
       },
-      // Big enough that the total is tens of milliseconds. The earlier sizes
-      // finished in 2-4ms, and a ratio of two single-digit-millisecond samples
-      // measures the OS scheduler more than the algorithm — one GC pause moves
-      // it further than a real regression would. This is the same check with
-      // enough work under it to mean something.
       [2000, 4000, 8000],
       "work-order creation",
     );
@@ -74,13 +144,7 @@ describe("work-order creation at volume", () => {
           `(${row.msPerItem.toFixed(3)}ms each, scaling ×${row.scalingFactor.toFixed(2)})`,
       );
     }
-
-    // Linear is ~1.0. Quadratic would climb with every doubling. 2.5 is loose
-    // enough to survive a noisy machine and tight enough to catch O(n²).
-    // The threshold is deliberately unchanged — the fix for the flake was to
-    // measure more work, not to accept a worse result.
-    const worst = Math.max(...profile.slice(1).map((r) => r.scalingFactor));
-    expect(worst).toBeLessThan(2.5);
+    expect(profile).toHaveLength(3);
   });
 
   it("reports a distribution rather than an average", async () => {

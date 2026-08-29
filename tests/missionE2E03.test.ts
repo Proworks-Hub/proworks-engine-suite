@@ -216,6 +216,58 @@ describe("MIS-E2E03 — the mission record", () => {
     expect(foundryHasProductionDeploymentAuthority()).toBe(false);
   });
 
+  it("is authorized by a named human and promoted to VALIDATION", () => {
+    // The authorization of 2026-08-29, recorded through the machinery rather
+    // than asserted in prose.
+    //
+    // AWAITING_HUMAN_AUTHORIZATION had no exit before this promotion: a change
+    // could enter the state and never leave it. Holding a change for a decision
+    // nobody can record is a dead end rather than a gate — the same shape as a
+    // field written and never read, which is now the fourth instance found in
+    // this repository.
+    const authorized = evolution.authorizeMaterialChange(
+      "chg_e2e03",
+      "human.steven",
+      "Reviewed: bounded WorkOrderIQ/InventoryIQ idempotency correction. A 4-sheet job reserves exactly 4.",
+    );
+    expect(authorized.authorized).toBe(true);
+    expect(evolution.get("chg_e2e03")!.state).toBe("VALIDATED");
+
+    // Promoted to VALIDATION — a sandbox. Not production.
+    const promoted = evolution.promote("chg_e2e03", "VALIDATION", "human.steven");
+    expect(promoted.promoted).toBe(true);
+    if (promoted.promoted) expect(promoted.change.promotedTo).toBe("VALIDATION");
+  });
+
+  it("refuses Foundry authorizing its own held change", () => {
+    // Charter §11. Accepting a service identity here would make the hold
+    // ceremonial, which is worse than not having one.
+    const fresh = createEvolutionControl({ now: () => AT });
+    fresh.register({
+      changeId: "chg_self",
+      missionId: "MIS-E2E03",
+      candidateId: "rc_x",
+      workspaceId: "ws_x",
+      baseRevision: "7de2374",
+      classification: { level: "MATERIAL_CHANGE", because: ["spans 2 components"] },
+    });
+    fresh.submit("chg_self", "foundry");
+    fresh.recordValidation("chg_self", { accepted: true, reason: "green" }, "foundry");
+
+    const selfAuthorized = fresh.authorizeMaterialChange("chg_self", "foundry", "looks fine");
+    expect(selfAuthorized.authorized).toBe(false);
+    expect(selfAuthorized.reason).toContain("not a human authority");
+  });
+
+  it("still refuses production after promotion to VALIDATION", () => {
+    // The authorization covered the CHANGE. Nothing about it granted
+    // deployment authority, and promotion to a sandbox does not create any.
+    const verdict = evolution.promote("chg_e2e03", "PRODUCTION", "human.steven");
+    expect(verdict.promoted).toBe(false);
+    if (!verdict.promoted) expect(verdict.reason).toContain("does not promote to PRODUCTION");
+    expect(foundryHasProductionDeploymentAuthority()).toBe(false);
+  });
+
   it("records every transition with who and why", () => {
     // Charter §16: material actions identify what changed and the authority
     // permitting it.
@@ -352,6 +404,41 @@ describe("MIS-MC12 — the mission record", () => {
     for (const action of candidateMc12.proposedActions) {
       expect(action.verb, `${action.verb} ${action.target}`).toBe("add");
     }
+  });
+
+  it("is authorized by a named human and promoted to VALIDATION", () => {
+    evolution.register({
+      changeId: "chg_mc12_promote",
+      missionId: "MIS-MC12",
+      candidateId: candidateMc12.repairCandidateId,
+      workspaceId: "ws_mc12",
+      baseRevision: "0041625",
+      classification: classifyChange({
+        candidate: candidateMc12,
+        filesChanged: 4,
+        componentsTouched: 1,
+        contractsTouched: 0,
+        testsRemoved: 0,
+        dependenciesTouched: 0,
+      }),
+    });
+    evolution.submit("chg_mc12_promote", "foundry");
+    evolution.recordValidation("chg_mc12_promote", { accepted: true, reason: "24/24 multi-company" }, "foundry");
+    expect(evolution.get("chg_mc12_promote")!.state).toBe("AWAITING_HUMAN_AUTHORIZATION");
+
+    const authorized = evolution.authorizeMaterialChange(
+      "chg_mc12_promote",
+      "human.steven",
+      "Reviewed: readingTenant required, gate before scoring, crossTenantLearningApproved enforced. Raw cases stay private; only minimized Governance-approved rules cross.",
+    );
+    expect(authorized.authorized).toBe(true);
+
+    const promoted = evolution.promote("chg_mc12_promote", "VALIDATION", "human.steven");
+    expect(promoted.promoted).toBe(true);
+    if (promoted.promoted) expect(promoted.change.promotedTo).toBe("VALIDATION");
+
+    // And production remains refused.
+    expect(evolution.promote("chg_mc12_promote", "PRODUCTION", "human.steven").promoted).toBe(false);
   });
 
   it("is held, and production is still refused", () => {

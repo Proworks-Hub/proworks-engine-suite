@@ -122,14 +122,40 @@ export async function scalingProfile(
   operation: (size: number) => Promise<void> | void,
   sizes: readonly number[],
   label: string,
+  options: { repetitions?: number } = {},
 ): Promise<Array<{ size: number; totalMs: number; msPerItem: number; scalingFactor: number }>> {
+  // ── Why the MINIMUM of several runs, not one run or an average ────────────
+  //
+  // A single sample per size made this flake: one GC pause or one scheduler
+  // hiccup during the largest run inflates the ratio past the threshold, and
+  // the suite reports a scaling regression that is really the machine being
+  // busy. I saw ×3.06 against a 2.5 limit on a loaded machine and green on
+  // every quiet run.
+  //
+  // The threshold is NOT the thing to relax — a previous fix here already made
+  // that call correctly, choosing to measure more work rather than accept a
+  // worse result. This keeps the threshold and fixes the measurement instead.
+  //
+  // The minimum is the right statistic. An algorithm's cost is a FLOOR: every
+  // sample sits at or above it, and everything above is contamination. A mean
+  // or a median carries that contamination into the number; the minimum is the
+  // least-contended observation and therefore the closest estimate of what the
+  // code actually costs.
+  //
+  // It does not weaken the assertion. A genuine O(n²) regression raises the
+  // floor itself, so the minimum climbs with it and the ratio still catches it.
+  const repetitions = Math.max(1, options.repetitions ?? 3);
+
   const rows: Array<{ size: number; totalMs: number; msPerItem: number; scalingFactor: number }> = [];
   let previous: { size: number; totalMs: number } | undefined;
 
   for (const size of sizes) {
-    const started = performance.now();
-    await operation(size);
-    const totalMs = performance.now() - started;
+    let totalMs = Number.POSITIVE_INFINITY;
+    for (let attempt = 0; attempt < repetitions; attempt += 1) {
+      const started = performance.now();
+      await operation(size);
+      totalMs = Math.min(totalMs, performance.now() - started);
+    }
 
     // Cost per item against the previous size. Flat means linear; climbing
     // means something quadratic is hiding in there.
@@ -161,3 +187,99 @@ export function formatResult(result: ScaleResult): string {
 
 /** A metrics collector wired for a scale run. */
 export const scaleMetrics = (): InMemoryMetrics => createInMemoryMetrics();
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Deterministic complexity measurement.
+//
+// A wall-clock ratio answers "was this fast on this machine just now", which is
+// not the question these tests are asking. They are asking "is the cost per
+// item constant as N grows" — a property of the algorithm, not of the hardware,
+// and one that can be measured exactly.
+//
+// So: count the WORK, not the time. Every engine here takes its storage as an
+// injected port, which means a counting wrapper sees every read the engine
+// performs. If a per-item operation were secretly O(n) in the store's size, it
+// would have to read the store, and the count would climb. It cannot climb for
+// any other reason — no GC pause, no scheduler, no other process on the box can
+// change how many times a function was called.
+//
+// The result is a test that fails only when the complexity actually regresses.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface WorkCount {
+  readonly size: number;
+  /**
+   * Port operations performed while processing `size` items.
+   *
+   * Reads AND writes. Counting only reads was my first attempt and it measured
+   * nothing: work-order creation appends and never reads, so the counter stayed
+   * at zero and the assertion was vacuous. The quantity that actually reflects
+   * the algorithm is total port traffic.
+   */
+  readonly operations: number;
+  /** Operations per item. Flat means linear; climbing means super-linear. */
+  readonly operationsPerItem: number;
+}
+
+/**
+ * Counts port reads across growing input sizes.
+ *
+ * `run` is handed a counter it must increment once per port OPERATION — in
+ * practice by wrapping the port it injects. Returning the count rather than
+ * timing it is what makes this deterministic.
+ */
+export async function workCountProfile(
+  run: (size: number, countOperation: () => void) => Promise<void> | void,
+  sizes: readonly number[],
+): Promise<WorkCount[]> {
+  const rows: WorkCount[] = [];
+
+  for (const size of sizes) {
+    let operations = 0;
+    await run(size, () => {
+      operations += 1;
+    });
+    rows.push({ size, operations, operationsPerItem: operations / size });
+  }
+
+  return rows;
+}
+
+/**
+ * Whether cost per item stayed flat.
+ *
+ * Compares the largest size's reads-per-item against the smallest. Linear work
+ * gives a ratio of 1.0 exactly — not approximately, exactly, because these are
+ * integer call counts. The tolerance exists only for algorithms with a genuine
+ * constant-factor difference at small N, and is far tighter than any wall-clock
+ * bound could be.
+ */
+export function costPerItemGrowth(rows: readonly WorkCount[]): number {
+  if (rows.length < 2) {
+    throw new Error(
+      "costPerItemGrowth needs at least two sizes. One sample measures nothing about growth.",
+    );
+  }
+
+  const first = rows[0]!;
+  const last = rows[rows.length - 1]!;
+
+  // ── A ZERO BASELINE IS A BROKEN MEASUREMENT, NOT A PASS ───────────────────
+  //
+  // My first version returned 1 here, and the test using it counted zero
+  // operations at every size and passed. It proved nothing at all — the exact
+  // "unmeasured counts as satisfied" failure this codebase refuses everywhere
+  // else, reintroduced inside the tool meant to catch regressions.
+  //
+  // Throwing is right: a counter that never incremented means the wrapper is
+  // not on the path the code actually uses, and silently reporting healthy
+  // growth from no data is worse than failing loudly.
+  if (first.operationsPerItem === 0) {
+    throw new Error(
+      `The work counter recorded zero operations at size ${first.size}. ` +
+        "Nothing was measured, so no growth can be computed — the counting wrapper is not on the path under test.",
+    );
+  }
+
+  return last.operationsPerItem / first.operationsPerItem;
+}

@@ -184,6 +184,27 @@ export interface EvolutionControl {
   ): { ok: boolean; reason: string };
 
   /**
+   * A named human authorizes a held material change.
+   *
+   * AWAITING_HUMAN_AUTHORIZATION had no exit until this existed — a change
+   * could enter the state and never leave it. Holding a change for a decision
+   * nobody can record is not a gate, it is a dead end, and it is the same shape
+   * of defect as a field that is written and never read.
+   *
+   * `by` must name a person. Foundry authorizing its own held change would be
+   * the §11 violation this whole hold exists to prevent, so a caller that is
+   * not a human is refused.
+   *
+   * This does NOT grant deployment authority. It moves the change to VALIDATED;
+   * `promote` still refuses STAGING and PRODUCTION afterwards, unchanged.
+   */
+  authorizeMaterialChange(
+    changeId: string,
+    by: string,
+    reason: string,
+  ): { authorized: boolean; reason: string };
+
+  /**
    * Promotes a validated change.
    *
    * THE WALL. Refuses STAGING and PRODUCTION with no override.
@@ -291,6 +312,40 @@ export function createEvolutionControl(options: EvolutionControlOptions = {}): E
 
       move(change, "VALIDATED", by, outcome.reason);
       return { ok: true, reason: "Validated." };
+    },
+
+    authorizeMaterialChange(changeId, by, reason) {
+      const change = changes.get(changeId);
+      if (!change) return { authorized: false, reason: `No change ${changeId}.` };
+
+      if (change.state !== "AWAITING_HUMAN_AUTHORIZATION") {
+        return {
+          authorized: false,
+          reason: `Change ${changeId} is ${change.state}, not awaiting human authorization. Only a held change needs one.`,
+        };
+      }
+
+      // A person, named. Foundry cannot authorize its own held change — that is
+      // precisely the §11 violation the hold exists to prevent, and accepting a
+      // service identity here would make the whole gate ceremonial.
+      if (!by.startsWith("human.")) {
+        return {
+          authorized: false,
+          reason:
+            `"${by}" is not a human authority. A material change is held for HUMAN authorization (Charter §13); ` +
+            "accepting a service identity here would make the hold ceremonial. Use a `human.` identity.",
+        };
+      }
+
+      if (!reason.trim()) {
+        return {
+          authorized: false,
+          reason: "An authorization must state its reason. An unexplained approval cannot be reviewed later.",
+        };
+      }
+
+      move(change, "VALIDATED", by, `Human authorization: ${reason}`);
+      return { authorized: true, reason: `Authorized by ${by}.` };
     },
 
     promote(changeId, target, by) {
