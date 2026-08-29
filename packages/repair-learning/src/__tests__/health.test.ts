@@ -83,9 +83,12 @@ describe("a lookup can never break its caller", () => {
   });
 
   it("degrades instead of hanging", async () => {
+    // Margins deliberately wide. A 20ms budget against a 200ms promise flakes
+    // on a loaded machine, and a timing test that fails under load teaches
+    // nothing except to distrust the suite.
     const answer = await withRepairKnowledge(
-      () => new Promise((resolve) => setTimeout(() => resolve("too late"), 200)),
-      { timeoutMs: 20 },
+      () => new Promise((resolve) => setTimeout(() => resolve("too late"), 5000)),
+      { timeoutMs: 50 },
     );
     expect(answer.value).toBeNull();
     expect(answer.degraded).toBe(true);

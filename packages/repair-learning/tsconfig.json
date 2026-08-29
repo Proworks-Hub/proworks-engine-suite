@@ -21,6 +21,9 @@
   ],
   "references": [
     {
+      "path": "../auditiq"
+    },
+    {
       "path": "../contracts"
     },
     {

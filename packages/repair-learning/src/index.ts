@@ -36,3 +36,6 @@ export * from "./knowledge/patterns.js";
 
 // Health and fail-safe (§40)
 export * from "./health.js";
+
+// AuditIQ wiring (§38)
+export * from "./audit.js";
