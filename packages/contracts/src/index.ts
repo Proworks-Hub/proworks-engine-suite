@@ -77,4 +77,5 @@ export * from "./productionAsset.js";
 export * from "./prepResult.js";
 export * from "./hiveArchitecture.js";
 export * from "./hiveClassification.js";
+export * from "./charterRegistry.js";
 export * from "./hiveMap.js";
