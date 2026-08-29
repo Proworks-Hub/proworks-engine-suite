@@ -76,4 +76,5 @@ export * from "./productionAsset.js";
 // and ProWorks had already converged on independently.
 export * from "./prepResult.js";
 export * from "./hiveArchitecture.js";
+export * from "./hiveClassification.js";
 export * from "./hiveMap.js";
