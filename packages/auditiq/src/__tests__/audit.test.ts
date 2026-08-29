@@ -14,7 +14,7 @@ import { createAuditIq } from "../audit.js";
 
 let counter = 0;
 const audit = () =>
-  createAuditIq({
+  createAuditIq({ instance: { globalInstanceId: "hive.ksix.us-east", provisional: false },
     now: () => new Date("2026-08-29T10:00:00.000Z"),
     generateId: () => `aud_${(counter += 1)}`,
   });
@@ -86,7 +86,7 @@ describe("evidence answers the charter's question", () => {
     // A run of rejected writes means something is emitting malformed evidence,
     // and nobody would otherwise see it.
     const rejected: string[] = [];
-    createAuditIq({ onRejected: (reason) => rejected.push(reason) }).record({ bad: true });
+    createAuditIq({ instance: { globalInstanceId: "hive.ksix.us-east", provisional: false }, onRejected: (reason) => rejected.push(reason) }).record({ bad: true });
     expect(rejected).toHaveLength(1);
   });
 });

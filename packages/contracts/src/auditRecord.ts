@@ -49,6 +49,16 @@ export const auditOutcomeSchema = z.enum([
   "denied",
   /** It began and did not finish. The state is one nobody chose. */
   "partial",
+  /**
+   * It happened and was subsequently undone by a compensating action.
+   *
+   * Distinct from `failed`, which never took effect, and from `partial`, which
+   * is still in a state nobody chose. A compensated action DID happen and was
+   * deliberately reversed — collapsing it into either of the others would lose
+   * the fact that the effect existed for a time, which is exactly what an
+   * incident review needs to know.
+   */
+  "compensated",
 ]);
 export type AuditOutcome = z.infer<typeof auditOutcomeSchema>;
 
@@ -80,6 +90,42 @@ export const auditRecordSchema = z
     /** Which engine performed or refused the action. */
     component: identifierSchema,
     componentVersion: z.string().min(1).optional(),
+
+    /**
+     * What KIND of thing this records.
+     *
+     * `action` is domain vocabulary and unbounded, which is right — every
+     * engine names its own facts. But an unbounded string cannot answer "show
+     * me every rollback" or "every approval in this window", and those are the
+     * questions an execution history exists to answer.
+     *
+     * Defaulted to `event`, which is the honest reading of an entry whose
+     * writer did not say: something happened. Never inferred from the action
+     * string, because a taxonomy derived by pattern-matching free text is one
+     * that silently reclassifies itself when somebody renames an action.
+     */
+    actionType: z
+      .enum([
+        /** An instruction was issued. */
+        "command",
+        /** An authority decision was made. */
+        "decision",
+        /** Something happened. The default. */
+        "event",
+        /** A human authorized something. */
+        "approval",
+        /** A prior effect was deliberately undone. */
+        "rollback",
+        /** Something went wrong. */
+        "failure",
+        /** A recorded history was re-delivered. */
+        "replay",
+        /** Evidence was raised out of an instance to the collective. */
+        "escalation",
+        /** Records passed out of retention. */
+        "retention",
+      ])
+      .default("event"),
 
     /** Past tense, like an event: `material.reserved`, `job.priced`. */
     action: z.string().min(1),
@@ -122,6 +168,21 @@ export const auditRecordSchema = z
      * content into evidence.
      */
     detail: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional(),
+
+    /**
+     * A hash or safe summary of what went in and what came out.
+     *
+     * DIGESTS, not payloads, and the field names say so. An execution history
+     * that stored inputs and outputs verbatim would become a second copy of
+     * every record the Hive has ever touched — a replication system wearing an
+     * audit label, and one that would carry protected content into whatever
+     * the evidence is later escalated to.
+     *
+     * A digest answers the question an audit actually asks: were these the
+     * same inputs as last time, and did they produce the same result.
+     */
+    inputsDigest: z.string().min(1).optional(),
+    outputsDigest: z.string().min(1).optional(),
   })
   .strict()
   .refine((r) => r.outcome !== "denied" || Boolean(r.governanceDecisionId), {
@@ -142,6 +203,16 @@ export type AuditRecord = z.infer<typeof auditRecordSchema>;
 export const sealedAuditRecordSchema = z
   .object({
     record: auditRecordSchema,
+    /**
+     * The Hive instance that SEALED this. Bound at seal time from the ledger's
+     * own configuration, never written by whoever submitted the record.
+     *
+     * Same rule as EventIQ's accepted events and the admission gate's
+     * principals: a writer that names its own instance has asserted an origin,
+     * not established one. Outside the record and inside the seal, so it is
+     * covered by the hash and cannot be edited without breaking the chain.
+     */
+    globalInstanceId: identifierSchema,
     sequence: z.number().int().nonnegative(),
     previousHash: z.string().min(1),
     hash: z.string().min(1),

@@ -36,7 +36,7 @@ import {
 
 let counter = 0;
 const audit = () =>
-  createAuditIq({
+  createAuditIq({ instance: { globalInstanceId: "hive.ksix.us-east", provisional: false },
     now: () => new Date("2026-08-29T10:00:00.000Z"),
     generateId: () => `aud_${(counter += 1)}`,
   });

@@ -667,7 +667,7 @@ describe("MC-05..MC-24 — the rest", () => {
 
   it("MC-13 audit scope", () => {
     const s = scenario("MC-13");
-    const log = createAuditIq({ now: () => new Date("2026-08-29T10:00:00.000Z") });
+    const log = createAuditIq({ instance: { globalInstanceId: "hive.instance.a", provisional: false }, now: () => new Date("2026-08-29T10:00:00.000Z") });
 
     for (const tenant of [KSIX, BRIGHTON]) {
       log.record({
