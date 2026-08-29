@@ -112,8 +112,28 @@ export interface MultiCompanyWorld {
   allPositions(): StockPosition[];
 }
 
+/**
+ * Stock per tenant, and the asymmetry is deliberate.
+ *
+ * ksix holds fifty sheets and brighton-signs holds three, of a SKU string they
+ * share exactly. That gap is the instrument: if the ledger keyed stock by SKU
+ * rather than by (tenant, SKU), brighton's three would be indistinguishable
+ * from part of ksix's fifty, and a leak would look like plenty of stock rather
+ * than like an error.
+ *
+ * Equal seeds would hide it. Two tenants each holding ten look the same whether
+ * they are partitioned or pooled at twenty.
+ */
+export const SEED: Readonly<Record<string, number>> = Object.freeze({
+  ksix: 50,
+  "brighton-signs": 3,
+  "longmont-print": 25,
+  "family-table": 0,
+  "makerops-demo": 12,
+});
+
 export interface WorldOptions {
-  /** Stock seeded per tenant. Default 10. */
+  /** Overrides the per-company seed. Rarely wanted — the asymmetry is the test. */
   onHand?: number;
   /**
    * Put every tenant on ONE ledger instead of one each.
@@ -135,11 +155,11 @@ const positionFor = (company: Company, onHand: number): StockPosition => ({
 });
 
 export function buildWorld(options: WorldOptions = {}): MultiCompanyWorld {
-  const onHand = options.onHand ?? 10;
+  const seedFor = (company: Company): number => options.onHand ?? SEED[company.id] ?? 10;
   const now = () => new Date("2026-08-29T10:00:00.000Z");
 
   const shared = options.sharedLedger
-    ? createInMemoryStockLedger(COMPANIES.map((c) => positionFor(c, onHand)))
+    ? createInMemoryStockLedger(COMPANIES.map((c) => positionFor(c, seedFor(c))))
     : null;
 
   const tenants = new Map<string, Tenant>();
@@ -151,7 +171,7 @@ export function buildWorld(options: WorldOptions = {}): MultiCompanyWorld {
     // per-tenant ledger is seeded with ONLY that tenant's position — a store
     // that held another tenant's row would make the isolation assertions
     // vacuous.
-    const ledger = shared ?? createInMemoryStockLedger([positionFor(company, onHand)]);
+    const ledger = shared ?? createInMemoryStockLedger([positionFor(company, seedFor(company))]);
     const reservations = createInMemoryReservationStore();
     const eventLog = createInMemoryEventLog();
 
