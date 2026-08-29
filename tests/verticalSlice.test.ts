@@ -30,6 +30,7 @@ import {
   quantity,
   toInventorySignal,
   type StockPosition,
+  type StockPositionInput,
 } from "@proworks-hub/inventoryiq";
 import { createTrackingService } from "@proworks-hub/tracking";
 import { buildManufacturingPlan } from "@proworks-hub/forgeiq/manufacturing";
@@ -66,7 +67,7 @@ import {
 const actor: EventActor = { kind: "user", userId: "op-1", role: "operator" };
 const ORG = "org-denver-metal";
 
-const stock = (over: Partial<StockPosition> = {}): StockPosition => ({
+const stock = (over: Partial<StockPositionInput> = {}): StockPositionInput => ({
   materialId: "mat-corten-125",
   organizationId: ORG,
   locationId: "rack-1",

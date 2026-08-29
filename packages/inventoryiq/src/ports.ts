@@ -31,7 +31,26 @@ export interface StockLedger {
     locationId: string,
   ): Promise<StockPosition | null>;
 
-  savePosition(position: StockPosition): Promise<void>;
+  /**
+   * Persists a change, stating the version that was read.
+   *
+   * MUST throw `StockConflictError` when that version is stale, and MUST
+   * increment the stored version itself. Both halves matter:
+   *
+   * Silently accepting a stale write is how two concurrent reserves each
+   * believe they hold material and one's hold disappears — which is exactly
+   * what this engine did before the version existed.
+   *
+   * Leaving the increment to callers means one that forgets leaves the version
+   * unchanged, and the next stale write passes too. Concurrency control that
+   * depends on everybody remembering is concurrency control that eventually is
+   * not there.
+   *
+   * A durable implementation does this as ONE conditional statement —
+   * `UPDATE ... WHERE version = ?` and check the affected rows. A read
+   * followed by a write reads exactly as correctly and is exactly as wrong.
+   */
+  savePosition(position: StockPosition, expectedVersion: number): Promise<void>;
 }
 
 export interface ReservationStore {

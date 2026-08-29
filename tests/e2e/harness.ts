@@ -13,6 +13,7 @@ import {
   createReserveMaterialUseCase,
   type InMemoryStockLedger,
   type StockPosition,
+  type StockPositionInput,
 } from "@proworks-hub/inventoryiq";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -166,7 +167,7 @@ export function seedShop(options: { onHand?: number; seedOtherTenant?: boolean }
   const onHand = options.onHand ?? 20;
   const now = () => new Date("2026-08-29T10:00:00.000Z");
 
-  const positions: StockPosition[] = [
+  const positions: StockPositionInput[] = [
     {
       materialId: MATERIAL,
       organizationId: KSIX,

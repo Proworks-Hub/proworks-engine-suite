@@ -11,7 +11,9 @@ import {
   quantity,
   subtractQuantity,
   sumQuantities,
+  stockPositionSchema,
   type StockPosition,
+  type StockPositionInput,
 } from "../models.js";
 import { computeAvailability, detectReorderSignals, detectShortages } from "../availability.js";
 import {
@@ -27,15 +29,18 @@ import {
 } from "../inMemory.js";
 import type { InventoryDeps } from "../ports.js";
 
-const position = (over: Partial<StockPosition> = {}): StockPosition => ({
-  materialId: "mat-steel-18ga",
-  organizationId: "org-a",
-  locationId: "rack-1",
-  onHand: quantity(100, "sq_ft"),
-  reserved: quantity(0, "sq_ft"),
-  updatedAt: "2026-08-27T12:00:00.000Z",
-  ...over,
-});
+// Parsed, so the fixture produces a real position with `version` defaulted
+// rather than an input shape that only some consumers accept.
+const position = (over: Partial<StockPositionInput> = {}): StockPosition =>
+  stockPositionSchema.parse({
+    materialId: "mat-steel-18ga",
+    organizationId: "org-a",
+    locationId: "rack-1",
+    onHand: quantity(100, "sq_ft"),
+    reserved: quantity(0, "sq_ft"),
+    updatedAt: "2026-08-27T12:00:00.000Z",
+    ...over,
+  });
 
 describe("quantities refuse to be mixed", () => {
   it("will not add square feet to linear feet", () => {

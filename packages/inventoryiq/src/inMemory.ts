@@ -2,7 +2,8 @@
 // Proprietary and confidential. Unauthorized copying, modification, or
 // distribution of this file, via any medium, is strictly prohibited.
 
-import type { Reservation, StockPosition } from "./models.js";
+import { StockConflictError, stockPositionSchema } from "./models.js";
+import type { Reservation, StockPosition, StockPositionInput } from "./models.js";
 import type { ReservationStore, StockLedger } from "./ports.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -22,7 +23,14 @@ import type { ReservationStore, StockLedger } from "./ports.js";
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface InMemoryStockLedger extends StockLedger {
-  seed(positions: ReadonlyArray<StockPosition>): void;
+  /**
+   * Accepts INPUT positions, so `version` may be omitted and defaults to 0.
+   *
+   * A seeded row that arrived unversioned would compare as `undefined` and
+   * match no compare-and-set, turning every first write into a spurious
+   * conflict.
+   */
+  seed(positions: ReadonlyArray<StockPositionInput>): void;
   all(): StockPosition[];
   clear(): void;
 }
@@ -33,14 +41,18 @@ const positionKey = (organizationId: string, materialId: string, locationId: str
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
 export function createInMemoryStockLedger(
-  initial: ReadonlyArray<StockPosition> = [],
+  initial: ReadonlyArray<StockPositionInput> = [],
 ): InMemoryStockLedger {
   const positions = new Map<string, StockPosition>();
 
-  const put = (position: StockPosition): void => {
+  const put = (position: StockPositionInput): void => {
+    // Parsed, so an unversioned input gets version 0 rather than `undefined`.
+    // A stored `undefined` would compare against no expected version and turn
+    // every first write into a spurious conflict.
+    const parsed = stockPositionSchema.parse(position);
     positions.set(
-      positionKey(position.organizationId, position.materialId, position.locationId),
-      clone(position),
+      positionKey(parsed.organizationId, parsed.materialId, parsed.locationId),
+      clone(parsed),
     );
   };
   for (const position of initial) put(position);
@@ -58,8 +70,29 @@ export function createInMemoryStockLedger(
       return found ? clone(found) : null;
     },
 
-    async savePosition(position) {
-      put(position);
+    async savePosition(position, expectedVersion) {
+      // ── Compare and set, with no await between the two ────────────────
+      //
+      // The check and the write are adjacent and synchronous on purpose.
+      // Anything that suspends between them reopens the gap this exists to
+      // close: the previous implementation read the position, awaited, and
+      // wrote an unconditional overwrite, so concurrent reserves all read the
+      // same figure and clobbered each other.
+      //
+      // JavaScript is single-threaded, so no `await` here means no interleaving
+      // here. A durable implementation gets the same property from a single
+      // conditional UPDATE rather than from the event loop.
+      const key = positionKey(position.organizationId, position.materialId, position.locationId);
+      const current = positions.get(key);
+      const actual = current?.version ?? 0;
+
+      if (current && actual !== expectedVersion) {
+        throw new StockConflictError(position.materialId, expectedVersion, actual);
+      }
+
+      // The LEDGER increments, not the caller. A caller that forgot would
+      // leave the version unchanged and the next stale write would pass too.
+      put({ ...position, version: actual + 1 });
     },
 
     seed(next) {

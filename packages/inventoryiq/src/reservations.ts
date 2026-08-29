@@ -7,6 +7,7 @@ import {
   addQuantity,
   compareQuantity,
   isNegativeQuantity,
+  StockConflictError,
   subtractQuantity,
   zeroQuantity,
   type Quantity,
@@ -37,7 +38,16 @@ export type InventoryFailure =
   | "unknown_material"
   | "unknown_reservation"
   | "already_settled"
-  | "unit_mismatch";
+  | "unit_mismatch"
+  /**
+   * The position kept changing underneath. TRANSIENT, and deliberately not
+   * `insufficient_stock`.
+   *
+   * There may be plenty of material; this request simply never got a clean
+   * read. Reporting it as a shortage would send a shop looking for stock it
+   * already has, which is a worse answer than admitting contention.
+   */
+  | "concurrent_modification";
 
 export interface InventoryError {
   readonly code: InventoryFailure;
@@ -129,7 +139,27 @@ export function createReserveMaterialUseCase(deps: InventoryDeps): ReserveMateri
       `${input.quantity.amount}${input.quantity.unit}`,
     ].join("::");
 
-  const reserveOnce = async (
+  /**
+   * How many times a reserve will reload and reconsider before giving up.
+   *
+   * Bounded, because an unbounded retry against sustained contention is a
+   * livelock that looks like a slow request.
+   *
+   * The number is 32 rather than something smaller because progress is
+   * GUARANTEED but not fast: every attempt has exactly one winner, so N
+   * concurrent reserves on one position need up to N attempts and the last
+   * caller in the queue needs all of them. Five was the first value tried and
+   * MC-04's twenty-job burst exposed it immediately — seven reserves landed on
+   * one row and the seventh ran out of attempts, failing a request that had
+   * material waiting for it.
+   *
+   * Too low is a false failure on a healthy shop. Too high is a slow refusal
+   * on a pathological one. Given that each attempt is one read and one
+   * conditional write, the first is the worse trade.
+   */
+  const MAX_RESERVE_ATTEMPTS = 32;
+
+  const attemptReserve = async (
     input: ReserveMaterialInput,
   ): Promise<InventoryResult<Reservation>> => {
       // ── Deduplication ────────────────────────────────────────────────────
@@ -201,7 +231,14 @@ export function createReserveMaterialUseCase(deps: InventoryDeps): ReserveMateri
       // merely over-reserved, which blocks a promise. The other order loses a
       // reservation and lets the same material be promised twice, which is the
       // failure that reaches a machine.
-      await deps.stock.savePosition(updated);
+      //
+      // Compare-and-set on the version read above. This is the fix for the
+      // defect MC-04 and MC-07 found: the write used to be unconditional, so
+      // concurrent reserves each read the same `reserved` figure, each added
+      // their own quantity, and each wrote the result. Last write won and the
+      // rest vanished — two reserves of 8 against 10 on hand were both granted
+      // while the ledger reported 8.
+      await deps.stock.savePosition(updated, position.version);
       await deps.reservations.save(reservation);
 
       const remaining = subtractQuantity(updated.onHand, updated.reserved);
@@ -228,6 +265,44 @@ export function createReserveMaterialUseCase(deps: InventoryDeps): ReserveMateri
       }
 
       return { ok: true, data: reservation, events };
+  };
+
+  /**
+   * Reserves, reloading and reconsidering when somebody else moved first.
+   *
+   * `StockConflictError` means the position changed between the read and the
+   * write — which is not a failure to report and NOT a write to retry as-is.
+   * The whole point is to go back and re-evaluate availability against what is
+   * actually there now: a retry that re-applied the same arithmetic would
+   * reintroduce the oversell this replaced.
+   *
+   * So the loop calls `attemptReserve` again from the top. It re-reads,
+   * re-checks `insufficient_stock`, and either fits under the winner's result
+   * or is refused for shortage — which is the correct answer rather than a
+   * consolation one.
+   */
+  const reserveOnce = async (
+    input: ReserveMaterialInput,
+  ): Promise<InventoryResult<Reservation>> => {
+    let lastConflict: StockConflictError | null = null;
+
+    for (let attempt = 0; attempt < MAX_RESERVE_ATTEMPTS; attempt += 1) {
+      try {
+        return await attemptReserve(input);
+      } catch (cause) {
+        if (!(cause instanceof StockConflictError)) throw cause;
+        lastConflict = cause;
+      }
+    }
+
+    // Sustained contention. Reported as transient rather than as a shortage,
+    // because there may be plenty of material — the caller simply never got a
+    // clean read, and telling them "insufficient stock" would be false.
+    return fail(
+      "concurrent_modification",
+      `${input.materialId} was modified by another reserve on every one of ${MAX_RESERVE_ATTEMPTS} attempts. ` +
+        `The stock may be sufficient; this request never got a clean read. (${lastConflict?.message ?? ""})`,
+    );
   };
 
   return {
@@ -289,11 +364,17 @@ export function createReleaseReservationUseCase(
       }
 
       const at = now().toISOString();
-      await deps.stock.savePosition({
-        ...position,
-        reserved: subtractQuantity(position.reserved, reservation.quantity),
-        updatedAt: at,
-      });
+      // Conditional, like the reserve path. Releasing is a read-modify-write
+      // too, and a release that lost a concurrent reserve would leave material
+      // free that somebody is holding.
+      await deps.stock.savePosition(
+        {
+          ...position,
+          reserved: subtractQuantity(position.reserved, reservation.quantity),
+          updatedAt: at,
+        },
+        position.version,
+      );
 
       const released: Reservation = { ...reservation, status: "released", settledAt: at };
       await deps.reservations.save(released);
@@ -376,12 +457,15 @@ export function createConsumeMaterialUseCase(deps: InventoryDeps): ConsumeMateri
       // Reserved drops by what was RESERVED; on-hand drops by what was USED.
       // Using the same number for both is the mistake that leaves phantom
       // reservations behind whenever consumption differs from the plan.
-      await deps.stock.savePosition({
-        ...position,
-        onHand: subtractQuantity(position.onHand, consumed),
-        reserved: subtractQuantity(position.reserved, reservation.quantity),
-        updatedAt: at,
-      });
+      await deps.stock.savePosition(
+        {
+          ...position,
+          onHand: subtractQuantity(position.onHand, consumed),
+          reserved: subtractQuantity(position.reserved, reservation.quantity),
+          updatedAt: at,
+        },
+        position.version,
+      );
 
       const settled: Reservation = { ...reservation, status: "consumed", settledAt: at };
       await deps.reservations.save(settled);

@@ -11,7 +11,7 @@ import {
   createReleaseReservationUseCase,
   createReserveMaterialUseCase,
 } from "../index.js";
-import type { StockPosition } from "../models.js";
+import type { StockPositionInput } from "../models.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Reservation deduplication — the inventory half of the E2E-03 fix.
@@ -26,7 +26,7 @@ const MATERIAL = "corten-18";
 const LOCATION = "main-rack";
 
 function shop(onHand = 20) {
-  const positions: StockPosition[] = [
+  const positions: StockPositionInput[] = [
     {
       materialId: MATERIAL,
       organizationId: ORG,
@@ -235,5 +235,136 @@ describe("existing invariants are unchanged", () => {
     await s.reserve.execute(request());
     await s.reserve.execute(request());
     expect(s.position().onHand.amount).toBe(20);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// The lost update, and why it was one.
+//
+// `reserveMaterial` read a stock position, awaited, then wrote an
+// unconditional overwrite. Concurrent reserves for one (org, material,
+// location) all read the same `reserved` figure, each added their own
+// quantity, and each wrote the result. Last write won; the rest vanished.
+//
+// MC-04 measured it: seven grants of 2 left a ledger reading 2 instead of 14.
+// MC-07 showed the consequence: two reserves of 8 against 10 on hand were BOTH
+// granted, because `insufficient_stock` is decided against the under-counted
+// figure. Sixteen sheets promised, ten in the building.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("concurrent reserves do not overwrite each other", () => {
+  const ORG = "org-a";
+  const MAT = "mat-1";
+  const LOC = "rack-1";
+
+  const shop = (onHand: number) => {
+    const stock = createInMemoryStockLedger([
+      {
+        materialId: MAT,
+        organizationId: ORG,
+        locationId: LOC,
+        onHand: { amount: onHand, unit: "each" },
+        reserved: { amount: 0, unit: "each" },
+        updatedAt: "2026-08-29T09:00:00.000Z",
+      },
+    ]);
+    let n = 0;
+    return {
+      stock,
+      reserve: createReserveMaterialUseCase({
+        stock,
+        reservations: createInMemoryReservationStore(),
+        now: () => new Date("2026-08-29T10:00:00.000Z"),
+        generateId: () => `rsv_${(n += 1)}`,
+      }),
+      position: async () => (await stock.position(ORG, MAT, LOC))!,
+    };
+  };
+
+  it("records every hold it granted", async () => {
+    // Seven different work orders, two units each, concurrently. Before the
+    // fix the ledger read 2.
+    const s = shop(100);
+    const results = await Promise.all(
+      Array.from({ length: 7 }, (_, i) =>
+        s.reserve.execute({
+          organizationId: ORG,
+          materialId: MAT,
+          locationId: LOC,
+          workOrderId: `wo-${i}`,
+          quantity: { amount: 2, unit: "each" },
+        }),
+      ),
+    );
+
+    const granted = results.filter((r) => r.ok).length;
+    expect(granted).toBe(7);
+    expect((await s.position()).reserved.amount).toBe(14);
+  });
+
+  it("refuses the second of two reserves that cannot both fit", async () => {
+    // MC-07's arithmetic: 8 and 8 against 10. There is no split that satisfies
+    // both, so exactly one wins and the other is refused for shortage — which
+    // is the correct answer, not a consolation one.
+    const s = shop(10);
+    const [a, b] = await Promise.all([
+      s.reserve.execute({
+        organizationId: ORG, materialId: MAT, locationId: LOC,
+        workOrderId: "wo-a", quantity: { amount: 8, unit: "each" },
+      }),
+      s.reserve.execute({
+        organizationId: ORG, materialId: MAT, locationId: LOC,
+        workOrderId: "wo-b", quantity: { amount: 8, unit: "each" },
+      }),
+    ]);
+
+    expect([a.ok, b.ok].filter(Boolean)).toHaveLength(1);
+    const loser = a.ok ? b : a;
+    expect(loser.ok).toBe(false);
+    if (!loser.ok) expect(loser.error.code).toBe("insufficient_stock");
+
+    // Eight promised, eight recorded. Never sixteen.
+    expect((await s.position()).reserved.amount).toBe(8);
+  });
+
+  it("never lets the ledger disagree with the holds it issued", async () => {
+    // The invariant the whole change exists for, stated directly: whatever was
+    // granted is what the ledger says, at any concurrency.
+    const s = shop(1000);
+    const results = await Promise.all(
+      Array.from({ length: 25 }, (_, i) =>
+        s.reserve.execute({
+          organizationId: ORG, materialId: MAT, locationId: LOC,
+          workOrderId: `wo-${i}`, quantity: { amount: 3, unit: "each" },
+        }),
+      ),
+    );
+
+    const granted = results.filter((r) => r.ok).length;
+    expect((await s.position()).reserved.amount).toBe(granted * 3);
+  });
+
+  it("increments the version itself, so a caller cannot forget", async () => {
+    const s = shop(100);
+    expect((await s.position()).version).toBe(0);
+    await s.reserve.execute({
+      organizationId: ORG, materialId: MAT, locationId: LOC,
+      workOrderId: "wo-1", quantity: { amount: 1, unit: "each" },
+    });
+    expect((await s.position()).version).toBe(1);
+  });
+
+  it("refuses a stale write rather than applying it", async () => {
+    // The ledger's own guarantee, checked directly.
+    const s = shop(100);
+    const before = await s.position();
+    await s.stock.savePosition({ ...before, reserved: { amount: 5, unit: "each" } }, before.version);
+
+    await expect(
+      s.stock.savePosition({ ...before, reserved: { amount: 99, unit: "each" } }, before.version),
+    ).rejects.toThrow(/changed underneath/);
+
+    // The winner's value stands.
+    expect((await s.position()).reserved.amount).toBe(5);
   });
 });

@@ -12,6 +12,7 @@ import {
   createReleaseReservationUseCase,
   createReserveMaterialUseCase,
   type StockPosition,
+  type StockPositionInput,
 } from "@proworks-hub/inventoryiq";
 import {
   createCreateWorkOrderUseCase,
@@ -100,7 +101,7 @@ export interface Tenant {
   readonly eventLog: ReturnType<typeof createInMemoryEventLog>;
   position(): StockPosition | undefined;
   /** Every position this tenant's ledger holds, whoever it belongs to. */
-  visiblePositions(): StockPosition[];
+  visiblePositions(): StockPositionInput[];
 }
 
 export interface MultiCompanyWorld {
@@ -109,7 +110,7 @@ export interface MultiCompanyWorld {
   /** The one shared ledger, when the world was built with `sharedLedger`. */
   readonly sharedLedger: ReturnType<typeof createInMemoryStockLedger> | null;
   /** Every position across every tenant. For cross-tenant assertions. */
-  allPositions(): StockPosition[];
+  allPositions(): StockPositionInput[];
 }
 
 /**
@@ -145,7 +146,7 @@ export interface WorldOptions {
   sharedLedger?: boolean;
 }
 
-const positionFor = (company: Company, onHand: number): StockPosition => ({
+const positionFor = (company: Company, onHand: number): StockPositionInput => ({
   materialId: company.sku,
   organizationId: company.id,
   locationId: LOCATION,

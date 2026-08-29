@@ -161,9 +161,59 @@ export const stockPositionSchema = z
     reorderPoint: quantitySchema.optional(),
     reorderQuantity: quantitySchema.optional(),
     updatedAt: z.string().datetime(),
+    /**
+     * Optimistic concurrency. Incremented by the LEDGER on every write.
+     *
+     * Added because `reserveMaterial` read a position, awaited, then wrote an
+     * unconditional overwrite. Concurrent reserves for one (org, material,
+     * location) all read the same figure and overwrote each other: two
+     * reserves of 8 against 10 on hand were BOTH granted, sixteen sheets were
+     * promised, and the ledger reported 8. Since `insufficient_stock` is
+     * decided against that under-counted figure, the engine went on approving
+     * holds for material already spoken for.
+     *
+     * `updatedAt` could not serve as the token. Two writes inside the same
+     * millisecond carry the same timestamp — which is not a theoretical
+     * concern, it is what every test with a fixed clock does — and a
+     * compare-and-set on equal timestamps succeeds when it must fail.
+     *
+     * Defaulted so every existing caller and stored row starts at 0 rather
+     * than being unversioned, which would compare as `undefined` and match
+     * nothing.
+     */
+    version: z.number().int().min(0).default(0),
   })
   .strict();
 export type StockPosition = z.infer<typeof stockPositionSchema>;
+/**
+ * A position as a caller supplies one, before defaults are applied.
+ *
+ * `version` is omitted here and required on the parsed type. That asymmetry is
+ * the point: nobody hands the ledger a version, and everybody reads one back.
+ */
+export type StockPositionInput = z.input<typeof stockPositionSchema>;
+
+/**
+ * Raised when a save states a version that is no longer current.
+ *
+ * A distinct type, because the correct response is to reload and reconsider
+ * rather than retry the same write — and a caller cannot tell that apart from
+ * a generic failure. The same shape `WorkflowConflictError` already uses.
+ */
+export class StockConflictError extends Error {
+  readonly transient = true as const;
+  constructor(
+    readonly materialId: string,
+    readonly expectedVersion: number,
+    readonly actualVersion: number,
+  ) {
+    super(
+      `Stock position for ${materialId} changed underneath: expected version ${expectedVersion}, ` +
+        `found ${actualVersion}. Reload it and decide again rather than retrying this write.`,
+    );
+    this.name = "StockConflictError";
+  }
+}
 
 /**
  * A promise that some material is spoken for.
