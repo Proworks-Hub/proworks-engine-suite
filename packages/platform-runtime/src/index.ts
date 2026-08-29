@@ -27,3 +27,6 @@ export * from "./capacityGate.js";
 
 // The instance operating mode, the local queue, and the way back.
 export * from "./continuityMode.js";
+
+// Classify, deduplicate, compare cohorts. Never contain.
+export * from "./telemetryPipeline.js";

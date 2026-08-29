@@ -98,3 +98,6 @@ export * from "./scheduling.js";
 
 // What an instance may still do when things are broken.
 export * from "./continuity.js";
+
+// What telemetry may say, and where it may go.
+export * from "./telemetry.js";

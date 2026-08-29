@@ -4,6 +4,13 @@
 
 import { z } from "zod";
 
+import {
+  dependencyHealthSchema,
+  engineReadinessSchema,
+  errorBudgetSchema,
+  trustStateSchema,
+} from "@proworks-hub/contracts";
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Whether an engine is alright.
 //
@@ -100,6 +107,43 @@ export const engineHeartbeatSchema = z
     maintenance: z.boolean().default(false),
     /** Free text the engine wants an operator to see. */
     message: z.string().optional(),
+
+    // ── Added for the observability contract ─────────────────────────────
+    //
+    // Optional, so every existing reporter keeps working, and absent means
+    // NOT REPORTED rather than healthy — `deriveEngineHealth` reads what is
+    // present and says so, which is the same rule the rest of this system
+    // applies to unknown.
+
+    /**
+     * Whether the process is alive, and separately whether it can take new
+     * work. A draining engine is live and not ready, and one boolean forces
+     * those into an answer that is wrong half the time.
+     */
+    readiness: engineReadinessSchema.optional(),
+    /**
+     * Per dependency, with latency. What an engine is waiting on.
+     *
+     * Optional rather than defaulted to `[]`, and the distinction is real: an
+     * empty array asserts "this engine has no dependencies", which is a claim.
+     * Absent says "not reported", which is the truth for every reporter written
+     * before this field existed.
+     */
+    dependencies: z.array(dependencyHealthSchema).optional(),
+    /** How full it is. 0..1 per resource. */
+    saturation: z.record(z.string(), z.number().min(0).max(1)).optional(),
+    errorBudget: errorBudgetSchema.optional(),
+    /** Config and schema versions, which drift independently of the package. */
+    configVersion: z.string().min(1).optional(),
+    schemaVersion: z.string().min(1).optional(),
+    /**
+     * The engine's trust posture, as Sentinel last set it.
+     *
+     * Reported, never self-assessed: an engine deciding it is trusted is the
+     * shape this whole architecture refuses. It is here so an operator reading
+     * one heartbeat can see it, not so the engine can claim it.
+     */
+    trustPosture: trustStateSchema.optional(),
   })
   .strict();
 export type EngineHeartbeat = z.infer<typeof engineHeartbeatSchema>;
