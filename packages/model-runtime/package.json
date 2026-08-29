@@ -22,8 +22,8 @@
     }
   },
   "dependencies": {
-    "@proworks-hub/intelligence-core": "*",
-    "@proworks-hub/contracts": "*",
+    "@proworks-hub/intelligence-core": "^0.19.0",
+    "@proworks-hub/contracts": "^0.19.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {

@@ -103,3 +103,79 @@ describe("every package is wired into every list", () => {
     }
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// One suite version, and internal dependencies that state it.
+//
+// Every package inside the suite used to depend on its siblings with `"*"`.
+// That is harmless while the whole suite is published together — a consumer
+// installing `prime@0.19.0` gets `contracts@latest`, which is also 0.19.0 — and
+// it stops being harmless the moment ONE package is published alone. `"*"`
+// means "whatever is newest", so a single hotfix to contracts would silently
+// re-point every installed engine at it, across a boundary nobody declared.
+//
+// The suite ships as a coordinated release, so the honest range is the version
+// the suite is on. `^0.19.0` rather than an exact pin: exact would force a
+// lockstep republish of all 31 packages for any single fix, and atomicity
+// already comes from publishing together — pinning exactly makes the boundary
+// rigid without making it safer.
+//
+// These two tests are the enforcement. The first would have caught the `"*"`
+// convention; the second catches the more likely future mistake, which is
+// bumping the suite version and leaving the ranges behind.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("the suite is one version, and says so in its own dependencies", () => {
+  const manifests = onDisk.map((name) => ({
+    name,
+    json: JSON.parse(
+      readFileSync(join(packagesDir, name, "package.json"), "utf8"),
+    ) as {
+      version: string;
+      dependencies?: Record<string, string>;
+      peerDependencies?: Record<string, string>;
+    },
+  }));
+
+  it("gives every package the same version", () => {
+    // "What version is the Hive" needs an answer. Before this there were six
+    // version lines across 31 packages and the question had none.
+    const versions = [...new Set(manifests.map((m) => m.json.version))];
+    expect(versions).toHaveLength(1);
+  });
+
+  it("never depends on a sibling with a wildcard", () => {
+    // `"*"` resolves to whatever is newest, which is a dependency on time
+    // rather than on a version.
+    const wildcards: string[] = [];
+    for (const { name, json } of manifests) {
+      for (const field of ["dependencies", "peerDependencies"] as const) {
+        for (const [dep, range] of Object.entries(json[field] ?? {})) {
+          if (dep.startsWith("@proworks-hub/") && (range === "*" || range === "latest")) {
+            wildcards.push(`${name} -> ${dep}: ${range}`);
+          }
+        }
+      }
+    }
+    expect(wildcards).toEqual([]);
+  });
+
+  it("states the suite version in every internal range", () => {
+    // The failure this catches: somebody bumps the suite to 0.20.0 and leaves
+    // the ranges at ^0.19.0. Nothing breaks locally — the workspace resolves
+    // siblings by path — and the mistake ships, so a published 0.20.0 package
+    // declares it works with 0.19.0 engines it was never built against.
+    const wrong: string[] = [];
+    for (const { name, json } of manifests) {
+      const expectedRange = `^${json.version}`;
+      for (const field of ["dependencies", "peerDependencies"] as const) {
+        for (const [dep, range] of Object.entries(json[field] ?? {})) {
+          if (dep.startsWith("@proworks-hub/") && range !== expectedRange) {
+            wrong.push(`${name} -> ${dep}: ${range} (expected ${expectedRange})`);
+          }
+        }
+      }
+    }
+    expect(wrong).toEqual([]);
+  });
+});

@@ -22,9 +22,9 @@
     }
   },
   "dependencies": {
-    "@proworks-hub/contracts": "*",
+    "@proworks-hub/contracts": "^0.19.0",
     "zod": "^3.23.0",
-    "@proworks-hub/core-kit": "*"
+    "@proworks-hub/core-kit": "^0.19.0"
   },
   "devDependencies": {
     "typescript": "^5.6.3",
