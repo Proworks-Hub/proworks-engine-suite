@@ -7,6 +7,8 @@ import {
   CAPABILITIES,
   createCapabilityResolver,
   newCorrelationId,
+  DECISION_CONTEXT_VERSION,
+  decisionContextSchema,
   type DecisionContext,
   type InventorySignal,
 } from "@proworks-hub/contracts";
@@ -30,6 +32,15 @@ import {
   type StockPosition,
 } from "@proworks-hub/inventoryiq";
 import { createTrackingService } from "@proworks-hub/tracking";
+import { buildManufacturingPlan } from "@proworks-hub/forgeiq/manufacturing";
+import { buildMetalSignDefinition, demoAluminumSpecs } from "@proworks-hub/forgeiq/demo/metalSign";
+import { demoCortenSpecs, demoFiberLaserSpecs } from "@proworks-hub/forgeiq/demo/firepit";
+import {
+  productConfigurationSchema,
+  runValidation,
+  type MaterialProfileSpecs,
+} from "@proworks-hub/forgeiq";
+import { createCostIqEngine } from "@proworks-hub/costiq";
 import {
   createInMemoryNotificationStore,
   createInMemoryPreferenceStore,
@@ -329,5 +340,202 @@ describe("what the slice proves about wiring", () => {
     const correlationId = newCorrelationId();
     expect(correlationId).toMatch(/^cor_/);
     expect(newCorrelationId()).not.toBe(correlationId);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ksixSignWorkflow — the closed shop path.
+//
+// The scenario above starts at InventoryIQ, which means the two engines that
+// decide WHAT is being made and WHAT IT COSTS were never in the loop. This one
+// starts where a customer starts — at a configuration — and carries real engine
+// output the whole way:
+//
+//   customer configuration
+//     → ForgeIQ    plan it
+//     → CostIQ     cost it
+//     → Prime      decide it
+//     → WorkOrder  record it
+//     → Inventory  reserve it
+//
+// The `manufacturing` and `cost` blocks of the decision context are REAL here,
+// produced by the engines rather than hand-authored. That is the difference
+// that matters: a decision made on fabricated inputs proves the shape of a
+// contract, not that the engines agree on it.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("ksixSignWorkflow: a configured sign becomes reserved material", () => {
+  const IDS = { cortenMaterialId: 1, aluminumMaterialId: 3, fiberLaserMachineId: 1 };
+  const definition = buildMetalSignDefinition(IDS);
+  const signMaterials = new Map<number, MaterialProfileSpecs>([
+    [IDS.cortenMaterialId, demoCortenSpecs],
+    [IDS.aluminumMaterialId, demoAluminumSpecs],
+  ]);
+  const CORTEN_NAME = 'Corten Steel 1/8"';
+  const MACHINE_NAME = "Gweike M3 Ultra (fiber)";
+
+  const configure = (quantityOrdered: number) =>
+    productConfigurationSchema.parse({
+      selections: { size: "size_18x12", material: "mat_corten", detail: "detail_cut" },
+      surfaces: {
+        face: [
+          {
+            id: "title",
+            type: "text",
+            text: "KSIX DESIGNS",
+            fontFamily: "Impact",
+            xIn: 1.5,
+            yIn: 4,
+            heightIn: 2,
+            rotationDeg: 0,
+          },
+        ],
+      },
+      quantity: quantityOrdered,
+    });
+
+  const planFor = (quantityOrdered: number) => {
+    const configuration = configure(quantityOrdered);
+    const validation = runValidation({
+      definition,
+      configuration,
+      materials: signMaterials,
+      machine: demoFiberLaserSpecs,
+    });
+    const plan = buildManufacturingPlan({
+      definition,
+      configuration,
+      materials: signMaterials,
+      machine: demoFiberLaserSpecs,
+      materialName: CORTEN_NAME,
+      machineName: MACHINE_NAME,
+      validation,
+    });
+    return { configuration, validation, plan };
+  };
+
+  it("runs configuration → plan → cost → decide → work order → reservation", async () => {
+    // 1. FORGEIQ — what is being made. Validation first: a plan built from an
+    //    invalid configuration is a plan for something nobody can produce.
+    const { configuration, validation, plan } = planFor(3);
+    expect(validation.valid).toBe(true);
+    expect(plan.product.slug).toBe("metal-sign");
+    // `stock` is nullable: a plan for a product needing no sheet stock has none.
+    // This product does, and asserting it guards the reservation below from
+    // silently reserving zero.
+    expect(plan.stock).not.toBeNull();
+    expect(plan.stock?.sheetsNeeded ?? 0).toBeGreaterThan(0);
+
+    // 2. COSTIQ — what it costs. Consumes the plan and nothing else: no product
+    //    definition, no configuration, no host.
+    const cost = createCostIqEngine().calculate(plan);
+    expect(cost.totalCost).toBeGreaterThan(0);
+
+    // 3. INVENTORYIQ — can it be made right now. Asked BEFORE the decision,
+    //    because a decision made without material truth is a promise.
+    const ledger = createInMemoryStockLedger([stock({ onHand: quantity(40, "sheet") })]);
+    const reservations = createInMemoryReservationStore();
+    const positions = await ledger.positions(ORG, ["mat-corten-125"]);
+
+    const required = quantity(plan.stock?.sheetsNeeded ?? 0, "sheet");
+    const shortages = detectShortages([{ materialId: "mat-corten-125", required }], positions);
+    const signal = toInventorySignal({
+      availability: computeAvailability("mat-corten-125", positions),
+      materialCategory: "corten",
+      ...(shortages[0] ? { shortage: shortages[0] } : {}),
+    });
+    expect(signal.sufficient).toBe(true);
+
+    // 4. PRIME — decides, on REAL manufacturing and cost blocks.
+    const decision = createPrimeEngine().decide(
+      decisionContextSchema.parse({
+        contextVersion: DECISION_CONTEXT_VERSION,
+        subject: { type: "order", reference: "KSX-SIGN-3001" },
+        manufacturing: plan,
+        cost,
+        inventory: [signal],
+        observedAt: "2026-08-29T09:00:00.000Z",
+      }),
+    );
+    expect(decision.status).not.toBe("blocked");
+
+    // 5. WORKORDERIQ — the record, created only because the decision allowed it.
+    const log = createInMemoryEventLog();
+    const created = await createCreateWorkOrderUseCase({ eventLog: log }).execute(
+      {
+        customerId: "cust-ksix-1",
+        customerName: "KSix Designs",
+        source: "manual",
+        lineItems: [{ id: "l1", label: definition.name, quantity: configuration.quantity }],
+      },
+      actor,
+    );
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+
+    // 6. INVENTORYIQ — the commitment. Checking said it was available; only
+    //    this makes it so. A reading is not a hold.
+    const reserved = await createReserveMaterialUseCase({
+      stock: ledger,
+      reservations,
+    }).execute({
+      organizationId: ORG,
+      materialId: "mat-corten-125",
+      locationId: "rack-1",
+      workOrderId: created.draft.workOrderId,
+      quantity: required,
+    });
+    expect(reserved.ok).toBe(true);
+
+    // The loop is closed: material is now spoken for BY the work order that
+    // ForgeIQ planned, CostIQ priced and Prime allowed.
+    const after = computeAvailability(
+      "mat-corten-125",
+      await ledger.positions(ORG, ["mat-corten-125"]),
+    );
+    expect(after.reserved.amount).toBe(required.amount);
+    expect(after.available.amount).toBe(40 - required.amount);
+  });
+
+  it("does not reach a work order when the material is short", async () => {
+    // The path that must NOT reach step 5. A work order created against
+    // material nobody has is the failure the whole chain exists to prevent.
+    const { plan } = planFor(3);
+
+    const ledger = createInMemoryStockLedger([stock({ onHand: quantity(0, "sheet") })]);
+    const positions = await ledger.positions(ORG, ["mat-corten-125"]);
+    const required = quantity(plan.stock?.sheetsNeeded ?? 0, "sheet");
+    const shortages = detectShortages([{ materialId: "mat-corten-125", required }], positions);
+
+    expect(shortages).toHaveLength(1);
+    const signal = toInventorySignal({
+      availability: computeAvailability("mat-corten-125", positions),
+      materialCategory: "corten",
+      ...(shortages[0] ? { shortage: shortages[0] } : {}),
+    });
+    expect(signal.sufficient).toBe(false);
+
+    const decision = createPrimeEngine().decide(
+      decisionContextSchema.parse({
+        contextVersion: DECISION_CONTEXT_VERSION,
+        subject: { type: "order", reference: "KSX-SIGN-3002" },
+        manufacturing: plan,
+        cost: createCostIqEngine().calculate(plan),
+        inventory: [signal],
+        observedAt: "2026-08-29T09:00:00.000Z",
+      }),
+    );
+
+    // Whether Prime blocks or asks for review is its judgement. What it may
+    // never do is wave through an order for material nobody has.
+    expect(decision.status).not.toBe("proceed");
+  });
+
+  it("costs more material for more signs", () => {
+    // Proves cost genuinely flows from the plan rather than being a constant
+    // the slice happens to carry past every assertion.
+    const one = createCostIqEngine().calculate(planFor(1).plan).totalCost;
+    const ten = createCostIqEngine().calculate(planFor(10).plan).totalCost;
+    expect(ten).toBeGreaterThan(one);
   });
 });

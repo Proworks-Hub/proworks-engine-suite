@@ -113,6 +113,15 @@ export const charterRecordSchema = z
      * CHARTERED, meaning nothing is built yet.
      */
     implementationLifecycle: lifecycleStateSchema,
+    /**
+     * In the V1 runtime slice — the closed shop loop.
+     *
+     * A flag rather than a list elsewhere, so adding an engine to V1 scope is a
+     * visible edit to that engine's own record. `tests/charterRegistry.test.ts`
+     * asserts the exact set, so scaffolding a new engine into the allowlist
+     * fails rather than quietly widening what V1 means.
+     */
+    v1Runtime: z.boolean().optional(),
   })
   .strict()
   .refine((c) => c.status !== "ACTIVE" || Boolean(c.integrityHash), {

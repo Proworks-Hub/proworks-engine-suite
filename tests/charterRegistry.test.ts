@@ -52,9 +52,50 @@ describe("the approved charter registry", () => {
   });
 
   it("does not infer implementation from charter status", () => {
-    // Charter ACTIVE + implementation CHARTERED is valid and is the current
-    // state of all 58: the architecture is decided, the code mostly is not.
-    expect(registry.all().every((r) => r.implementationLifecycle === "CHARTERED")).toBe(true);
+    // Charter ACTIVE + implementation CHARTERED is valid: the architecture is
+    // decided, the code is not. But it is NOT true of everything — flattening
+    // every engine to CHARTERED would erase the distinction the lifecycle
+    // vocabulary exists to make.
+    const states = new Set(registry.all().map((r) => r.implementationLifecycle));
+    expect(states.size).toBeGreaterThan(1);
+    expect(states).toContain("CHARTERED");
+    expect(states).toContain("EXPERIMENTAL");
+  });
+
+  it("marks engines with substantial code as more than CHARTERED", () => {
+    // Every engine here has thousands of lines of tested behaviour. Reporting
+    // one as CHARTERED would tell a reader nothing is built.
+    for (const id of ["hive.forgeiq", "hive.costiq", "hive.workorderiq", "hive.visioniq"]) {
+      const r = registry.forEngine(id);
+      expect(r?.implementationLifecycle, id).not.toBe("CHARTERED");
+    }
+  });
+
+  it("leaves unimplemented engines CHARTERED", () => {
+    // The other half. If everything drifted upward the vocabulary would be
+    // just as useless in the opposite direction.
+    for (const id of ["hive.sentinel-iq", "hive.aria", "hive.healthcareiq"]) {
+      const r = registry.forEngine(id);
+      if (r) expect(r.implementationLifecycle, id).toBe("CHARTERED");
+    }
+  });
+
+  it("holds the V1 runtime slice to exactly six engines", () => {
+    // The guard requested: scaffolding an out-of-scope engine into the
+    // allowlist fails here rather than quietly widening what V1 means.
+    const v1 = registry.all().filter((r) => r.v1Runtime).map((r) => r.canonicalEngineId).sort();
+    expect(v1).toEqual([
+      "hive.costiq", "hive.forgeiq", "hive.inventoryiq",
+      "hive.receiptiq", "hive.visioniq", "hive.workorderiq",
+    ]);
+  });
+
+  it("requires every V1 engine to have real code behind it", () => {
+    // A V1 engine that is only CHARTERED would put an unbuilt engine in the
+    // shop loop.
+    for (const r of registry.all().filter((x) => x.v1Runtime)) {
+      expect(r.implementationLifecycle, r.canonicalEngineId).not.toBe("CHARTERED");
+    }
   });
 
   it("charters CustomerIQ, which settles customer ownership", () => {

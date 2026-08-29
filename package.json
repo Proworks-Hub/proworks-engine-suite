@@ -7,27 +7,7 @@
   "author": "Steven Kreutzer",
   "license": "UNLICENSED",
   "workspaces": [
-    "packages/contracts",
-    "packages/forgeiq",
-    "packages/costiq",
-    "packages/prime",
-    "packages/receiptiq",
-    "packages/platform-events",
-    "packages/platform-runtime",
-    "packages/workorderiq",
-    "packages/tracking",
-    "packages/inventoryiq",
-    "packages/notifications",
-    "packages/order-ingestion",
-    "packages/visioniq",
-    "packages/control-plane",
-    "packages/intelligence-core",
-    "packages/model-runtime",
-    "packages/model-evals",
-    "packages/senseiq",
-    "packages/finance-core",
-    "packages/core-kit",
-    "packages/operations-core"
+    "packages/*"
   ],
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",

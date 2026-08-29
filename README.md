@@ -1,248 +1,190 @@
-# ForgeIQ Engine (`@forgeiq/engine`)
+# ProWorks Engine Suite
 
-ForgeIQ Engine is a **portable, host-independent product configuration and
-manufacturability engine**. Products are data (`ProductDefinition`), not code — one
-generic engine renders the builder, validates manufacturability against machine and
-material profiles, derives the bill of materials and stock requirements, and generates
-production files.
+Copyright © 2026 Steven Kreutzer. All Rights Reserved. Proprietary — UNLICENSED.
 
-**KSix Designs is its first production host.** Other systems — including MakerOps, another
-storefront, or an internal quoting application — can consume ForgeIQ without ForgeIQ
-depending on them. ForgeIQ does not belong to any host.
+The portable engine suite of **the Hive** — 24 packages, ~1,630 tests, no host
+dependencies anywhere.
 
-**Nothing in this package may import host-application code.** Hosts consume the engine;
-never the reverse.
+> **Rewritten 2026-08-29.** This document previously described a single ForgeIQ
+> package and stated that CostIQ and Prime were *"not implemented here"*. Both
+> have been implemented in this repository for some time — `costiq` is 25 source
+> files, `prime` is 5 — and the README had simply not kept up. If anything below
+> drifts from the code again, the code is right.
 
-## The ecosystem in plain language
+---
 
-| System | Role |
-|---|---|
-| **KSix Designs** | Sells the product. Customer-facing ecommerce host. |
-| **ForgeIQ** | Understands the product. *Configure it. Validate it. Manufacture it.* |
-| **CostIQ** | Understands the money. *Cost it. Margin it. Price it.* |
-| **Prime** | Understands the decisions. *Evaluate it. Route it. Decide what happens next.* |
-| **MakerOps** | Runs the production. Jobs, scheduling, machines, inventory, execution. |
-| **ProWorks Hub** | Brings the business together. A unified platform consuming the engines and operational systems. |
+## What this is
 
-**ForgeIQ, CostIQ, and Prime are a portable intelligence suite.** KSix Designs,
-ProWorks Hub, and MakerOps *consume* that intelligence; none of them owns it. ProWorks
-Hub is a host and platform, not the engines' architectural owner — the same is true of
-KSix Designs. MakerOps is a manufacturing operations system that consumes engine output.
+Engines that each understand one business domain, own nothing outside it, and can
+be lifted into any host application. **No package here imports host code**, and a
+test enforces it. Hosts consume the engines; never the reverse.
 
-### Two kinds of portability
-
-**Individual portability.** Each engine stands alone. ForgeIQ works with no CostIQ and
-no Prime. CostIQ costs any valid `ManufacturingPlan` — ForgeIQ is the *preferred*
-producer of one, not the only possible producer, so a foreign system that can build
-the contract can be costed. Prime evaluates a `DecisionContext` assembled from whatever
-is available, including contexts with no plan and no cost in them at all.
-
-**Suite portability.** The contracts travel with the engines. Move ForgeIQ, CostIQ,
-Prime, and their contracts into another compatible TypeScript application, supply host
-adapters, and the three still know how to talk to each other — because their
-integration is expressed in portable contracts rather than host glue. There is no
-ProWorks-specific (or KSix-specific) adapter sitting between two engines, and there
-must never be one.
-
-`tests/portability.test.ts` enforces this mechanically rather than by convention.
-
-## Architecture
-
-### ForgeIQ — *configure it, validate it, manufacture it*
-
-ForgeIQ understands **what is being made and how it can be produced**. It owns:
-
-- Product definitions, options, dimensions, materials, finishes
-- Customization surfaces, artwork, and text
-- Manufacturability validation and machine compatibility
-- Manufacturing constraints (minimum feature size, cut heights, work area)
-- Bill of materials: parts, dimensions, quantities
-- Sheet nesting, material utilization, required stock
-- Manufacturing operations and production files (cutlines, work orders)
-
-### CostIQ — *cost it, margin it, price it*
-
-CostIQ understands the **economics** of producing a ForgeIQ manufacturing plan:
-purchasing cost, waste, machine and labor cost, consumables, outsourcing, overhead
-allocation, quantity efficiencies, margin rules, and recommended price.
-
-CostIQ is **not implemented here**. What exists is the seam: ForgeIQ emits a
-`ManufacturingPlan` and defines a `CostEngine` port
-(`src/core/cost/costEngine.ts`) that a costing engine implements. A cost engine
-receives the plan and nothing else — it never needs the builder UI, the host
-application, or the product definition.
-
-### Prime — *evaluate it, route it, decide what happens next*
-
-Prime answers **what should happen next**, given everything known: routing,
-prioritization, approval requirements, capacity and material exceptions, outsourcing,
-risk. It replaces neither of the other engines — it coordinates specialized
-intelligence.
-
-Prime is **not implemented here** either. What exists is the seam: a `DecisionContext`
-carrying normalized engine output (a `ManufacturingPlan`, a `CostResult`) alongside
-operational signals a host supplies (commercial terms, capacity, inventory), and a
-`DecisionEngine` port returning a `DecisionResult`
-(`src/core/decision/decisionEngine.ts`). Every field but the subject is optional, so a
-decision engine works on partial information instead of demanding the whole stack.
-
-### Hosts
-
-KSix Designs, ProWorks Hub, MakerOps, or any other application can consume these
-engines. The engines never depend on the host.
+Governance is enforced at runtime: a Core will not execute a capability without an
+authorization decision, whoever asks. Constitution §1.9 —
+**capability does not imply permission.**
 
 ```
-Customer
-   ↓
-Host builder UI (e.g. KSix)
-   ↓
-ForgeIQ  →  configuration · manufacturability · BOM · parts · nesting
-   ↓
-ManufacturingPlan          ← portable contract
-   ↓
-CostIQ   →  true cost · margin · recommended price
-   ↓
-CostResult                 ← portable contract
-   ↓
-Prime    →  proceed · review · block · actions
-   ↓
-DecisionResult             ← portable contract
-   ↓
-Host / MakerOps  →  customer price, jobs, routing
+Hive Constitution  →  Engine Charter  →  Contract standard  →  Implementation
 ```
 
-### The first vertical slice
+The Constitution is synchronized at `Documents/ProWorks-Ecosystem/constitution/`.
+All 58 approved Engine Charters are referenced with integrity hashes in
+[`charters/registry.json`](charters/registry.json).
 
-A real KSix fire pit travels the whole chain in `tests/verticalSlice.test.ts`:
-configuration → ForgeIQ validation → `ManufacturingPlan` → CostIQ → `CostResult` →
-Prime → `DecisionResult`. It runs entirely at the engine level — no host, database,
-HTTP, React, ProWorks Hub, or MakerOps — which is the practical proof that the suite
-is portable.
+---
 
-First-cut implementations of the two downstream engines live alongside ForgeIQ:
+## The layers
 
-| Path | Engine | Depends on |
-|---|---|---|
-| `src/costiq/` | CostIQ — material, waste, machine, setup, labor, overhead, recommended price | `ManufacturingPlan` + `CostEngine`, **type-only** |
-| `src/prime/` | Prime — deterministic approve / review / block rules | decision contracts, **type-only** |
+Two planes. The **capability plane** obeys a downward-only dependency law; the
+**constitutional plane** sits outside it, because Governance authorizes *across*
+the system and "across" is not a rank.
 
-Both import their contracts with `import type`, which TypeScript erases at compile
-time, so **neither carries a single line of ForgeIQ code at runtime**. Living in this
-repository is a convenience during development, not ownership — the portability guard
-enforces the separation on every test run.
+```
+                    HUMAN CONSTITUTIONAL AUTHORITY
+                                │
+                         HIVE CONSTITUTION
+                                │
+            ┌───────────────────┼───────────────────┐
+       GOVERNANCE           SENTINEL            FOUNDRY          ← Overwatch
+            └───────────────────┼───────────────────┘
+                               ARIA                              ← Intelligence
+                                │
+                          PRIME ENGINE                           ← Orchestration
+                                │
+            ───────────── CAPABILITY PLANE ─────────────
+                         8 CORE ENGINES
+                   SHARED PLATFORM ENGINES
+                    SPECIALIZED ENGINES
+                      INDUSTRY ENGINES
+                       HOST APPLICATIONS
+```
 
-Both are deliberately shallow. CostIQ applies a flat overhead percentage rather than
-allocating real shop expenses, and reports what it could not cost (finishing has no
-rates yet) in `unpriced` and `assumptions` instead of guessing. Prime runs a handful of
-threshold rules with no AI, scheduling, or optimization. Deepening them is Phase 3 and
-Phase 4; ForgeIQ stays the first engine to deepen because it produces the physical
-truth the other two consume.
+Enforced by `tests/hiveArchitecture.test.ts`. The rule that matters most is the
+absence: **nothing depends upward**, and a Specialized engine may depend only on
+the platform layer — not even on its own Core.
 
-**Existing ForgeIQ pricing is untouched** and still authoritative for what the customer
-is charged. CostIQ is currently a production-intelligence path running beside it. The
-two agree on direct cost and differ only by CostIQ's overhead, which is a useful check
-while the engines mature.
+---
 
-### Manufacturing routing
+## Packages
 
-A product declares the steps that turn stock into a finished thing, and each
-step says what it scales with — area, part count, order quantity, or once per
-job — plus whether a machine or a person does it. A step can be conditional, so
-a coating operation appears only when the customer chose that finish.
+### Constitutional plane
 
-Routing flows through everything downstream: the plan reports each operation,
-CostIQ charges machine steps at the machine rate and bench steps at the labor
-rate, Prime matches capacity signals per process, and the work order prints a
-numbered routing for the floor. `labor.derivedFromOperations` tells a costing
-engine when labor is already covered by the routing, so the same minutes are
-never charged twice.
-
-An operation can name the machine it runs on, so one job crosses several: the
-fire pit is cut on the fiber laser and folded on the press brake. Each
-operation carries its own machine and that machine's hourly rate, `machines`
-lists everything the job touches in first-use order, and Prime matches capacity
-per process — so an overloaded brake is flagged while the free laser is not.
-
-Products with no routing — including definitions persisted before it existed —
-still work: the plan derives a single operation from the product's time
-estimate, exactly as before, and the work order says so plainly. A host that
-supplies no machine map gets the same graceful result: every step routes to the
-product's primary machine.
-
-### The contract surface
-
-Three directories hold everything the engines use to talk to each other:
-
-| Path | Contract | Produced by | Consumed by |
+| Package | Version | State | What it does |
 |---|---|---|---|
-| `src/core/manufacturing/` | `ManufacturingPlan` | ForgeIQ | CostIQ, Prime, MakerOps |
-| `src/core/cost/` | `CostEngine`, `CostResult` | CostIQ | ForgeIQ/host, Prime |
-| `src/core/decision/` | `DecisionEngine`, `DecisionContext`, `DecisionResult` | Prime | Hosts, MakerOps |
+| `governance-engine` | 0.1.0 | Experimental | Decides whether consequential activity is permitted. Grants, Core Protections, purpose-binding, risk ceilings, expiry. Owns authorization decisions and no domain state. |
+| `prime` | 0.13.0 | Experimental | Orchestration and decision-making. Deliberately lightweight and hard-codes no engine. Nexus/Pulse chambers and the durable Execution Ledger are not built. |
 
-Each contract carries an explicit version marker (`planVersion`, `resultVersion`,
-`contextVersion`) so it can evolve deliberately. These three directories are the unit
-that would move together if the contracts are ever extracted into their own package —
-that extraction is deliberately deferred until the complexity justifies it.
+*Sentinel IQ, Foundry EvolutionIQ and ARIA are chartered and unimplemented.*
 
-### Where pricing stands today
+### Core engines — 4 of 8 built
 
-ForgeIQ's `PricingEngine` still computes the customer price and a rough internal cost
-estimate, and continues to work unchanged — nothing was removed. It is the piece a real
-CostIQ is expected to supplement or replace, by routing
-`ForgeIQ → ManufacturingPlan → CostIQ → CostResult` instead. The seam is in place; the
-migration is not required until CostIQ exists.
-
-One known wrinkle: production time estimates (`estMachineMinutesPerSqFt`,
-`setupMinutes`, `laborMinutes`) currently live inside the definition's `pricing.internalCost`
-block, though they are manufacturing facts rather than pricing ones. `ManufacturingPlan`
-reports them correctly as manufacturing data. Relocating them to a dedicated `production`
-block is a future cleanup, deferred because it would invalidate stored definitions.
-
-## Layout
-
-| Path | May import | Contents |
+| Package | Version | What it coordinates |
 |---|---|---|
-| `src/core/` | `zod` only | Schemas, PricingEngine, ValidationEngine, BOM/nesting, ManufacturingPlan, CostEngine and DecisionEngine ports — pure & isomorphic |
-| `src/server/` | core, `drizzle-orm`, `express` | `fiq_*` tables, storage, `createBuilderEngineRouter(deps)` |
-| `src/react/` | core, `react`, `@tanstack/react-query` | Generic `<BuilderEngine>` UI |
-| `tests/` | relative imports only | Vitest units (run under the host's vitest) |
+| `foundation-core` | 0.1.0 | The universal structural language: identity, canonical references, versions, relationships, health vocabulary. |
+| `finance-core` | 0.18.0 | Monetary reasoning. Routes to CostIQ and ReceiptIQ. |
+| `operations-core` | 0.16.0 | Work: ordered sequences with honest partial-failure state. |
+| `resources-core` | 0.2.0 | What an organization has. Distinguishes a **reading** from a **commitment** — stock goes stale, cost does not. |
 
-## Consumption rules
+*Knowledge, Communication, Intelligence and Domain Cores are chartered and unbuilt.*
 
-- **Never run `npm install` in this directory.** All peer deps resolve from the host's
-  `node_modules`; a local one would duplicate React and break hooks.
-- Engine-internal imports are **always relative** (tsx/esbuild resolve tsconfig `paths`
-  per-file against the nearest tsconfig, so the host's alias is not visible here).
-- Hosts import via their own alias, e.g. `@forgeiq/engine/server` →
-  `<this repo>/src/server`.
-- The host injects everything environment-specific into `createBuilderEngineRouter`:
-  drizzle `db`, admin middleware, `getOrgId`, `getUserId`, and an optional `aiProvider`.
-  The React component receives `uploadFile` and `onAddToCart` callbacks — the engine
-  knows no host endpoints.
+### Shared platform
 
-## Multi-tenancy
+| Package | Version | What it provides |
+|---|---|---|
+| `contracts` | 0.14.0 | The shared vocabulary: tenancy, capabilities, events, tracing, governance, identifiers, classification, charter registry. Depends on nothing but zod. |
+| `core-kit` | 0.16.0 | The machinery every Core shares — registry, routing, timeouts, typed refusals, governed resolution. |
+| `platform-events` | 0.13.0 | In-memory `EventBus`, resilient delivery, processed-event ledger for idempotent consumers. |
+| `platform-runtime` | 0.13.0 | In-memory job queue, structured logger, metrics collector. |
+| `control-plane` | 0.14.0 | Engine manifests, health, topology, diagnostics, incidents, releases — the Hive console's data layer. |
+| `intelligence-core` | 0.14.0 | Provider-independent AI contracts. Nothing here names a vendor. |
+| `model-runtime` | 0.14.0 | Provider adapters, model registry, routing, retry, fallback, structured-output validation. |
+| `model-evals` | 0.14.0 | Measurable regression testing for models and instructions. |
 
-Every row belongs to an organization, so one deployment can serve several shops.
-KSix Designs is organization #1 in its own deployment; that is a host detail, not an
-engine assumption.
+### Specialized portable engines
 
-## Versioning model
+| Package | Version | What it owns |
+|---|---|---|
+| `forgeiq` | 0.13.0 | *Configure it, validate it, manufacture it.* Produces the `ManufacturingPlan`. |
+| `costiq` | 0.13.0 | *Cost it, margin it, price it.* The only place money is computed. |
+| `workorderiq` | 0.13.0 | The canonical work order and its production execution state. |
+| `visioniq` | 0.13.0 | How a digital asset should be prepared for a process, machine and material. |
+| `receiptiq` | 0.13.0 | *Read it, normalize it, learn from it.* Receipts into purchases and price observations. |
+| `inventoryiq` | 0.13.0 | What is on hand, spoken for, and about to run out. Holds no cost. |
+| `senseiq` | 0.14.0 | Physical-world intelligence: devices, spaces, observations, authorized command intent. |
 
-Product definitions are immutable per version: editing inserts a new row with
-`version + 1` and retires the old one. Configurations pin the exact versioned
-definition row plus price/validation snapshots, so later product changes never
-mutate old orders.
+### Services — not engines
 
-Definitions are persisted as JSON and read back by cast, so rows written before a
-schema field existed come back without it. Consumers guard for absence and storage
-re-parses definitions on read to apply schema defaults — any new field with a default
-needs the same care.
+| Package | Version | What it does |
+|---|---|---|
+| `order-ingestion` | 0.13.0 | Normalizes an order from any channel into the canonical contract, once. |
+| `tracking` | 0.13.0 | Where an order actually is, merged across production and carrier. |
+| `notifications` | 0.13.0 | Who should be told what, and told once. |
 
-## Roadmap breadcrumbs
+The distinction is deliberate and recorded in the engine map: a service has no
+chartered domain ownership.
 
-- A real CostIQ implementing `CostEngine`, consuming `ManufacturingPlan`.
-- A real Prime implementing `DecisionEngine`, consuming `DecisionContext`.
-- Production files: the host's generic `printExport.ts` / `laserExport.ts` libraries
-  migrate into `src/core/export/`; an engine-emitted file manifest
-  (`{file, operation, machineClass, material}`) replaces filename-regex routing.
-- Admin "builder builder" — create products without code.
+---
+
+## The V1 runtime slice
+
+Six specialists form the closed shop loop, flagged `v1Runtime: true` in the
+charter registry:
+
+**ForgeIQ → CostIQ → Prime → WorkOrderIQ → InventoryIQ**, with **VisionIQ**
+preparing assets.
+
+`tests/verticalSlice.test.ts` drives that path end to end, and a test fails if an
+out-of-scope engine is added to the V1 allowlist.
+
+---
+
+## Working here
+
+```bash
+npm run verify      # typecheck + full suite
+npm run build       # tsc -b, project references
+npm run test        # vitest
+```
+
+### Adding a package
+
+`workspaces` is `packages/*` and cannot drift. Four lists still must be updated,
+and `tests/packageWiring.test.ts` fails if any is missed:
+
+1. the `build` script — order matters
+2. the `clean` script — must match `build` exactly
+3. `tsconfig.json` path mapping
+4. `vitest.config.ts` alias
+
+Then add a row to `charters/registry.json` with a truthful
+`implementationLifecycle`, and a component to `hiveMap.ts`. **A `partial`
+component must state its gap** — the schema refuses one that does not.
+
+### Architecture tests you will meet
+
+| Test | Enforces |
+|---|---|
+| `hiveArchitecture` | The dependency law; the eight Cores; the Core admission bar |
+| `hiveClassification` | The two planes; constitutional classes have no tier |
+| `portability` | No host imports; no ambient I/O in pure engines |
+| `packageWiring` | Every package in every list |
+| `charterRegistry` | 58 charters + 1 framework, integrity-hashed |
+| `governedResolution` | Governance decides before capability resolution |
+| `verticalSlice` | The V1 shop loop, end to end |
+
+---
+
+## Rules that will not bend
+
+- **Capability does not imply permission.** Governance is a required coordinator
+  dependency; the only way to express "no governance" is to pass
+  `createDenyAllGovernance()` and mean it.
+- **Nothing depends upward.** A specialist that imports its Core can never be
+  reused under a different one.
+- **An engine owns one domain.** Movement does not transfer ownership: a
+  projection of inventory is not inventory.
+- **Unknown ≠ zero ≠ healthy.** An engine that cannot answer says so rather than
+  answering emptily.
+- **A `partial` component states its gap**, or the schema refuses it.
+- **No false validators.** An assertion that cannot fail is worse than none —
+  Engineering Rule 24.

@@ -23,7 +23,7 @@
   "constitutionVersion": "1.0",
   "integrityHash": "sha256:6f93b93c54592a6db508a0b4bd21a3a965751962fbe98d4c3d5de0e94f942e80",
   "sourceDocument": "01_Governance_Engine_Charter.docx",
-  "implementationLifecycle": "CHARTERED"
+  "implementationLifecycle": "EXPERIMENTAL"
  },
  {
   "charterId": "charter.overwatch.aria",
@@ -49,7 +49,7 @@
   "constitutionVersion": "1.0",
   "integrityHash": "sha256:de43abe5000887703b599a61687d17678f2d515d492f9364377687ec090fbc1a",
   "sourceDocument": "Prime_Engine_Charter_V1_0.docx",
-  "implementationLifecycle": "CHARTERED"
+  "implementationLifecycle": "SCAFFOLDED"
  },
  {
   "charterId": "charter.overwatch.sentinel-iq",
@@ -101,7 +101,7 @@
   "constitutionVersion": "1.0",
   "integrityHash": "sha256:92e5845202601054f2fd7028b955c61bb583e092cc48b88ac1f10de1b3072d1c",
   "sourceDocument": "04_Finance_Core_Charter.docx",
-  "implementationLifecycle": "CHARTERED"
+  "implementationLifecycle": "EXPERIMENTAL"
  },
  {
   "charterId": "charter.core.foundation-core",
@@ -114,7 +114,7 @@
   "constitutionVersion": "1.0",
   "integrityHash": "sha256:51e8a8031173d444e5cc0d087750f96aee0c6412a70af546d229a2e6e7c793a2",
   "sourceDocument": "01_Foundation_Core_Charter.docx",
-  "implementationLifecycle": "CHARTERED"
+  "implementationLifecycle": "EXPERIMENTAL"
  },
  {
   "charterId": "charter.core.intelligence-core",
@@ -127,7 +127,7 @@
   "constitutionVersion": "1.0",
   "integrityHash": "sha256:5b89df50f6d737090f205d5d61b8394ea29f9097cc3e747fc0156c972f84c225",
   "sourceDocument": "06_Intelligence_Core_Charter.docx",
-  "implementationLifecycle": "CHARTERED"
+  "implementationLifecycle": "SCAFFOLDED"
  },
  {
   "charterId": "charter.core.knowledge-core",
@@ -153,7 +153,7 @@
   "constitutionVersion": "1.0",
   "integrityHash": "sha256:a2b5b409d5da1a07b108d5067487970f7da4542bed4f51ec191353ee9d61ad3c",
   "sourceDocument": "03_Operations_Core_Charter.docx",
-  "implementationLifecycle": "CHARTERED"
+  "implementationLifecycle": "EXPERIMENTAL"
  },
  {
   "charterId": "charter.core.resources-core",
@@ -166,7 +166,7 @@
   "constitutionVersion": "1.0",
   "integrityHash": "sha256:4dd15467bc3b74b0c4e20926439426cf109f414eeac3cc76bcb09fd4187938c5",
   "sourceDocument": "05_Resources_Core_Charter.docx",
-  "implementationLifecycle": "CHARTERED"
+  "implementationLifecycle": "EXPERIMENTAL"
  },
  {
   "charterId": "charter.industry.agricultureiq",
@@ -543,7 +543,8 @@
   "constitutionVersion": "1.0",
   "integrityHash": "sha256:9ee4fbb8b52a95e3131107354a60643c6030b86116dce8f2887780a5b644f93f",
   "sourceDocument": "CostIQ_Charter_V1_0.docx",
-  "implementationLifecycle": "CHARTERED"
+  "implementationLifecycle": "EXPERIMENTAL",
+  "v1Runtime": true
  },
  {
   "charterId": "charter.specialized.customeriq",
@@ -595,7 +596,8 @@
   "constitutionVersion": "1.0",
   "integrityHash": "sha256:7afe2bee1bf4f6420196d846d58a7305769fe37e6ea21a55a949dd2ce6b15606",
   "sourceDocument": "ForgeIQ_Charter_V1_0.docx",
-  "implementationLifecycle": "CHARTERED"
+  "implementationLifecycle": "EXPERIMENTAL",
+  "v1Runtime": true
  },
  {
   "charterId": "charter.specialized.insightiq",
@@ -621,7 +623,8 @@
   "constitutionVersion": "1.0",
   "integrityHash": "sha256:7a51eeffc68326db93a76e704a30cac264ae1ceee27f5452a928622348015106",
   "sourceDocument": "InventoryIQ_Charter_V1_0.docx",
-  "implementationLifecycle": "CHARTERED"
+  "implementationLifecycle": "EXPERIMENTAL",
+  "v1Runtime": true
  },
  {
   "charterId": "charter.specialized.machineiq",
@@ -673,7 +676,8 @@
   "constitutionVersion": "1.0",
   "integrityHash": "sha256:d9096a3a15ba445fe6bd1ec4a44290a5fb04f48ae260dacdce8334849acda4bd",
   "sourceDocument": "ReceiptIQ_Charter_V1_0.docx",
-  "implementationLifecycle": "CHARTERED"
+  "implementationLifecycle": "EXPERIMENTAL",
+  "v1Runtime": true
  },
  {
   "charterId": "charter.specialized.scheduleiq",
@@ -738,7 +742,8 @@
   "constitutionVersion": "1.0",
   "integrityHash": "sha256:a546d2a177a9312778a1c1027397055386cb4197379946e5e71f71b684b83c4d",
   "sourceDocument": "VisionIQ_Charter_V1_0.docx",
-  "implementationLifecycle": "CHARTERED"
+  "implementationLifecycle": "EXPERIMENTAL",
+  "v1Runtime": true
  },
  {
   "charterId": "charter.specialized.workorderiq",
@@ -751,7 +756,8 @@
   "constitutionVersion": "1.0",
   "integrityHash": "sha256:24bb45af601e94a769f615c0075165dc212df6124b7cc39c120bf5a4564317ce",
   "sourceDocument": "WorkOrderIQ_Charter_V1_0.docx",
-  "implementationLifecycle": "CHARTERED"
+  "implementationLifecycle": "EXPERIMENTAL",
+  "v1Runtime": true
  },
  {
   "charterId": "framework.overwatch",
