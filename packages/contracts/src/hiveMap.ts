@@ -168,6 +168,13 @@ export const HIVE_MAP: readonly HiveComponent[] = [
   }),
 
   component({
+    id: "aria", name: "ARIA", tier: "platform", status: "partial",
+    packageName: "@proworks-hub/aria",
+    responsibility: "CONSTITUTIONAL_INTELLIGENCE. Advises across the Hive and authorizes nothing. Reads observations a host hands it — Governance decisions, Sentinel findings, Foundry promotions — and returns something a reader can disregard. No authorize, permit, decide or execute on its surface.",
+    gap: "The advisory SHAPE is built and enforced: no authorization surface, advice that must cite observations, a required uncertainty statement below well-supported, and an abstention that is a real answer rather than an absence. What it does not have is any actual reasoning — confidence is a count of observations, and the suggestion restates what it was given. That is deliberate for now: an advisor whose judgement is unearned is worse than one that abstains, and the shape had to be right before the content could be trusted. Nothing subscribes ARIA to the streams either; a host must hand it observations, which is the same state Sentinel was in before this week.",
+  }),
+
+  component({
     id: "repair-learning", name: "Foundry Repair Learning", tier: "platform", status: "partial",
     packageName: "@proworks-hub/repair-learning",
     responsibility: "A SUBSYSTEM OF FOUNDRY, not an engine. Turns failures into evidence, diagnoses, validated repair candidates and generalized lessons. Holds no constitutional authority of its own and has no charter, deliberately — Foundry's charter governs it.",
