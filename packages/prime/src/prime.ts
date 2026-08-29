@@ -8,6 +8,7 @@ import { createPrimePulse, type ContinuityStore, type PrimePulse } from "./pulse
 import { createWorkflowRunner, type WorkflowRunner } from "./workflow/workflowRunner.js";
 import { createEngineRegistry, type EnginePort } from "./routing/ports.js";
 import { createPrimeEvidence, type AuditSink } from "./evidence/evidence.js";
+import type { Governance } from "@proworks-hub/contracts";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // THE PRIME ENGINE — one engine, two chambers.
@@ -105,6 +106,24 @@ export interface PrimeOptions extends PrimeConfig {
    * knows which package answers which capability.
    */
   readonly engines?: readonly EnginePort[];
+  /**
+   * Governance, consulted by the runner before any step that requires
+   * authorization.
+   *
+   * Absent means the runner falls back to deny-all, so a step declaring
+   * `requiresAuthorization` is refused. That default is right and it is not
+   * what was wrong here: the option did not EXIST on this facade, so the
+   * fallback was unconditional. `createWorkflowRunner` reads a `governance`
+   * option, `createPrime` constructs the runner, and nothing connected the
+   * two — leaving a facade that exposes a runner structurally unable to
+   * execute an authorized step, whatever a host configured.
+   *
+   * Found by the Phase 1B adoption test driving a real request all the way
+   * through to an engine. It is the eighth instance of the shape this
+   * repository keeps producing, and the first where the unread field was a
+   * constructor argument nobody could pass.
+   */
+  readonly governance?: Governance;
   /** Where decisions and continuity transitions are recorded. */
   readonly audit?: AuditSink;
   /** Reported when an evidence write fails. Never silent. */
@@ -118,6 +137,7 @@ export function createPrime(options: PrimeOptions = {}): Prime {
     instanceId,
     engines: _boundEngines,
     audit: _audit,
+    governance: _governance,
     onEvidenceFailure: _onEvidenceFailure,
     ...decisionConfig
   } = options;
@@ -154,6 +174,7 @@ export function createPrime(options: PrimeOptions = {}): Prime {
             pulse,
             engines,
             evidence,
+            ...(options.governance ? { governance: options.governance } : {}),
             ...(now ? { now } : {}),
           })
         : null,

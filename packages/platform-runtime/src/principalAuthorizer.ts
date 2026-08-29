@@ -196,6 +196,10 @@ export function createPrincipalAuthorizer(options: PrincipalAuthorizerOptions): 
           action: permission,
           ...(context.tenant.organizationId ? { tenantId: context.tenant.organizationId } : {}),
           globalInstanceId: options.instance.globalInstanceId,
+          // Carried through so mission-scoped elevation is visible to the
+          // rule that enforces it. Absent stays absent: a grant tied to a
+          // mission is inert on a request naming none.
+          ...(context.missionId ? { missionId: context.missionId } : {}),
           at: now().toISOString(),
         },
         grants,

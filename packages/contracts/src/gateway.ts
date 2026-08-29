@@ -59,6 +59,21 @@ export const requestContextSchema = z
     tenant: tenantContextSchema,
     identity: identityClaimsSchema,
     trace: traceContextSchema,
+    /**
+     * The Foundry mission this request runs under, when it runs under one.
+     *
+     * Added rather than routed around: `Authorizer.can(context, permission,
+     * resource)` has nowhere else to carry it, and mission-scoped elevation
+     * that the enforcement seam cannot see is elevation nothing enforces. The
+     * concept already exists on Prime's execution context; this is the same
+     * field at the boundary that produces one.
+     *
+     * Absent means the request runs under no mission — never "any mission". A
+     * grant tied to a mission is inert on a request that names none, which is
+     * what stops omitting a field being the cleanest route around a
+     * restriction.
+     */
+    missionId: z.string().min(1).optional(),
     /** Which API version the caller asked for. */
     apiVersion: z.string().default("v1"),
     receivedAt: z.string().min(1),

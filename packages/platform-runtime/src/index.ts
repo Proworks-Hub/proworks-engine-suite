@@ -18,3 +18,6 @@ export * from "./outbox.js";
 
 // Binds the identity plane to the existing `Authorizer` port.
 export * from "./principalAuthorizer.js";
+
+// A Hive instance admitting a request: identity, trust, evidence, Governance.
+export * from "./instanceAdmission.js";
