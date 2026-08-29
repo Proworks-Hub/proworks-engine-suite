@@ -5,6 +5,7 @@
 import { z } from "zod";
 
 import {
+  HIVE_MESSAGE_SCHEMA_VERSION,
   deliverableTo,
   deliveryExpectationSchema,
   hasExpired,
@@ -13,7 +14,18 @@ import {
   type Acknowledgement,
   type DeliveryExpectation,
   type HiveMessage,
+  type InstanceIdentity,
 } from "@proworks-hub/contracts";
+
+import {
+  createInMemoryEventIqStore,
+  type DeliveryAttempt,
+  type EventIqStore,
+  type ReplaySession,
+  type StoredEvent,
+} from "./store.js";
+
+export type { DeliveryAttempt, DeliveryState, EventIqStore, InboxRecord, ReplaySession, StoredEvent } from "./store.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // EventIQ — Wave I. The durable, governed asynchronous event backbone.
@@ -58,6 +70,35 @@ import {
 //
 //   Prime is not required to relay all events.
 //       Nothing here references Prime. Constitution §2.3.
+//
+// WHAT IS ACTUALLY GUARANTEED, AND WHAT IS NOT
+//
+//   DELIVERY      At-least-once, per Communication Core's vocabulary, which
+//                 deliberately has no `exactly-once` member. A message may
+//                 arrive twice and consumers must be idempotent.
+//
+//                 What the Hive provides instead is EFFECTIVELY EXACTLY-ONCE
+//                 BUSINESS SEMANTICS, and only for messages that ask for it: a
+//                 message carrying an `idempotencyKey` is suppressed once its
+//                 consumer group has accepted that operation. A message
+//                 without one gets at-least-once and nothing more, which is
+//                 correct for telemetry and wrong for anything consequential.
+//
+//   ORDERING      FIFO WITHIN one `orderingKey`, and only for a subscription
+//                 whose `expectation.ordering` is not `none`. Nothing else.
+//                 No global order, no per-tenant order, no cross-instance
+//                 order — the last of those being a promise nothing could keep
+//                 without a clock two instances share.
+//
+//   DURABILITY    Whatever the bound store provides, and `durability()` says
+//                 which. The in-memory adapter is honest about being
+//                 in-memory; every guarantee about offsets, dead letters and
+//                 replay history is a guarantee about state, and only as good
+//                 as where the state lives.
+//
+//   INSTANCE      An event is stamped with the instance that ACCEPTED it, from
+//                 configuration. A message claiming a different origin is
+//                 refused. There is no cross-instance delivery.
 //
 // IT IMPLEMENTS COMMUNICATION CORE'S VOCABULARY, IT DOES NOT REDEFINE IT
 //
@@ -159,25 +200,16 @@ export const deliveryStateSchema = z.enum([
   "dead_lettered",
   "expired",
 ]);
-export type DeliveryState = z.infer<typeof deliveryStateSchema>;
 
-export interface DeliveryAttempt {
-  readonly messageId: string;
-  readonly subscriptionId: string;
-  readonly state: DeliveryState;
-  readonly attempts: number;
-  readonly firstAttemptedAt: string;
-  readonly lastAttemptedAt: string;
-  readonly lastReason: string;
-  /** Set once dead-lettered, so provenance survives (charter: Dead-Letter Resolve). */
-  readonly deadLetteredAt: string | null;
-}
-
-export interface AcceptedEvent {
-  readonly message: HiveMessage;
-  readonly sequence: number;
-  readonly acceptedAt: string;
-}
+/**
+ * An event this instance accepted.
+ *
+ * `globalInstanceId` is bound here from EventIQ's own configuration and is
+ * never read from the message. A producer that writes its own instance into a
+ * payload has asserted an origin, not established one — the same mistake as a
+ * request naming its own tenant, one layer out.
+ */
+export type AcceptedEvent = StoredEvent;
 
 /** The engine's own events (charter: Events Published). */
 export const eventiqEventSchema = z.enum([
@@ -235,10 +267,26 @@ export interface PolledEvent {
   readonly sequence: number;
   readonly attempt: number;
   readonly isReplay: boolean;
+  /**
+   * Which replay produced this delivery. Present only when `isReplay`.
+   *
+   * The original event is delivered UNCHANGED — same id, same timestamp, same
+   * sequence. Replay provenance rides on the delivery, not on the event,
+   * because rewriting an event to look newly created destroys the only record
+   * of when the thing actually happened.
+   */
+  readonly replaySessionId?: string;
+  /** The instance that accepted this event. Bound, not claimed. */
+  readonly globalInstanceId: string;
 }
 
 export type ReplayResult =
-  | { readonly started: true; readonly events: readonly PolledEvent[]; readonly decisionId: string }
+  | {
+      readonly started: true;
+      readonly events: readonly PolledEvent[];
+      readonly decisionId: string;
+      readonly replaySessionId: string;
+    }
   | { readonly started: false; readonly reason: string };
 
 export interface EventIq {
@@ -284,12 +332,50 @@ export interface EventIq {
   /** Backpressure: how far behind a subscription is. */
   lag(subscriptionId: string): number;
 
+  /** Every replay this instance has performed. Auditable after the fact. */
+  replaySessions(): readonly ReplaySession[];
+
+  /**
+   * Whether state survives a restart.
+   *
+   * Exposed so a host can check its own wiring, and so a test can assert that
+   * an in-memory binding is not being mistaken for a durable one. Every
+   * guarantee EventIQ makes about offsets, dead letters and replay history is
+   * a guarantee about state — and it is only true if the state is durable.
+   */
+  durability(): "in-memory" | "durable";
+
+  /** Which Hive instance this is. For an operator asking what is bound. */
+  instance(): InstanceIdentity;
+
   subscriptions(): readonly Subscription[];
   count(): number;
 }
 
 export interface EventIqOptions {
+  /**
+   * Which Hive instance this EventIQ IS. REQUIRED, never defaulted.
+   *
+   * The whole of instance isolation rests on this being configuration rather
+   * than inference. An EventIQ that guessed its instance — from a tenant, from
+   * a message, from an environment variable it fell back on — would make
+   * "which instance produced this" a question answered by whatever was
+   * convenient at the time.
+   *
+   * Separate from tenant, and deliberately not derivable from one: a tenant may
+   * operate several instances, and an instance may serve several tenant
+   * contexts under future deployment models.
+   */
+  instance: InstanceIdentity;
   authority: EventAuthority;
+  /**
+   * Where state lives. Defaults to the deterministic in-memory adapter.
+   *
+   * A default rather than a requirement because in-memory is the correct
+   * binding for a test and for a single-process development host, and it says
+   * `durability: "in-memory"` so nothing can mistake it for the durable one.
+   */
+  store?: EventIqStore;
   containment?: StreamContainment;
   now?: () => Date;
   /**
@@ -307,14 +393,12 @@ export interface EventIqOptions {
 export function createEventIq(options: EventIqOptions): EventIq {
   const now = options.now ?? (() => new Date());
   const degradedLag = options.degradedLagThreshold ?? 100;
+  const store = options.store ?? createInMemoryEventIqStore();
+  const instanceId = options.instance.globalInstanceId;
+  let replaySeq = 0;
 
-  const log: AcceptedEvent[] = [];
   const subs = new Map<string, Subscription>();
-  /** Offset per consumer GROUP, not per consumer. Members share a checkpoint. */
-  const offsets = new Map<string, number>();
-  const attempts = new Map<string, DeliveryAttempt>();
 
-  const attemptKey = (messageId: string, subscriptionId: string) => `${messageId}::${subscriptionId}`;
   const isolated = () => ({
     subscriptions: new Set(options.containment?.isolatedSubscriptions() ?? []),
     types: new Set(options.containment?.isolatedMessageTypes() ?? []),
@@ -340,6 +424,31 @@ export function createEventIq(options: EventIqOptions): EventIq {
 
   return {
     publish(input) {
+      // ── Schema version, before anything reads the body ─────────────────
+      //
+      // Checked first and reported distinctly. `hiveMessageSchema` refuses an
+      // unknown version anyway, but it refuses it as one more field validation
+      // error in a JSON blob — and "this producer is a version we do not
+      // understand" needs a different response from "this message is
+      // malformed". One is a deployment-skew problem between instances running
+      // different approved engine versions; the other is a bug.
+      //
+      // UNKNOWN IS NOT COMPATIBLE. There is no upgrade-on-read here and no
+      // best-effort reinterpretation: a version this build has never seen is
+      // refused, because guessing at the meaning of an unrecognized envelope is
+      // how two halves of a workflow come to disagree about what was sent.
+      const claimedVersion = (input as { schemaVersion?: unknown } | null)?.schemaVersion;
+      if (claimedVersion !== undefined && claimedVersion !== HIVE_MESSAGE_SCHEMA_VERSION) {
+        return {
+          accepted: false,
+          reason:
+            `Schema version ${String(claimedVersion)} is not supported by this instance, which speaks ` +
+            `version ${HIVE_MESSAGE_SCHEMA_VERSION}. An unrecognized version is refused rather than ` +
+            "reinterpreted: unknown does not mean compatible.",
+          failedClosed: true,
+        };
+      }
+
       const parsed = hiveMessageSchema.safeParse(input);
       if (!parsed.success) {
         return {
@@ -351,6 +460,29 @@ export function createEventIq(options: EventIqOptions): EventIq {
 
       const message = parsed.data;
       const tenant = message.tenant?.organizationId ?? null;
+
+      // ── The instance boundary ──────────────────────────────────────────
+      //
+      // A message may CLAIM an origin. If it claims a different instance, it is
+      // refused — not accepted-and-tagged, not rewritten to this instance.
+      //
+      // Cross-instance delivery requires a governed relationship, cryptographic
+      // identity, and a Sentinel-inspectable transport, none of which exist
+      // yet. Until they do, the honest answer to a foreign message is no. A
+      // temporary allow-all bridge here would be the insecure substitute the
+      // architecture forbids, and it would be the hardest thing to remove
+      // later, because by then something would depend on it.
+      if (message.origin && message.origin.globalInstanceId !== instanceId) {
+        return {
+          accepted: false,
+          reason:
+            `Message ${message.messageId} claims to originate in instance ` +
+            `${message.origin.globalInstanceId} and this is ${instanceId}. Cross-instance delivery ` +
+            "requires a governed relationship through the Interconnect, which does not exist yet. " +
+            "Refused rather than bridged.",
+          failedClosed: true,
+        };
+      }
 
       const decision = options.authority.mayPublish({
         producerId: message.producerId,
@@ -378,20 +510,29 @@ export function createEventIq(options: EventIqOptions): EventIq {
       // Deduplication by message id. Charter capability: deduplication /
       // idempotency references. A re-published id is not an error — it is the
       // producer retrying — so the original is returned rather than a refusal.
-      const existing = log.find((e) => e.message.messageId === message.messageId);
+      //
+      // An indexed lookup now rather than a scan of the log, which is what
+      // publish and acknowledge both did. Linear in the length of the log is a
+      // cost that only appears once a log is long enough to matter, which is
+      // the point at which it is hardest to change.
+      const existing = store.byMessageId(message.messageId);
       if (existing) return { accepted: true, event: existing };
 
-      const event: AcceptedEvent = {
+      const event: StoredEvent = {
         message,
-        sequence: log.length,
+        sequence: store.count(),
         acceptedAt: now().toISOString(),
+        // Bound from configuration. Never `message.origin.globalInstanceId`:
+        // that is the claim, this is the fact.
+        globalInstanceId: instanceId,
       };
-      log.push(event);
+      store.append(event);
 
       options.onEngineEvent?.("EventAccepted", {
         messageId: message.messageId,
         messageType: message.messageType,
         sequence: event.sequence,
+        globalInstanceId: instanceId,
         governanceDecisionId: decision.decisionId,
       });
 
@@ -416,8 +557,8 @@ export function createEventIq(options: EventIqOptions): EventIq {
       // A new consumer group starts at the head, not at zero. Replaying the
       // entire history into a new subscriber is a replay, and a replay is
       // authorized separately.
-      if (!offsets.has(subscription.consumerGroup)) {
-        offsets.set(subscription.consumerGroup, log.length);
+      if (store.offsetOf(subscription.consumerGroup) === null) {
+        store.setOffset(subscription.consumerGroup, store.count());
       }
       return { subscribed: true, subscription };
     },
@@ -427,24 +568,80 @@ export function createEventIq(options: EventIqOptions): EventIq {
       if (!subscription) return [];
       if (isolated().subscriptions.has(subscriptionId)) return [];
 
-      const from = offsets.get(subscription.consumerGroup) ?? 0;
+      const from = store.offsetOf(subscription.consumerGroup) ?? 0;
       const out: PolledEvent[] = [];
       const at = now();
 
-      for (const event of log.slice(from)) {
+      /**
+       * Ordering keys still in flight for this subscription.
+       *
+       * EventIQ promises FIFO WITHIN an ordering key and nothing more. A
+       * message whose key already has an unacknowledged message ahead of it is
+       * held back until that one is answered; messages with no key, or with a
+       * different key, are unaffected.
+       *
+       * Global ordering is deliberately not promised. It would serialize every
+       * unrelated workflow through one queue, and across instances it would be
+       * a promise nothing could keep — one instance cannot order another's
+       * events without a shared clock nobody has.
+       */
+      const blockedKeys = new Set<string>();
+
+      for (const event of store.from(from)) {
         if (out.length >= limit) break;
         if (!matches(subscription, event.message)) continue;
 
-        const key = attemptKey(event.message.messageId, subscriptionId);
-        const prior = attempts.get(key);
+        const prior = store.attemptOf(event.message.messageId, subscriptionId);
 
         if (prior?.state === "dead_lettered" || prior?.state === "acknowledged") continue;
 
+        // ── The consumer inbox ───────────────────────────────────────────
+        //
+        // Keyed by the operation, not the message. Two messages can describe
+        // one operation when a producer retried and minted a new id, and a
+        // consumer deduplicating on message id would perform the effect twice
+        // while believing it had not.
+        //
+        // Keyed by the ACCEPTING instance too, so that when messages
+        // eventually arrive from elsewhere, two instances that independently
+        // chose the same key do not look like one operation already done.
+        const key = event.message.idempotencyKey;
+        if (
+          key !== undefined &&
+          store.hasProcessed({
+            globalInstanceId: event.globalInstanceId,
+            idempotencyKey: key,
+            consumerGroup: subscription.consumerGroup,
+          })
+        ) {
+          continue;
+        }
+
+        // ── Ordering ─────────────────────────────────────────────────────
+        //
+        // Enforced only where the SUBSCRIPTION asked for it.
+        // `expectation.ordering` already existed — `none | per-entity |
+        // per-tenant | per-workflow` — and nothing read it. This is where it
+        // becomes load-bearing: the scope says a consumer needs order, the
+        // message's `orderingKey` says which stream it belongs to, and neither
+        // alone is enough.
+        //
+        // A consumer that declared `none` is not slowed down by another
+        // consumer's ordering requirement, which is the difference between a
+        // guarantee somebody asked for and a global serialization nobody did.
+        const ordering = event.message.orderingKey;
+        if (ordering !== undefined && subscription.expectation.ordering !== "none") {
+          if (blockedKeys.has(ordering)) continue;
+          // Everything after this one in the same stream waits for it.
+          blockedKeys.add(ordering);
+        }
+
         // Expiry, per Communication Core's own function.
         if (hasExpired(subscription.expectation, at)) {
-          attempts.set(key, {
+          store.putAttempt({
             messageId: event.message.messageId,
             subscriptionId,
+            globalInstanceId: event.globalInstanceId,
             state: "expired",
             attempts: prior?.attempts ?? 0,
             firstAttemptedAt: prior?.firstAttemptedAt ?? at.toISOString(),
@@ -456,9 +653,10 @@ export function createEventIq(options: EventIqOptions): EventIq {
         }
 
         const attempt = (prior?.attempts ?? 0) + 1;
-        attempts.set(key, {
+        store.putAttempt({
           messageId: event.message.messageId,
           subscriptionId,
+          globalInstanceId: event.globalInstanceId,
           state: "delivered",
           attempts: attempt,
           firstAttemptedAt: prior?.firstAttemptedAt ?? at.toISOString(),
@@ -472,10 +670,11 @@ export function createEventIq(options: EventIqOptions): EventIq {
           sequence: event.sequence,
           attempt,
           isReplay: false,
+          globalInstanceId: event.globalInstanceId,
         });
       }
 
-      const behind = log.length - from;
+      const behind = store.count() - from;
       if (behind > degradedLag) {
         options.onEngineEvent?.("SubscriptionDegraded", { subscriptionId, lag: behind });
       }
@@ -504,20 +703,36 @@ export function createEventIq(options: EventIqOptions): EventIq {
       const subscription = subs.get(ack.subscriptionId);
       if (!subscription) return { recorded: false, reason: `No subscription ${ack.subscriptionId}.` };
 
-      const key = attemptKey(ack.messageId, ack.subscriptionId);
-      const prior = attempts.get(key);
+      const prior = store.attemptOf(ack.messageId, ack.subscriptionId);
       if (!prior) return { recorded: false, reason: `Nothing was delivered for ${ack.messageId}.` };
 
       const at = now().toISOString();
 
       if (ack.outcome === "accepted" || ack.outcome === "duplicate") {
-        attempts.set(key, { ...prior, state: "acknowledged", lastAttemptedAt: at, lastReason: ack.reason ?? "Accepted." });
+        store.putAttempt({ ...prior, state: "acknowledged", lastAttemptedAt: at, lastReason: ack.reason ?? "Accepted." });
         // The checkpoint advances past this message and no further. Advancing
         // to the head would skip anything the consumer has not yet seen.
-        const event = log.find((e) => e.message.messageId === ack.messageId);
+        const event = store.byMessageId(ack.messageId);
         if (event) {
-          const current = offsets.get(subscription.consumerGroup) ?? 0;
-          offsets.set(subscription.consumerGroup, Math.max(current, event.sequence + 1));
+          const current = store.offsetOf(subscription.consumerGroup) ?? 0;
+          store.setOffset(subscription.consumerGroup, Math.max(current, event.sequence + 1));
+
+          // The inbox is written only on ACCEPTANCE, and only for a message
+          // that named an operation. A consumer that rejected or deferred has
+          // not performed the effect, and recording it as processed would
+          // suppress the redelivery it is waiting for.
+          //
+          // `duplicate` counts as processed because that is what the consumer
+          // is reporting: it recognised the operation and did not repeat it.
+          if (event.message.idempotencyKey !== undefined) {
+            store.markProcessed({
+              globalInstanceId: event.globalInstanceId,
+              idempotencyKey: event.message.idempotencyKey,
+              consumerGroup: subscription.consumerGroup,
+              messageId: event.message.messageId,
+              processedAt: at,
+            });
+          }
         }
         return { recorded: true, reason: "Acknowledged; checkpoint advanced." };
       }
@@ -535,7 +750,7 @@ export function createEventIq(options: EventIqOptions): EventIq {
       const retryable = shouldRetry(communicationAck, expectation, prior.attempts);
 
       if (retryable) {
-        attempts.set(key, {
+        store.putAttempt({
           ...prior,
           state: "retrying",
           lastAttemptedAt: at,
@@ -549,7 +764,7 @@ export function createEventIq(options: EventIqOptions): EventIq {
         return { recorded: true, reason: "Will be redelivered." };
       }
 
-      attempts.set(key, {
+      store.putAttempt({
         ...prior,
         state: "dead_lettered",
         lastAttemptedAt: at,
@@ -602,35 +817,66 @@ export function createEventIq(options: EventIqOptions): EventIq {
         return { started: false, reason: `Governance refused replay: ${decision.reason}` };
       }
 
+      replaySeq += 1;
+      const replaySessionId = `replay_${instanceId}_${replaySeq}`;
+      const startedAt = now().toISOString();
+
       options.onEngineEvent?.("EventReplayStarted", {
         subscriptionId: input.subscriptionId,
+        replaySessionId,
         fromSequence: input.fromSequence,
         toSequence: input.toSequence,
         governanceDecisionId: decision.decisionId,
       });
 
-      const events = log
-        .slice(input.fromSequence, input.toSequence + 1)
+      // The original events, UNCHANGED. Same ids, same timestamps, same
+      // sequences. Replay provenance travels on the delivery — `isReplay` and
+      // the session id — and never on the event, because an event rewritten to
+      // look newly created has destroyed the only record of when the thing
+      // actually happened.
+      const events: PolledEvent[] = store
+        .range(input.fromSequence, input.toSequence)
         .filter((e) => matches(subscription, e.message))
-        .map((e) => ({ message: e.message, sequence: e.sequence, attempt: 0, isReplay: true }));
+        .map((e) => ({
+          message: e.message,
+          sequence: e.sequence,
+          attempt: 0,
+          isReplay: true,
+          replaySessionId,
+          globalInstanceId: e.globalInstanceId,
+        }));
 
-      options.onEngineEvent?.("EventReplayCompleted", {
+      // Recorded, not merely announced. An engine event is a signal somebody
+      // may have been listening for; this is the record that exists afterwards,
+      // when the question is who replayed what and under whose decision.
+      store.recordReplay({
+        replaySessionId,
         subscriptionId: input.subscriptionId,
+        requestedBy: input.requestedBy,
+        fromSequence: input.fromSequence,
+        toSequence: input.toSequence,
+        decisionId: decision.decisionId,
+        startedAt,
         delivered: events.length,
       });
 
-      return { started: true, events, decisionId: decision.decisionId };
+      options.onEngineEvent?.("EventReplayCompleted", {
+        subscriptionId: input.subscriptionId,
+        replaySessionId,
+        delivered: events.length,
+      });
+
+      return { started: true, events, decisionId: decision.decisionId, replaySessionId };
     },
 
     deadLetters(subscriptionId) {
-      return [...attempts.values()].filter(
+      return store.attempts().filter(
         (a) => a.state === "dead_lettered" && (subscriptionId === undefined || a.subscriptionId === subscriptionId),
       );
     },
 
     resolveDeadLetter(input) {
-      const key = attemptKey(input.messageId, input.subscriptionId);
-      const attempt = attempts.get(key);
+      const attempt = store.attemptOf(input.messageId, input.subscriptionId);
       if (!attempt || attempt.state !== "dead_lettered") {
         return { resolved: false, reason: `${input.messageId} is not dead-lettered on ${input.subscriptionId}.` };
       }
@@ -639,7 +885,7 @@ export function createEventIq(options: EventIqOptions): EventIq {
       // `deadLetteredAt`, and the disposition is appended to the reason rather
       // than replacing it. Charter: "authorized disposition of failed events
       // with preserved provenance."
-      attempts.set(key, {
+      store.putAttempt({
         ...attempt,
         state: input.disposition === "redeliver" ? "retrying" : "dead_lettered",
         lastReason: `${attempt.lastReason} | ${input.disposition} by ${input.authorizedBy}: ${input.reason}`,
@@ -650,17 +896,21 @@ export function createEventIq(options: EventIqOptions): EventIq {
     offsetOf(subscriptionId) {
       const subscription = subs.get(subscriptionId);
       if (!subscription) return 0;
-      return offsets.get(subscription.consumerGroup) ?? 0;
+      return store.offsetOf(subscription.consumerGroup) ?? 0;
     },
 
     lag(subscriptionId) {
       const subscription = subs.get(subscriptionId);
       if (!subscription) return 0;
-      return log.length - (offsets.get(subscription.consumerGroup) ?? 0);
+      return store.count() - (store.offsetOf(subscription.consumerGroup) ?? 0);
     },
 
+    replaySessions: () => store.replaySessions(),
+    durability: () => store.durability,
+    instance: () => options.instance,
+
     subscriptions: () => [...subs.values()],
-    count: () => log.length,
+    count: () => store.count(),
   };
 }
 

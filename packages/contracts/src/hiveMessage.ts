@@ -97,6 +97,46 @@ export const integrityMetadataSchema = z
   .strict();
 export type IntegrityMetadata = z.infer<typeof integrityMetadataSchema>;
 
+/**
+ * WHERE a message came from.
+ *
+ * OPTIONAL on the envelope and that is deliberate, because the field is not
+ * how origin is established. A producer writing `globalInstanceId: "ksix"`
+ * into its own message has asserted an origin, not proved one — the same
+ * mistake as a request naming its own tenant.
+ *
+ * The authoritative origin is bound by the runtime that ACCEPTS the message,
+ * from its own configuration. This field is what a message CLAIMS, kept
+ * separately so the two can be compared: a claim that disagrees with the
+ * accepting instance is refused rather than reconciled.
+ *
+ * It exists now, before the Interconnect, for one reason. When instance A
+ * eventually hands a message to instance B, B must be able to see what A said
+ * about itself and check it against a governed relationship. A field added
+ * then would be a field every existing producer predates.
+ */
+export const messageOriginSchema = z
+  .object({
+    /**
+     * The Hive instance the producer says it ran in.
+     *
+     * Never `tenantId`. A tenant may operate several instances and an instance
+     * may serve several tenant contexts; collapsing them would make isolation
+     * depend on today's deployment shape.
+     */
+    globalInstanceId: identifierSchema,
+    /**
+     * Which build produced it.
+     *
+     * Events outlive the code that wrote them. Without this, a consumer that
+     * finds a malformed payload cannot tell whether the producer was a version
+     * with a known defect or a version it has never seen.
+     */
+    producerVersion: z.string().min(1).optional(),
+  })
+  .strict();
+export type MessageOrigin = z.infer<typeof messageOriginSchema>;
+
 export const HIVE_MESSAGE_SCHEMA_VERSION = 1;
 
 /**
@@ -149,6 +189,36 @@ export const hiveMessageSchema = z
     producedUnderAuthority: authorityReferenceSchema.optional(),
 
     dataClassification: dataClassificationSchema.default("internal"),
+
+    /**
+     * What the producer claims about where it ran. Compared, never trusted.
+     * See `messageOriginSchema`.
+     */
+    origin: messageOriginSchema.optional(),
+
+    /**
+     * The stream this message must stay in order within.
+     *
+     * Absent means this message needs no ordering, which is the common case and
+     * the honest default: promising global ordering would make every unrelated
+     * workflow share one queue, and across instances it would be a promise
+     * nothing could keep.
+     *
+     * Present, it names ONE thing whose messages must arrive in sequence — one
+     * work order, one proposal, one transfer, one execution. Ordering is a
+     * guarantee somebody asks for per stream, not a property of the fabric.
+     */
+    orderingKey: z.string().min(1).optional(),
+
+    /**
+     * The business operation this message represents, for consumers that must
+     * not perform an effect twice.
+     *
+     * Distinct from `messageId`, which identifies the MESSAGE: two different
+     * messages can describe one operation (a producer retried and generated a
+     * new id), and deduplicating on message id alone would let that through.
+     */
+    idempotencyKey: z.string().min(1).optional(),
 
     payload: z.unknown().optional(),
     payloadReference: payloadReferenceSchema.optional(),

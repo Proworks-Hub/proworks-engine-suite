@@ -37,6 +37,9 @@ const refuses: EventAuthority = {
 
 const at = () => new Date("2026-08-29T10:00:00.000Z");
 
+/** The instance this EventIQ IS. Required, never defaulted. */
+const INSTANCE = { globalInstanceId: "hive.ksix.us-east", provisional: false };
+
 const message = (over: Record<string, unknown> = {}) => ({
   messageId: "msg_1",
   category: "EVENT",
@@ -66,7 +69,7 @@ const subscription = (over: Record<string, unknown> = {}) => ({
 });
 
 const eventiq = (over: Partial<Parameters<typeof createEventIq>[0]> = {}) =>
-  createEventIq({ authority: permits, now: at, ...over });
+  createEventIq({ instance: INSTANCE, authority: permits, now: at, ...over });
 
 describe("the five required invariants", () => {
   it("does not create authority by delivering", () => {
@@ -78,6 +81,7 @@ describe("the five required invariants", () => {
         sequence: 0,
         attempt: 1,
         isReplay: false,
+        globalInstanceId: INSTANCE.globalInstanceId,
       }),
     ).toBe(false);
   });
@@ -482,6 +486,7 @@ describe("replay is authorized, bounded, and announced", () => {
     const e = eventiq({ authority: refuses });
     // Publishing needs a permitting authority, so use a mixed one.
     const mixed = createEventIq({
+      instance: INSTANCE,
       authority: {
         mayPublish: permits.mayPublish,
         mayReplay: refuses.mayReplay,

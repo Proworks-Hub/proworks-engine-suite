@@ -95,7 +95,9 @@ const containment: WorkspaceContainment = {
 
 /** EventIQ with a subscription already listening, so events are pollable. */
 const wired = () => {
-  const eventiq = createEventIq({ authority: permits, now: at });
+  const eventiq = createEventIq({
+      instance: { globalInstanceId: "hive.ksix.us-east", provisional: false },
+      authority: permits, now: at });
   eventiq.subscribe({
     subscriptionId: "sub_all",
     consumerGroup: "grp_observer",
@@ -254,7 +256,9 @@ describe("events reach a subscriber through EventIQ", () => {
   });
 
   it("marks a tenantless activity system-scoped rather than leaving it blank", () => {
-    const eventiq = createEventIq({ authority: permits, now: at });
+    const eventiq = createEventIq({
+      instance: { globalInstanceId: "hive.ksix.us-east", provisional: false },
+      authority: permits, now: at });
     eventiq.subscribe({
       subscriptionId: "sub_sys",
       consumerGroup: "grp_sys",
@@ -279,6 +283,7 @@ describe("publishing is best-effort and never fails the operation", () => {
     // Foundry terminating a runaway agent must not be undone because the event
     // bus was full.
     const eventiq = createEventIq({
+      instance: { globalInstanceId: "hive.ksix.us-east", provisional: false },
       authority: {
         mayPublish: () => ({ permitted: false, reason: "bus restricted", decisionId: "gd-deny" }),
         mayReplay: permits.mayReplay,
@@ -316,6 +321,7 @@ describe("publishing is best-effort and never fails the operation", () => {
     // quieter problem than Foundry not acting.
     const seen: string[] = [];
     const eventiq = createEventIq({
+      instance: { globalInstanceId: "hive.ksix.us-east", provisional: false },
       authority: {
         mayPublish: () => ({ permitted: false, reason: "restricted", decisionId: "gd-deny" }),
         mayReplay: permits.mayReplay,
