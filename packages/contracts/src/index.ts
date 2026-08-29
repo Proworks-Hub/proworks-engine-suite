@@ -80,4 +80,5 @@ export * from "./hiveClassification.js";
 export * from "./charterRegistry.js";
 export * from "./governance.js";
 export * from "./identifiers.js";
+export * from "./runtimeManifest.js";
 export * from "./hiveMap.js";
