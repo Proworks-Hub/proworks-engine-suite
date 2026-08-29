@@ -61,16 +61,17 @@ export const HIVE_MAP: readonly HiveComponent[] = [
   // ── Foundation Core ────────────────────────────────────────────────────────
   component({
     id: "foundation-core", name: "Foundation Core", tier: "core", core: "foundation", status: "partial",
-    responsibility: "Identity, access, tenancy, policy, audit, configuration and platform health.",
-    gap: "No coordinator package. The capabilities exist as contracts (tenancy, capabilities, gateway) and host implementations, with no Core to route between them.",
-  }),
-
-  // ── Foundation Core ────────────────────────────────────────────────────────
-  component({
-    id: "foundation-core", name: "Foundation Core", tier: "core", core: "foundation", status: "partial",
     packageName: "@proworks-hub/foundation-core",
     responsibility: "The universal structural language: identity, canonical references, versions, relationships, health vocabulary.",
     gap: "Baseline. The identifier and reference TYPES live in @proworks-hub/contracts, not here, because the dependency law forbids a Specialized engine importing a Core — a structural language no engine may import is not universal. Foundation holds authority over what they mean. No persistence, no relationship store, no entity registry, no schema registry.",
+  }),
+
+  // ── Communication Core ─────────────────────────────────────────────────────
+  component({
+    id: "communication-core", name: "Communication Core", tier: "core", core: "communication", status: "partial",
+    packageName: "@proworks-hub/communication-core",
+    responsibility: "The universal language of exchange: message categories, delivery expectations, acknowledgement, expiry, correlation and communication provenance.",
+    gap: "Vocabulary and coordinator only. It moves nothing — no queue, no outbox, no subscription store, no delivery loop — because the charter puts transport in EventIQ, NotificationIQ and IntegrationIQ, none of which are registered as specialists yet. So a delivery expectation can be described and an acknowledgement judged, but nothing in this installation acts on either. `exactly-once` is deliberately absent from the guarantee vocabulary rather than unimplemented.",
   }),
 
   // ── Knowledge Core ─────────────────────────────────────────────────────────
