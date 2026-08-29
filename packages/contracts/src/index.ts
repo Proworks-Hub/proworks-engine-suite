@@ -92,3 +92,6 @@ export * from "./synchronousOnly.js";
 
 // WHO is acting: principals, instance identity, trust state, permission grants.
 export * from "./principal.js";
+
+// What may run, given what is left: classes, quotas, budgets, degradation.
+export * from "./scheduling.js";

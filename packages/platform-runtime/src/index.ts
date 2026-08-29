@@ -21,3 +21,6 @@ export * from "./principalAuthorizer.js";
 
 // A Hive instance admitting a request: identity, trust, evidence, Governance.
 export * from "./instanceAdmission.js";
+
+// Is there room, and is this important enough to have it.
+export * from "./capacityGate.js";
