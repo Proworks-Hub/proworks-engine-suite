@@ -121,6 +121,18 @@ export const HIVE_MAP: readonly HiveComponent[] = [
     responsibility: "Budgets, allocation, variance and forecasting.",
   }),
 
+  // ── Constitutional plane ───────────────────────────────────────────────────
+  // These have NO capability tier (ADR-003, approved §23.3). The map is
+  // tier-based, so `platform` is recorded as the least-wrong placeholder and the
+  // responsibility text says what they actually are. The authoritative
+  // classification lives in charters/registry.json, not here.
+  component({
+    id: "governance-engine", name: "Governance Engine", tier: "platform", status: "partial",
+    packageName: "@proworks-hub/governance-engine",
+    responsibility: "CONSTITUTIONAL_GOVERNANCE. Determines whether consequential activity is permitted. Owns authorization decisions only.",
+    gap: "Baseline evaluator: grants, Core Protections, purpose and risk matching, expiry. No delegation state, no data-use authorization, no human-approval routing, no PolicyIQ integration, no override mechanism. Charter §6 data governance and §13 external development authorization are unimplemented.",
+  }),
+
   // ── Resources Core ─────────────────────────────────────────────────────────
   component({
     id: "resources-core", name: "Resources Core", tier: "core", core: "resources", status: "partial",

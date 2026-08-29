@@ -1,6 +1,6 @@
 {
   "name": "@proworks-hub/operations-core",
-  "version": "0.15.0",
+  "version": "0.16.0",
   "type": "module",
   "description": "Operations Core \u2014 coordinates the work specialists. Owns ordering and failure state, never the domain logic.",
   "author": "Steven Kreutzer",

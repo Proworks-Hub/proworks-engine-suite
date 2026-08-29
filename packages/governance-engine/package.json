@@ -1,14 +1,14 @@
 {
-  "name": "@proworks-hub/core-kit",
-  "version": "0.16.0",
+  "name": "@proworks-hub/governance-engine",
+  "version": "0.1.0",
   "type": "module",
-  "description": "The machinery every Core coordinator shares: a specialist registry, routing, timeouts, failure isolation and partial answers.",
+  "description": "Governance Engine \u2014 determines whether consequential activity is permitted. Owns authorization decisions only.",
   "author": "Steven Kreutzer",
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Proworks-Hub/proworks-engine-suite.git",
-    "directory": "packages/core-kit"
+    "directory": "packages/governance-engine"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@proworks-hub/contracts": "*",
+    "@proworks-hub/core-kit": "*",
     "zod": "^3.23.0"
   },
   "devDependencies": {
