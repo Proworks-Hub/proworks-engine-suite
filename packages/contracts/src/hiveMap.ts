@@ -157,6 +157,13 @@ export const HIVE_MAP: readonly HiveComponent[] = [
     gap: "Findings, dispositions and the defensive ladder exist; nothing detects. There is no monitor, no sensor and no correlation engine, so every finding must be handed in by a caller — Charter §5's fourteen monitoring capabilities are all unimplemented. Protective state is described but not enforced: a restriction is a record, and nothing in this installation stops a quarantined engine from being called. Emergency Protective State can be declared and decays correctly, and activates nothing. Deliberately takes no Governance dependency (§8, §15) — oversight that must ask permission from the system it oversees is not oversight.",
   }),
 
+  component({
+    id: "repair-learning", name: "Foundry Repair Learning", tier: "platform", status: "partial",
+    packageName: "@proworks-hub/repair-learning",
+    responsibility: "A SUBSYSTEM OF FOUNDRY, not an engine. Turns failures into evidence, diagnoses, validated repair candidates and generalized lessons. Holds no constitutional authority of its own and has no charter, deliberately — Foundry's charter governs it.",
+    gap: "Phase A only (capture): scenario harness, sandbox boundary, fault injection, evidence recorder, failure signature. Nothing diagnoses, repairs, validates or learns yet. The harness drives no engines — a host supplies the executor and the condition evaluators, so an unevaluated corpus condition counts as unheld rather than passed. Most corpus fault classes are constitutional (SOURCE_OF_TRUTH_THEFT) and have no mechanical injection form, so those scenarios run INCONCLUSIVE until a host can produce the fault.",
+  }),
+
   // ── Resources Core ─────────────────────────────────────────────────────────
   component({
     id: "resources-core", name: "Resources Core", tier: "core", core: "resources", status: "partial",
