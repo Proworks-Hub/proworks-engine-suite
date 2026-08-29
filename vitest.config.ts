@@ -26,6 +26,7 @@ export default defineConfig({
       "@proworks-hub/governance-engine": pkg("governance-engine", "src/index.ts"),
       "@proworks-hub/foundation-core": pkg("foundation-core", "src/index.ts"),
       "@proworks-hub/communication-core": pkg("communication-core", "src/index.ts"),
+      "@proworks-hub/eventiq": pkg("eventiq", "src/index.ts"),
       "@proworks-hub/sentineliq": pkg("sentineliq", "src/index.ts"),
       "@proworks-hub/repair-learning": pkg("repair-learning", "src/index.ts"),
       "@proworks-hub/foundry-evolutioniq": pkg("foundry-evolutioniq", "src/index.ts"),

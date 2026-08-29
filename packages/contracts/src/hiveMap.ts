@@ -74,6 +74,13 @@ export const HIVE_MAP: readonly HiveComponent[] = [
     gap: "Vocabulary and coordinator only. It moves nothing — no queue, no outbox, no subscription store, no delivery loop — because the charter puts transport in EventIQ, NotificationIQ and IntegrationIQ, none of which are registered as specialists yet. So a delivery expectation can be described and an acknowledgement judged, but nothing in this installation acts on either. `exactly-once` is deliberately absent from the guarantee vocabulary rather than unimplemented.",
   }),
 
+  component({
+    id: "eventiq", name: "EventIQ", tier: "platform", status: "partial",
+    packageName: "@proworks-hub/eventiq",
+    responsibility: "SHARED_PLATFORM. The durable, governed asynchronous event backbone. Authoritative for event envelopes, delivery and subscription state, consumer offsets, replay state and dead-letter state — never for the business facts events carry.",
+    gap: "In-memory: the log, offsets and dead letters do not survive a restart, so `durable` is the contract and not yet the implementation. No ordering guarantees by key, no compaction, no cross-region replication, no transformation adapters — all four are Optional Capabilities in the charter and none is built. Backpressure is observed and announced, never applied by dropping. Governance and Sentinel are ports a host binds.",
+  }),
+
   // ── Knowledge Core ─────────────────────────────────────────────────────────
   component({
     id: "knowledge-core", name: "Knowledge Core", tier: "core", core: "knowledge", status: "planned",
@@ -168,7 +175,7 @@ export const HIVE_MAP: readonly HiveComponent[] = [
     id: "foundry-evolutioniq", name: "Foundry EvolutionIQ", tier: "platform", status: "partial",
     packageName: "@proworks-hub/foundry-evolutioniq",
     responsibility: "CONSTITUTIONAL_EVOLUTION. Owns the runtime that repair agents live inside: Mission Control, Agent Runtime with a live termination supervisor, Sandbox (which now owns workspaces), the Validation Orchestrator, and Evolution Control with the promotion wall. Holds NO production deployment authority.",
-    gap: "V1 runs the loop end to end in SIMULATION and VALIDATION — diagnose, create mission, spawn agent, author candidate, mutate a sandbox, test, validate, promote to a sandbox — and refuses STAGING and PRODUCTION with no override. Both schedulers now exist: a host-agnostic supervisor scheduler that drives `supervise()` through an injected Ticker (no timer API is imported), and a cross-mission scheduler with component-overlap conflict detection, capacity limits and a starvation valve. What is absent: the TestBot and ContractBot are interfaces a host binds, so replay and regression evidence is supplied rather than produced; there is no agent-to-agent coordination; and no EventIQ integration because EventIQ does not exist. Repair Learning remains a separate package that Foundry consumes rather than contains.",
+    gap: "V1 runs the loop end to end in SIMULATION and VALIDATION — diagnose, create mission, spawn agent, author candidate, mutate a sandbox, test, validate, promote to a sandbox — and refuses STAGING and PRODUCTION with no override. Both schedulers now exist: a host-agnostic supervisor scheduler that drives `supervise()` through an injected Ticker (no timer API is imported), and a cross-mission scheduler with component-overlap conflict detection, capacity limits and a starvation valve. What is absent: the TestBot and ContractBot are interfaces a host binds, so replay and regression evidence is supplied rather than produced; there is no agent-to-agent coordination; and no agent-to-agent coordination. EventIQ integration now exists: mission, agent, candidate, promotion and drift events publish through EventIQ, while every decision a caller acts on — lease checks, validation, promotion, supervision — stays a direct synchronous contract. Repair Learning remains a separate package that Foundry consumes rather than contains.",
   }),
 
   // ── Resources Core ─────────────────────────────────────────────────────────

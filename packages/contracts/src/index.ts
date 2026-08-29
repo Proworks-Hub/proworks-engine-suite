@@ -84,4 +84,5 @@ export * from "./runtimeManifest.js";
 export * from "./engineRegistry.js";
 export * from "./auditRecord.js";
 export * from "./hiveMessage.js";
+export * from "./delivery.js";
 export * from "./hiveMap.js";

@@ -9,3 +9,4 @@ export * from "./agents/scheduler.js";
 export * from "./sandbox/sandbox.js";
 export * from "./validation/orchestrator.js";
 export * from "./evolution/control.js";
+export * from "./events.js";

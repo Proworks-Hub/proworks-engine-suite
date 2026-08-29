@@ -1,14 +1,14 @@
 {
-  "name": "@proworks-hub/foundry-evolutioniq",
+  "name": "@proworks-hub/eventiq",
   "version": "0.1.0",
   "type": "module",
-  "description": "Foundry EvolutionIQ \u2014 constitutional architecture, engineering, repair and validation. Owns the runtime that repair agents live inside; holds no production deployment authority.",
+  "description": "EventIQ \u2014 the durable, governed asynchronous event backbone. Events tell the Hive what happened; they do not decide what should be authorized next.",
   "author": "Steven Kreutzer",
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Proworks-Hub/proworks-engine-suite.git",
-    "directory": "packages/foundry-evolutioniq"
+    "directory": "packages/eventiq"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
@@ -23,10 +23,7 @@
   },
   "dependencies": {
     "@proworks-hub/contracts": "*",
-    "@proworks-hub/auditiq": "0.1.0",
-    "@proworks-hub/repair-learning": "0.1.0",
-    "zod": "^3.23.0",
-    "@proworks-hub/eventiq": "0.1.0"
+    "zod": "^3.23.0"
   },
   "devDependencies": {
     "typescript": "^5.6.3",

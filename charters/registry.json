@@ -387,7 +387,7 @@
     "constitutionVersion": "1.0",
     "integrityHash": "sha256:0476fb2db201dd8d6c8755fefe4a5db593efb04bd73440e81c0039ea30ae0016",
     "sourceDocument": "02_EventIQ_Charter.docx",
-    "implementationLifecycle": "CHARTERED"
+    "implementationLifecycle": "EXPERIMENTAL"
   },
   {
     "charterId": "charter.platform.fileiq",

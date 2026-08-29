@@ -21,19 +21,7 @@
   ],
   "references": [
     {
-      "path": "../auditiq"
-    },
-    {
-      "path": "../repair-learning"
-    },
-    {
-      "path": "../eventiq"
-    },
-    {
       "path": "../contracts"
-    },
-    {
-      "path": "../core-kit"
     }
   ]
 }
