@@ -1,0 +1,999 @@
+[
+  {
+    "scenarioId": "MC-01",
+    "family": "parallel-happy",
+    "title": "Five companies closed-loop at once, no shared ids",
+    "targetComponents": [
+      "ForgeIQ",
+      "CostIQ",
+      "Prime",
+      "WorkOrderIQ",
+      "InventoryIQ"
+    ],
+    "startingState": "seed stock per tenant; five hosts constructed separately",
+    "faultClass": "none",
+    "faultInjection": "Promise.all five shop paths (family-table does receipt only)",
+    "expectedDetection": "N/A",
+    "expectedDiagnosis": "N/A",
+    "expectedContainment": "no record body crosses tenant",
+    "expectedRecovery": "all five complete independently",
+    "mustPass": [
+      "five distinct tenantIds",
+      "ksix stock unchanged by others",
+      "no shared workOrderId"
+    ],
+    "mustFail": [
+      "any mixed-tenant projection"
+    ],
+    "violatedInvariants": [
+      "cross-tenant read empty",
+      "Inventory owns stock per tenant"
+    ],
+    "requiredEvidence": [
+      "per-tenant snapshots"
+    ],
+    "repairClass": "none",
+    "allowedRepairActions": [],
+    "forbiddenRepairActions": [
+      "merge-tenants"
+    ],
+    "severity": "critical",
+    "blastRadius": "HIVE",
+    "reversibility": "REVERSIBLE",
+    "tenantAndDataClass": "multi-tenant / operational",
+    "generalizationCandidate": "yes"
+  },
+  {
+    "scenarioId": "MC-02",
+    "family": "sku-homonym",
+    "title": "ksix and brighton-signs share SKU string ACRYLIC-3MM",
+    "targetComponents": [
+      "InventoryIQ",
+      "WorkOrderIQ",
+      "ForgeIQ"
+    ],
+    "startingState": "both seed ACRYLIC-3MM different on-hand (ksix=50, brighton=3)",
+    "faultClass": "identity-collision",
+    "faultInjection": "ksix reserves 10; brighton queries same sku string",
+    "expectedDetection": "tenant-scoped inventory keys",
+    "expectedDiagnosis": "sku is not global PK",
+    "expectedContainment": "brighton on-hand stays 3",
+    "expectedRecovery": "ksix reserved 10 of 50",
+    "mustPass": [
+      "brighton on-hand=3",
+      "ksix reserved=10"
+    ],
+    "mustFail": [
+      "sku used as global primary key"
+    ],
+    "violatedInvariants": [
+      "tenant isolation",
+      "stock SoT"
+    ],
+    "requiredEvidence": [
+      "two inventory rows"
+    ],
+    "repairClass": "deny",
+    "allowedRepairActions": [
+      "tenant-scope"
+    ],
+    "forbiddenRepairActions": [
+      "global-sku-pk"
+    ],
+    "severity": "critical",
+    "blastRadius": "cross-tenant",
+    "reversibility": "REVERSIBLE",
+    "tenantAndDataClass": "ksix vs brighton-signs",
+    "generalizationCandidate": "yes"
+  },
+  {
+    "scenarioId": "MC-03",
+    "family": "correlation-theft",
+    "title": "brighton-signs replays a ksix correlationId",
+    "targetComponents": [
+      "WorkOrderIQ",
+      "platform-events"
+    ],
+    "startingState": "ksix job exists with correlation C1",
+    "faultClass": "cross-tenant-replay",
+    "faultInjection": "brighton actor sends envelope with tenant=brighton correlation=C1",
+    "expectedDetection": "deny",
+    "expectedDiagnosis": "correlation is tenant-bound",
+    "expectedContainment": "no ksix body returned",
+    "expectedRecovery": "ksix job untouched",
+    "mustPass": [
+      "empty/forbidden",
+      "ksix WO unchanged"
+    ],
+    "mustFail": [
+      "ksix job visible to brighton"
+    ],
+    "violatedInvariants": [
+      "tenant isolation",
+      "correlation binding"
+    ],
+    "requiredEvidence": [
+      "deny code"
+    ],
+    "repairClass": "deny",
+    "allowedRepairActions": [
+      "not-found"
+    ],
+    "forbiddenRepairActions": [
+      "honor-foreign-correlation"
+    ],
+    "severity": "critical",
+    "blastRadius": "cross-tenant",
+    "reversibility": "REVERSIBLE",
+    "tenantAndDataClass": "ksix vs brighton-signs",
+    "generalizationCandidate": "yes"
+  },
+  {
+    "scenarioId": "MC-04",
+    "family": "burst",
+    "title": "Twenty interleaved jobs across three manufacturers",
+    "targetComponents": [
+      "ForgeIQ",
+      "CostIQ",
+      "Prime",
+      "WorkOrderIQ",
+      "InventoryIQ"
+    ],
+    "startingState": "ksix, brighton-signs, longmont-print seeded",
+    "faultClass": "load",
+    "faultInjection": "20 concurrent create+reserve mixed tenants",
+    "expectedDetection": "none if isolation holds; leak if not",
+    "expectedDiagnosis": "burst-isolation",
+    "expectedContainment": "per-tenant math",
+    "expectedRecovery": "all jobs either succeed or structured-fail in-tenant",
+    "mustPass": [
+      "zero cross-tenant reads",
+      "reserved per tenant <= that tenant on-hand"
+    ],
+    "mustFail": [
+      "mixed-tenant projection"
+    ],
+    "violatedInvariants": [
+      "tenant isolation",
+      "reserved<=on-hand"
+    ],
+    "requiredEvidence": [
+      "20 results tagged tenant"
+    ],
+    "repairClass": "deny",
+    "allowedRepairActions": [
+      "tenant-scope"
+    ],
+    "forbiddenRepairActions": [
+      "shared-counter"
+    ],
+    "severity": "critical",
+    "blastRadius": "HIVE",
+    "reversibility": "REVERSIBLE",
+    "tenantAndDataClass": "three manufacturers",
+    "generalizationCandidate": "yes"
+  },
+  {
+    "scenarioId": "MC-05",
+    "family": "poison-isolation",
+    "title": "longmont-print poison envelope does not halt ksix",
+    "targetComponents": [
+      "platform-events",
+      "WorkOrderIQ"
+    ],
+    "startingState": "ksix mid-path; longmont sends schema-invalid write",
+    "faultClass": "malformed-payload",
+    "faultInjection": "poison from longmont; ksix continues reserve",
+    "expectedDetection": "DLQ longmont",
+    "expectedDiagnosis": "poison",
+    "expectedContainment": "ksix path completes",
+    "expectedRecovery": "longmont dead-letter; ksix reserved",
+    "mustPass": [
+      "ksix WO exists",
+      "longmont no partial WO"
+    ],
+    "mustFail": [
+      "poison writes into ksix"
+    ],
+    "violatedInvariants": [
+      "envelope",
+      "tenant isolation"
+    ],
+    "requiredEvidence": [
+      "DLQ",
+      "ksix snapshot"
+    ],
+    "repairClass": "dead-letter",
+    "allowedRepairActions": [
+      "DLQ"
+    ],
+    "forbiddenRepairActions": [
+      "global-halt"
+    ],
+    "severity": "high",
+    "blastRadius": "write-path",
+    "reversibility": "REVERSIBLE",
+    "tenantAndDataClass": "ksix vs longmont-print",
+    "generalizationCandidate": "yes"
+  },
+  {
+    "scenarioId": "MC-06",
+    "family": "crash-isolation",
+    "title": "brighton-signs process kill does not roll back ksix reserve",
+    "targetComponents": [
+      "WorkOrderIQ",
+      "InventoryIQ"
+    ],
+    "startingState": "both reserved",
+    "faultClass": "process-crash",
+    "faultInjection": "drop brighton memory; ksix still live",
+    "expectedDetection": "brighton replay needed",
+    "expectedDiagnosis": "single-tenant crash",
+    "expectedContainment": "ksix reserved intact",
+    "expectedRecovery": "brighton replay same keys",
+    "mustPass": [
+      "ksix reserved unchanged",
+      "brighton at most one reserve after replay"
+    ],
+    "mustFail": [
+      "ksix reserve cleared by brighton crash"
+    ],
+    "violatedInvariants": [
+      "tenant isolation",
+      "idempotency"
+    ],
+    "requiredEvidence": [
+      "both snapshots"
+    ],
+    "repairClass": "replay",
+    "allowedRepairActions": [
+      "reapply-brighton-keys"
+    ],
+    "forbiddenRepairActions": [
+      "reset-all-tenants"
+    ],
+    "severity": "high",
+    "blastRadius": "single-tenant",
+    "reversibility": "CONTAIN_FIRST",
+    "tenantAndDataClass": "ksix vs brighton-signs",
+    "generalizationCandidate": "yes"
+  },
+  {
+    "scenarioId": "MC-07",
+    "family": "stock-contention-same-tenant-only",
+    "title": "two ksix jobs fight acrylic; brighton acrylic untouched",
+    "targetComponents": [
+      "InventoryIQ",
+      "WorkOrderIQ"
+    ],
+    "startingState": "ksix acrylic=10; brighton acrylic=10; two ksix jobs need 8",
+    "faultClass": "resource-contention",
+    "faultInjection": "two ksix reserves concurrent; brighton idle",
+    "expectedDetection": "ksix shortage on loser",
+    "expectedDiagnosis": "in-tenant contention",
+    "expectedContainment": "brighton still 10/0 reserved",
+    "expectedRecovery": "one ksix winner",
+    "mustPass": [
+      "ksix reserved<=10",
+      "brighton reserved=0 on-hand=10"
+    ],
+    "mustFail": [
+      "brighton stock used to fill ksix"
+    ],
+    "violatedInvariants": [
+      "tenant isolation",
+      "reserved<=on-hand"
+    ],
+    "requiredEvidence": [
+      "three inventory views"
+    ],
+    "repairClass": "allocate-available",
+    "allowedRepairActions": [
+      "grant-one-ksix"
+    ],
+    "forbiddenRepairActions": [
+      "borrow-other-tenant"
+    ],
+    "severity": "critical",
+    "blastRadius": "sku-level",
+    "reversibility": "REVERSIBLE",
+    "tenantAndDataClass": "ksix vs brighton-signs",
+    "generalizationCandidate": "yes"
+  },
+  {
+    "scenarioId": "MC-08",
+    "family": "receipt-vs-shop",
+    "title": "Family Table receipt and ksix job same clock, no WO from receipt",
+    "targetComponents": [
+      "ReceiptIQ",
+      "WorkOrderIQ",
+      "InventoryIQ"
+    ],
+    "startingState": "both tenants live",
+    "faultClass": "confused-deputy",
+    "faultInjection": "family-table ingest receipt while ksix creates WO",
+    "expectedDetection": "receipt stored separately",
+    "expectedDiagnosis": "receipt is not a job",
+    "expectedContainment": "family-table WO count 0; ksix stock untouched by receipt",
+    "expectedRecovery": "both succeed",
+    "mustPass": [
+      "one receipt",
+      "one ksix WO",
+      "family-table no WO"
+    ],
+    "mustFail": [
+      "receipt minted a WO in either tenant"
+    ],
+    "violatedInvariants": [
+      "ReceiptIQ owns receipt",
+      "WO SoT"
+    ],
+    "requiredEvidence": [
+      "receipt id",
+      "wo id"
+    ],
+    "repairClass": "none",
+    "allowedRepairActions": [
+      "store-receipt"
+    ],
+    "forbiddenRepairActions": [
+      "auto-create-WO"
+    ],
+    "severity": "high",
+    "blastRadius": "cross-host",
+    "reversibility": "REVERSIBLE",
+    "tenantAndDataClass": "family-table vs ksix",
+    "generalizationCandidate": "yes"
+  },
+  {
+    "scenarioId": "MC-09",
+    "family": "customer-view",
+    "title": "ksix customer projection never names brighton-signs",
+    "targetComponents": [
+      "Tracking",
+      "Notifications",
+      "WorkOrderIQ"
+    ],
+    "startingState": "both have in-progress jobs",
+    "faultClass": "information-leak",
+    "faultInjection": "fetch ksix customer view",
+    "expectedDetection": "redact",
+    "expectedDiagnosis": "external-view",
+    "expectedContainment": "no other tenant name, no machine ids",
+    "expectedRecovery": "safe status only",
+    "mustPass": [
+      "brighton-signs absent",
+      "no machineId"
+    ],
+    "mustFail": [
+      "other tenant name in payload"
+    ],
+    "violatedInvariants": [
+      "Tracking is projection"
+    ],
+    "requiredEvidence": [
+      "payload snapshot"
+    ],
+    "repairClass": "redact",
+    "allowedRepairActions": [
+      "project-safe"
+    ],
+    "forbiddenRepairActions": [
+      "copy-internal"
+    ],
+    "severity": "high",
+    "blastRadius": "customer-channel",
+    "reversibility": "REVERSIBLE",
+    "tenantAndDataClass": "ksix customer-external",
+    "generalizationCandidate": "yes"
+  },
+  {
+    "scenarioId": "MC-10",
+    "family": "auth-purpose",
+    "title": "brighton quote-purpose cannot consume ksix stock",
+    "targetComponents": [
+      "InventoryIQ",
+      "governance-engine"
+    ],
+    "startingState": "ksix reserved; actor token purpose=quote tenant=brighton",
+    "faultClass": "purpose-mismatch",
+    "faultInjection": "brighton quote token attempts ksix consume",
+    "expectedDetection": "deny",
+    "expectedDiagnosis": "wrong tenant and wrong purpose",
+    "expectedContainment": "ksix reserve held",
+    "expectedRecovery": "fail-closed",
+    "mustPass": [
+      "consume rejected",
+      "ksix stock unchanged"
+    ],
+    "mustFail": [
+      "consume succeeds"
+    ],
+    "violatedInvariants": [
+      "capability != permission",
+      "tenant isolation"
+    ],
+    "requiredEvidence": [
+      "deny"
+    ],
+    "repairClass": "deny",
+    "allowedRepairActions": [
+      "error"
+    ],
+    "forbiddenRepairActions": [
+      "allow-because-capable"
+    ],
+    "severity": "critical",
+    "blastRadius": "stock-write",
+    "reversibility": "REVERSIBLE",
+    "tenantAndDataClass": "cross-tenant auth",
+    "generalizationCandidate": "yes"
+  },
+  {
+    "scenarioId": "MC-11",
+    "family": "repair-minimize",
+    "title": "Lesson from ksix miss must not contain ksix or order ids",
+    "targetComponents": [
+      "repair-learning"
+    ],
+    "startingState": "ksix duplicate-delivery failure recorded",
+    "faultClass": "confused-deputy",
+    "faultInjection": "promote generalized lesson from that case",
+    "expectedDetection": "minimization reject if identifiers present",
+    "expectedDiagnosis": "tenant data reclassified as knowledge",
+    "expectedContainment": "Knowledge Core never stores tenant names",
+    "expectedRecovery": "lesson proposed only if stripped",
+    "mustPass": [
+      "no tenantId in lesson title/body/applicableComponents",
+      "status PROPOSED not APPROVED"
+    ],
+    "mustFail": [
+      "ksix or order number in stored lesson"
+    ],
+    "violatedInvariants": [
+      "minimization is containment"
+    ],
+    "requiredEvidence": [
+      "lesson text"
+    ],
+    "repairClass": "minimize",
+    "allowedRepairActions": [
+      "strip-identifiers"
+    ],
+    "forbiddenRepairActions": [
+      "store-raw-case-as-lesson"
+    ],
+    "severity": "critical",
+    "blastRadius": "HIVE",
+    "reversibility": "REVERSIBLE",
+    "tenantAndDataClass": "ksix \u2192 shared knowledge",
+    "generalizationCandidate": "yes \u2014 this IS the generalization gate"
+  },
+  {
+    "scenarioId": "MC-12",
+    "family": "repair-reuse-scope",
+    "title": "brighton-signs may reuse ksix lesson only by signature, not by tenant data",
+    "targetComponents": [
+      "repair-learning"
+    ],
+    "startingState": "ksix proven repair stored; stripped lesson exists",
+    "faultClass": "none",
+    "faultInjection": "brighton duplicate-delivery same signature",
+    "expectedDetection": "exact signature hash match",
+    "expectedDiagnosis": "reuse",
+    "expectedContainment": "brighton never reads ksix case body",
+    "expectedRecovery": "stillRequiresValidation true",
+    "mustPass": [
+      "matchedOn exact signature hash",
+      "brighton cannot fetch ksix experience record"
+    ],
+    "mustFail": [
+      "brighton reads ksix raw case"
+    ],
+    "violatedInvariants": [
+      "tenant isolation",
+      "reuse is of lesson not of case"
+    ],
+    "requiredEvidence": [
+      "match record"
+    ],
+    "repairClass": "reuse",
+    "allowedRepairActions": [
+      "apply-lesson-after-revalidate"
+    ],
+    "forbiddenRepairActions": [
+      "share-raw-experience"
+    ],
+    "severity": "critical",
+    "blastRadius": "HIVE",
+    "reversibility": "REVERSIBLE",
+    "tenantAndDataClass": "ksix lesson \u2192 brighton reuse",
+    "generalizationCandidate": "yes"
+  },
+  {
+    "scenarioId": "MC-13",
+    "family": "audit-scope",
+    "title": "brighton auditor cannot read ksix audit chain",
+    "targetComponents": [
+      "auditiq"
+    ],
+    "startingState": "both tenants have >=3 audit events",
+    "faultClass": "cross-tenant-read",
+    "faultInjection": "query audit as brighton with ksix ids",
+    "expectedDetection": "deny/empty",
+    "expectedDiagnosis": "audit is tenant-scoped",
+    "expectedContainment": "ksix chain unread",
+    "expectedRecovery": "deny",
+    "mustPass": [
+      "no ksix audit body"
+    ],
+    "mustFail": [
+      "ksix events returned"
+    ],
+    "violatedInvariants": [
+      "tenant isolation",
+      "audit evidence"
+    ],
+    "requiredEvidence": [
+      "query result"
+    ],
+    "repairClass": "deny",
+    "allowedRepairActions": [
+      "not-found"
+    ],
+    "forbiddenRepairActions": [
+      "global-audit-log"
+    ],
+    "severity": "critical",
+    "blastRadius": "evidence",
+    "reversibility": "REVERSIBLE",
+    "tenantAndDataClass": "audit",
+    "generalizationCandidate": "yes"
+  },
+  {
+    "scenarioId": "MC-14",
+    "family": "sot-theft-cross",
+    "title": "brighton WorkOrderIQ must not write ksix stock",
+    "targetComponents": [
+      "WorkOrderIQ",
+      "InventoryIQ"
+    ],
+    "startingState": "ksix seeded",
+    "faultClass": "authority-creep",
+    "faultInjection": "brighton WO API attempts ksix on-hand adjust",
+    "expectedDetection": "reject",
+    "expectedDiagnosis": "SoT + tenant",
+    "expectedContainment": "ksix inventory unchanged",
+    "expectedRecovery": "deny",
+    "mustPass": [
+      "ksix on-hand original"
+    ],
+    "mustFail": [
+      "brighton WO persisted ksix stock"
+    ],
+    "violatedInvariants": [
+      "Inventory owns stock",
+      "tenant isolation"
+    ],
+    "requiredEvidence": [
+      "reject"
+    ],
+    "repairClass": "deny",
+    "allowedRepairActions": [
+      "error"
+    ],
+    "forbiddenRepairActions": [
+      "accept-write"
+    ],
+    "severity": "critical",
+    "blastRadius": "domain-boundary",
+    "reversibility": "REVERSIBLE",
+    "tenantAndDataClass": "cross-tenant SoT",
+    "generalizationCandidate": "yes"
+  },
+  {
+    "scenarioId": "MC-15",
+    "family": "prime-cross",
+    "title": "Prime decide for ksix must not persist brighton WO",
+    "targetComponents": [
+      "Prime",
+      "WorkOrderIQ"
+    ],
+    "startingState": "both have DecisionContext",
+    "faultClass": "authority-creep",
+    "faultInjection": "Prime.decide ksix while brighton context also in memory",
+    "expectedDetection": "no side persist",
+    "expectedDiagnosis": "Prime owns no domain",
+    "expectedContainment": "neither WO created by Prime",
+    "expectedRecovery": "decision objects only",
+    "mustPass": [
+      "Prime storage has no WO rows"
+    ],
+    "mustFail": [
+      "Prime minted either tenant WO"
+    ],
+    "violatedInvariants": [
+      "Prime persists no domain SoT"
+    ],
+    "requiredEvidence": [
+      "Prime dump"
+    ],
+    "repairClass": "none",
+    "allowedRepairActions": [
+      "decision-only"
+    ],
+    "forbiddenRepairActions": [
+      "persist-WO"
+    ],
+    "severity": "critical",
+    "blastRadius": "domain-boundary",
+    "reversibility": "REVERSIBLE",
+    "tenantAndDataClass": "multi-tenant Prime",
+    "generalizationCandidate": "yes"
+  },
+  {
+    "scenarioId": "MC-16",
+    "family": "envelope",
+    "title": "Write missing tenantId rejected while other companies proceed",
+    "targetComponents": [
+      "platform-events",
+      "WorkOrderIQ"
+    ],
+    "startingState": "ksix and longmont live",
+    "faultClass": "schema-fault",
+    "faultInjection": "anonymous envelope create-WO; ksix continues",
+    "expectedDetection": "reject anonymous",
+    "expectedDiagnosis": "missing-tenant",
+    "expectedContainment": "no default-tenant assignment",
+    "expectedRecovery": "ksix ok",
+    "mustPass": [
+      "anonymous no persist",
+      "ksix path ok"
+    ],
+    "mustFail": [
+      "defaulted into ksix"
+    ],
+    "violatedInvariants": [
+      "envelope requires tenant"
+    ],
+    "requiredEvidence": [
+      "reject"
+    ],
+    "repairClass": "deny",
+    "allowedRepairActions": [
+      "error"
+    ],
+    "forbiddenRepairActions": [
+      "default-tenant"
+    ],
+    "severity": "critical",
+    "blastRadius": "write-path",
+    "reversibility": "REVERSIBLE",
+    "tenantAndDataClass": "unknown vs ksix",
+    "generalizationCandidate": "yes"
+  },
+  {
+    "scenarioId": "MC-17",
+    "family": "host-mix",
+    "title": "MakerOps demo and KSix share engines, neither owns stock SoT",
+    "targetComponents": [
+      "InventoryIQ",
+      "ForgeIQ"
+    ],
+    "startingState": "two hosts, one InventoryIQ instance, two tenants",
+    "faultClass": "none",
+    "faultInjection": "both reserve",
+    "expectedDetection": "N/A",
+    "expectedDiagnosis": "N/A",
+    "expectedContainment": "hosts do not write stock tables of their own",
+    "expectedRecovery": "both reserves on InventoryIQ",
+    "mustPass": [
+      "single stock owner",
+      "two tenant partitions"
+    ],
+    "mustFail": [
+      "host local stock used as SoT"
+    ],
+    "violatedInvariants": [
+      "host is not SoT",
+      "engines portable"
+    ],
+    "requiredEvidence": [
+      "inventory partitions"
+    ],
+    "repairClass": "none",
+    "allowedRepairActions": [],
+    "forbiddenRepairActions": [
+      "host-stock-table"
+    ],
+    "severity": "high",
+    "blastRadius": "ARCHITECTURE",
+    "reversibility": "REVERSIBLE",
+    "tenantAndDataClass": "two hosts one kernel",
+    "generalizationCandidate": "yes \u2014 OS shape"
+  },
+  {
+    "scenarioId": "MC-18",
+    "family": "repairbot-forbidden",
+    "title": "RepairBot cannot emit disable-governance even if ksix path is blocked",
+    "targetComponents": [
+      "repair-learning"
+    ],
+    "startingState": "ksix intake blocked; rogue strategy planted",
+    "faultClass": "self-authorization",
+    "faultInjection": "authorCandidates under SIMULATION lease",
+    "expectedDetection": "strategy output refused before Phase D",
+    "expectedDiagnosis": "forbidden verb/target",
+    "expectedContainment": "disable governance never reaches validator as a live candidate from the bot",
+    "expectedRecovery": "failed repair recorded if it arrives another way",
+    "mustPass": [
+      "no disable+governance from RepairBot",
+      "deploymentAuthority false"
+    ],
+    "mustFail": [
+      "bot emits forbidden pair"
+    ],
+    "violatedInvariants": [
+      "Foundry may not grant itself authority"
+    ],
+    "requiredEvidence": [
+      "authoring log"
+    ],
+    "repairClass": "deny",
+    "allowedRepairActions": [
+      "refuse-emit"
+    ],
+    "forbiddenRepairActions": [
+      "disable-governance"
+    ],
+    "severity": "critical",
+    "blastRadius": "HIVE",
+    "reversibility": "REVERSIBLE",
+    "tenantAndDataClass": "ksix blocked path",
+    "generalizationCandidate": "yes"
+  },
+  {
+    "scenarioId": "MC-19",
+    "family": "clock",
+    "title": "Five companies same occurredAt, no last-write-wins across tenants",
+    "targetComponents": [
+      "WorkOrderIQ",
+      "InventoryIQ",
+      "platform-events"
+    ],
+    "startingState": "identical timestamps",
+    "faultClass": "none",
+    "faultInjection": "five writes same occurredAt",
+    "expectedDetection": "N/A",
+    "expectedDiagnosis": "N/A",
+    "expectedContainment": "no global last-write-wins",
+    "expectedRecovery": "per-tenant apply",
+    "mustPass": [
+      "five independent records"
+    ],
+    "mustFail": [
+      "one tenant overwrites another because time tied"
+    ],
+    "violatedInvariants": [
+      "tenant isolation"
+    ],
+    "requiredEvidence": [
+      "five ids"
+    ],
+    "repairClass": "none",
+    "allowedRepairActions": [],
+    "forbiddenRepairActions": [
+      "global-LWW"
+    ],
+    "severity": "high",
+    "blastRadius": "HIVE",
+    "reversibility": "REVERSIBLE",
+    "tenantAndDataClass": "multi-tenant time",
+    "generalizationCandidate": "yes"
+  },
+  {
+    "scenarioId": "MC-20",
+    "family": "inconclusive-isolation",
+    "title": "INCONCLUSIVE brighton inject must not mark ksix ENGINE_DEFECT",
+    "targetComponents": [
+      "repair-learning"
+    ],
+    "startingState": "brighton fault never landed; ksix healthy",
+    "faultClass": "none",
+    "faultInjection": "brighton run INCONCLUSIVE",
+    "expectedDetection": "INCONCLUSIVE outranks defect",
+    "expectedDiagnosis": "untested run",
+    "expectedContainment": "ksix health unchanged",
+    "expectedRecovery": "no false accusation",
+    "mustPass": [
+      "brighton INCONCLUSIVE",
+      "ksix not ENGINE_DEFECT"
+    ],
+    "mustFail": [
+      "false accusation on ksix"
+    ],
+    "violatedInvariants": [
+      "INCONCLUSIVE outranks failure"
+    ],
+    "requiredEvidence": [
+      "both verdicts"
+    ],
+    "repairClass": "none",
+    "allowedRepairActions": [],
+    "forbiddenRepairActions": [
+      "blame-sibling-tenant"
+    ],
+    "severity": "high",
+    "blastRadius": "diagnosis",
+    "reversibility": "REVERSIBLE",
+    "tenantAndDataClass": "multi-tenant diagnosis",
+    "generalizationCandidate": "yes"
+  },
+  {
+    "scenarioId": "MC-21",
+    "family": "sense",
+    "title": "ksix SenseIQ flood does not reserve brighton stock",
+    "targetComponents": [
+      "senseiq",
+      "InventoryIQ"
+    ],
+    "startingState": "both seeded",
+    "faultClass": "load-flood",
+    "faultInjection": "500 ksix readings",
+    "expectedDetection": "readings stored",
+    "expectedDiagnosis": "reading is not a hold",
+    "expectedContainment": "brighton stock untouched; ksix stock untouched",
+    "expectedRecovery": "none",
+    "mustPass": [
+      "no reserves created"
+    ],
+    "mustFail": [
+      "flood moved stock"
+    ],
+    "violatedInvariants": [
+      "reading is not a hold"
+    ],
+    "requiredEvidence": [
+      "stock snapshots"
+    ],
+    "repairClass": "none",
+    "allowedRepairActions": [
+      "store-reading"
+    ],
+    "forbiddenRepairActions": [
+      "reserve"
+    ],
+    "severity": "medium",
+    "blastRadius": "sensor",
+    "reversibility": "REVERSIBLE",
+    "tenantAndDataClass": "ksix telemetry",
+    "generalizationCandidate": "yes"
+  },
+  {
+    "scenarioId": "MC-22",
+    "family": "week",
+    "title": "Monday five companies; Friday replay equals live per tenant",
+    "targetComponents": [
+      "ForgeIQ",
+      "CostIQ",
+      "Prime",
+      "WorkOrderIQ",
+      "InventoryIQ",
+      "ReceiptIQ",
+      "auditiq"
+    ],
+    "startingState": "5-day persist per tenant",
+    "faultClass": "mixed",
+    "faultInjection": "sequenced envelopes per company; weekend replay",
+    "expectedDetection": "per-chapter",
+    "expectedDiagnosis": "shop-week multi-tenant",
+    "expectedContainment": "replay does not merge tenants",
+    "expectedRecovery": "per-tenant terminal state matches",
+    "mustPass": [
+      "five replay==live",
+      "no merged books"
+    ],
+    "mustFail": [
+      "week replay diverges or merges"
+    ],
+    "violatedInvariants": [
+      "idempotency",
+      "tenant isolation"
+    ],
+    "requiredEvidence": [
+      "day-boundary snapshots"
+    ],
+    "repairClass": "replay",
+    "allowedRepairActions": [
+      "reapply-per-tenant"
+    ],
+    "forbiddenRepairActions": [
+      "merge-tenants"
+    ],
+    "severity": "critical",
+    "blastRadius": "HIVE",
+    "reversibility": "CONTAIN_FIRST",
+    "tenantAndDataClass": "five companies week",
+    "generalizationCandidate": "yes"
+  },
+  {
+    "scenarioId": "MC-23",
+    "family": "drift",
+    "title": "Adding a host package must not appear as an engine in v1Runtime",
+    "targetComponents": [
+      "contracts",
+      "repair-learning"
+    ],
+    "startingState": "current registry",
+    "faultClass": "classification-lie",
+    "faultInjection": "treat KSix host app as engine",
+    "expectedDetection": "drift or classification reject",
+    "expectedDiagnosis": "HOST is not an engine",
+    "expectedContainment": "v1Runtime unchanged",
+    "expectedRecovery": "correct-registry",
+    "mustPass": [
+      "HOST not in engine classification"
+    ],
+    "mustFail": [
+      "KSix listed v1Runtime engine"
+    ],
+    "violatedInvariants": [
+      "DEC-005"
+    ],
+    "requiredEvidence": [
+      "registry dump"
+    ],
+    "repairClass": "correct-registry",
+    "allowedRepairActions": [
+      "clear-lie"
+    ],
+    "forbiddenRepairActions": [
+      "accept-lie"
+    ],
+    "severity": "high",
+    "blastRadius": "ARCHITECTURE",
+    "reversibility": "REVERSIBLE",
+    "tenantAndDataClass": "n/a architecture",
+    "generalizationCandidate": "yes"
+  },
+  {
+    "scenarioId": "MC-24",
+    "family": "supervisor-not-yet",
+    "title": "Documented: multi-company bot session still has no mid-flight terminator",
+    "targetComponents": [
+      "repair-learning"
+    ],
+    "startingState": "RepairBot lease SIMULATION two tenants in one process",
+    "faultClass": "declared-unenforced",
+    "faultInjection": "observe terminationConditions field unread mid-flight",
+    "expectedDetection": "MISSING_GOVERNANCE_HOOK if drift detector pointed at leases",
+    "expectedDiagnosis": "supervisor absent",
+    "expectedContainment": "leasePermits still gates each call",
+    "expectedRecovery": "do not build supervisor until a live miss exists \u2014 record the gap",
+    "mustPass": [
+      "deploymentAuthority false",
+      "this scenario is documentation-plus-assert on leasePermits per call"
+    ],
+    "mustFail": [
+      "treat unread terminationConditions as enforced"
+    ],
+    "violatedInvariants": [
+      "declared properties must have enforcement or be named gaps"
+    ],
+    "requiredEvidence": [
+      "lease dump"
+    ],
+    "repairClass": "none",
+    "allowedRepairActions": [
+      "keep-gap-named"
+    ],
+    "forbiddenRepairActions": [
+      "claim-supervisor-exists"
+    ],
+    "severity": "high",
+    "blastRadius": "ARCHITECTURE",
+    "reversibility": "NOT_APPLICABLE",
+    "tenantAndDataClass": "multi-tenant bots",
+    "generalizationCandidate": "no \u2014 wait for live agent"
+  }
+]

@@ -1,0 +1,32 @@
+[
+  {
+    "id": "ksix",
+    "host": "KSix Designs",
+    "sku": "ACRYLIC-3MM",
+    "product": "custom sign"
+  },
+  {
+    "id": "brighton-signs",
+    "host": "Brighton Signs Co",
+    "sku": "ACRYLIC-3MM",
+    "product": "yard sign"
+  },
+  {
+    "id": "longmont-print",
+    "host": "Longmont Printworks",
+    "sku": "DTF-FILM",
+    "product": "DTF shirt"
+  },
+  {
+    "id": "family-table",
+    "host": "Family Table",
+    "sku": "GROCERY",
+    "product": "receipt"
+  },
+  {
+    "id": "makerops-demo",
+    "host": "MakerOps Demo",
+    "sku": "SLATE-4X4",
+    "product": "slate plaque"
+  }
+]
