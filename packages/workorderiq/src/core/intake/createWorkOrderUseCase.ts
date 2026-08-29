@@ -57,15 +57,46 @@ import type {
   WorkOrderDraft,
 } from "./intakeTypes.js";
 import { DEFAULT_INTAKE_PRIORITY } from "./intakeTypes.js";
+import {
+  conflictFor,
+  fingerprintIntake,
+  IDEMPOTENCY_CONFLICT,
+  type IdempotencyClaim,
+  type IdempotencyConflict,
+  type IdempotencyStore,
+} from "./idempotency.js";
 
 // ---------- Public surface ----------
 
 export type CreateWorkOrderResult =
-  | { readonly ok: true; readonly draft: WorkOrderDraft }
+  | {
+      readonly ok: true;
+      readonly draft: WorkOrderDraft;
+      /**
+       * True when this call created nothing.
+       *
+       * The key was already claimed by an identical payload, so the original
+       * work order is returned. A caller that needs to know whether it created
+       * or resolved can check; one that does not can ignore it, because the
+       * draft is the same either way — which is the guarantee.
+       */
+      readonly replayed?: boolean;
+    }
   | {
       readonly ok: false;
       readonly attemptedWorkOrderId: WorkOrderId;
       readonly errors: ReadonlyArray<IntakeValidationError>;
+    }
+  | {
+      /**
+       * The same key with a materially different payload.
+       *
+       * Not a validation error — the input is well-formed. It is a conflict
+       * with a request that already happened, reported separately so a caller
+       * can tell "you sent bad data" from "you reused a key".
+       */
+      readonly ok: false;
+      readonly conflict: IdempotencyConflict;
     };
 
 export interface CreateWorkOrderUseCaseDeps {
@@ -77,12 +108,28 @@ export interface CreateWorkOrderUseCaseDeps {
   readonly workOrderIdGenerator?: IdGenerator;
   /** Inject in tests for deterministic timestamps. Defaults to `() => new Date()`. */
   readonly clock?: Clock;
+  /**
+   * Where idempotency claims live. Optional, so no existing caller changes.
+   *
+   * Absent means no guarantee is available — and `execute` REFUSES a claim
+   * rather than ignoring it, because a caller that passed a key and silently
+   * got no protection is worse off than one that got an error.
+   */
+  readonly idempotencyStore?: IdempotencyStore;
 }
 
 export interface CreateWorkOrderUseCase {
+  /**
+   * Creates a work order.
+   *
+   * `idempotency` is optional and additive: no existing call site changes.
+   * Supplied, repeating the call with the same key and payload resolves to one
+   * canonical work order rather than creating a second.
+   */
   execute(
     input: IntakeInput,
-    actor: EventActor
+    actor: EventActor,
+    idempotency?: IdempotencyClaim
   ): Promise<CreateWorkOrderResult>;
 }
 
@@ -96,66 +143,169 @@ export function createCreateWorkOrderUseCase(
     deps.workOrderIdGenerator ?? defaultWorkOrderIdGenerator;
   const now: Clock = deps.clock ?? (() => new Date());
 
-  return {
-    async execute(input, actor) {
-      const nowDate = now();
-      const candidateWorkOrderId: WorkOrderId = generateWorkOrderId();
-      const validation = validateIntakeInput(input, nowDate);
+  // ── Concurrency ────────────────────────────────────────────────────────────
+  //
+  // Two concurrent creates with one key must not both create. The store's
+  // `claim` is atomic, which handles the durable half — but the loser still has
+  // to WAIT for the winner and return its draft, rather than reading a claim
+  // whose work order has not been written yet.
+  //
+  // So an in-flight map joins concurrent callers onto the winner's promise.
+  // Per-process; a multi-process host relies on the store's atomicity, where
+  // the loser reads the winner's committed claim instead. Both paths end at one
+  // work order, and neither double-reserves.
+  const inFlight = new Map<string, Promise<CreateWorkOrderResult>>();
 
-      if (!validation.valid) {
-        await eventLog.append<IntakeValidationFailedPayload>({
-          workOrderId: candidateWorkOrderId,
-          type: "work_order.intake.validation_failed",
-          actor,
-          payload: {
-            source: input.source,
-            errors: validation.errors,
-            attemptedCustomerId:
-              typeof input.customerId === "string" && input.customerId.length > 0
-                ? input.customerId
-                : undefined,
-          },
-        });
-        return {
-          ok: false,
-          attemptedWorkOrderId: candidateWorkOrderId,
-          errors: validation.errors,
-        };
-      }
+  const buildDraft = (
+    input: IntakeInput,
+    workOrderId: WorkOrderId,
+    createdAt: string
+  ): WorkOrderDraft =>
+    Object.freeze({
+      workOrderId,
+      status: "draft" as const,
+      customerId: input.customerId,
+      customerName: input.customerName,
+      source: input.source,
+      priority: input.priority ?? DEFAULT_INTAKE_PRIORITY,
+      lineItems: input.lineItems,
+      dueDate: input.dueDate,
+      customerNotes: input.customerNotes,
+      shopNotes: input.shopNotes,
+      attachments: input.attachments ?? [],
+      discounts: input.discounts ?? [],
+      surcharges: input.surcharges ?? [],
+      createdAt,
+    });
 
-      const priority = input.priority ?? DEFAULT_INTAKE_PRIORITY;
-      const draft: WorkOrderDraft = Object.freeze({
+  /** The original path, unchanged in behaviour. */
+  const createWithId = async (
+    input: IntakeInput,
+    actor: EventActor,
+    candidateWorkOrderId: WorkOrderId
+  ): Promise<CreateWorkOrderResult> => {
+    const nowDate = now();
+    const validation = validateIntakeInput(input, nowDate);
+
+    if (!validation.valid) {
+      await eventLog.append<IntakeValidationFailedPayload>({
         workOrderId: candidateWorkOrderId,
-        status: "draft",
-        customerId: input.customerId,
-        customerName: input.customerName,
-        source: input.source,
-        priority,
-        lineItems: input.lineItems,
-        dueDate: input.dueDate,
-        customerNotes: input.customerNotes,
-        shopNotes: input.shopNotes,
-        attachments: input.attachments ?? [],
-        discounts: input.discounts ?? [],
-        surcharges: input.surcharges ?? [],
-        createdAt: nowDate.toISOString(),
-      });
-
-      await eventLog.append<IntakeCreatedPayload>({
-        workOrderId: candidateWorkOrderId,
-        type: "work_order.intake.created",
+        type: "work_order.intake.validation_failed",
         actor,
         payload: {
           source: input.source,
-          customerId: input.customerId,
-          customerName: input.customerName,
-          priority,
-          lineItemCount: input.lineItems.length,
-          dueDate: input.dueDate,
+          errors: validation.errors,
+          attemptedCustomerId:
+            typeof input.customerId === "string" && input.customerId.length > 0
+              ? input.customerId
+              : undefined,
         },
       });
+      return {
+        ok: false,
+        attemptedWorkOrderId: candidateWorkOrderId,
+        errors: validation.errors,
+      };
+    }
 
-      return { ok: true, draft };
+    const priority = input.priority ?? DEFAULT_INTAKE_PRIORITY;
+    const draft = buildDraft(input, candidateWorkOrderId, nowDate.toISOString());
+
+    await eventLog.append<IntakeCreatedPayload>({
+      workOrderId: candidateWorkOrderId,
+      type: "work_order.intake.created",
+      actor,
+      payload: {
+        source: input.source,
+        customerId: input.customerId,
+        customerName: input.customerName,
+        priority,
+        lineItemCount: input.lineItems.length,
+        dueDate: input.dueDate,
+      },
+    });
+
+    return { ok: true, draft };
+  };
+
+  /** The idempotent path: validate, claim, then create or resolve. */
+  const executeIdempotent = async (
+    input: IntakeInput,
+    actor: EventActor,
+    idempotency: IdempotencyClaim,
+    store: IdempotencyStore
+  ): Promise<CreateWorkOrderResult> => {
+    // Validate BEFORE claiming. A rejected payload must not burn the key —
+    // otherwise a caller who fixed their data and retried with the same key
+    // would conflict against a work order that was never created.
+    const validation = validateIntakeInput(input, now());
+    if (!validation.valid) {
+      return createWithId(input, actor, generateWorkOrderId());
+    }
+
+    const fingerprint = fingerprintIntake(input);
+    const candidateWorkOrderId: WorkOrderId = generateWorkOrderId();
+
+    const claim = await store.claim({
+      organizationId: idempotency.organizationId,
+      key: idempotency.key,
+      workOrderId: candidateWorkOrderId,
+      fingerprint,
+      claimedAt: now().toISOString(),
+    });
+
+    if (!claim.claimed) {
+      const existing = claim.existing;
+      if (existing.fingerprint !== fingerprint) {
+        return { ok: false, conflict: conflictFor(idempotency, existing) };
+      }
+      // Same key, same payload: resolve to the canonical work order. Rebuilt
+      // from the input rather than stored, so this port holds identity and not
+      // a second copy of the work order — a source of truth it has no business
+      // owning.
+      return {
+        ok: true,
+        draft: buildDraft(input, existing.workOrderId, existing.claimedAt),
+        replayed: true,
+      };
+    }
+
+    return createWithId(input, actor, candidateWorkOrderId);
+  };
+
+  return {
+    async execute(input, actor, idempotency) {
+      if (!idempotency) {
+        return createWithId(input, actor, generateWorkOrderId());
+      }
+
+      if (!deps.idempotencyStore) {
+        return {
+          ok: false,
+          conflict: {
+            code: IDEMPOTENCY_CONFLICT,
+            key: idempotency.key,
+            organizationId: idempotency.organizationId,
+            existingWorkOrderId: "" as WorkOrderId,
+            message:
+              "An idempotency key was supplied but no idempotencyStore is configured. Refusing rather than " +
+              "proceeding unprotected: a caller that passed a key and silently got no guarantee is worse off " +
+              "than one that got an error.",
+          },
+        };
+      }
+
+      const scoped = `${idempotency.organizationId}::${idempotency.key}`;
+      const joined = inFlight.get(scoped);
+      if (joined) return joined;
+
+      const run = executeIdempotent(input, actor, idempotency, deps.idempotencyStore);
+      inFlight.set(scoped, run);
+      try {
+        return await run;
+      } finally {
+        inFlight.delete(scoped);
+      }
     },
   };
 }

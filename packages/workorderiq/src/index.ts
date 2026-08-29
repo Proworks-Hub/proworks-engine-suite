@@ -31,6 +31,7 @@ export * from "./models/events.js";
 export * from "./core/intake/intakeTypes.js";
 export * from "./core/intake/intakeValidator.js";
 export * from "./core/intake/createWorkOrderUseCase.js";
+export * from "./core/intake/idempotency.js";
 
 // ── Templates: what work this product normally requires ──────────────────
 export * from "./core/template/templateTypes.js";

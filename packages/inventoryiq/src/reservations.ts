@@ -73,12 +73,82 @@ export interface ReserveMaterialUseCase {
   execute(input: ReserveMaterialInput): Promise<InventoryResult<Reservation>>;
 }
 
+/**
+ * The identity that makes a reservation a repeat rather than a new one.
+ *
+ * DERIVED, NOT SUPPLIED. The mission asks to "propagate or derive the correct
+ * deduplication identity", and deriving is the smaller change:
+ * `ReservationStore.listByWorkOrder` already exists, so the identity is
+ * available with no new port, no new input field, and no change at any call
+ * site.
+ *
+ * (organization, work order, material, location, quantity, still held).
+ *
+ * Quantity is INCLUDED deliberately. A repeat of the same operation asking for
+ * a different amount is a different operation — treating it as a repeat would
+ * silently ignore a changed BOM. That case falls through and reserves, which
+ * is correct.
+ *
+ * Only a live hold counts. Reserving again after a release is a new operation,
+ * not a repeat of a finished one.
+ */
+function sameLogicalOperation(existing: Reservation, input: ReserveMaterialInput): boolean {
+  return (
+    existing.organizationId === input.organizationId &&
+    existing.workOrderId === input.workOrderId &&
+    existing.materialId === input.materialId &&
+    existing.locationId === input.locationId &&
+    existing.quantity.unit === input.quantity.unit &&
+    existing.quantity.amount === input.quantity.amount &&
+    existing.status === "held"
+  );
+}
+
 export function createReserveMaterialUseCase(deps: InventoryDeps): ReserveMaterialUseCase {
   const now = deps.now ?? (() => new Date());
   const generateId = deps.generateId ?? defaultId("rsv");
 
-  return {
-    async execute(input) {
+  // ── Concurrency ──────────────────────────────────────────────────────────
+  //
+  // The dedup check below reads, then awaits, then writes. That gap is exactly
+  // where two concurrent reserves for one work order both pass the check and
+  // both hold material.
+  //
+  // Joining concurrent callers onto one promise closes it within a process. A
+  // multi-process host needs the same guarantee in its `ReservationStore`: a
+  // unique index on (organizationId, workOrderId, materialId, locationId)
+  // filtered to status='held' is the shape that provides it.
+  const inFlight = new Map<string, Promise<InventoryResult<Reservation>>>();
+
+  const operationKey = (input: ReserveMaterialInput): string =>
+    [
+      input.organizationId,
+      input.workOrderId,
+      input.materialId,
+      input.locationId,
+      `${input.quantity.amount}${input.quantity.unit}`,
+    ].join("::");
+
+  const reserveOnce = async (
+    input: ReserveMaterialInput,
+  ): Promise<InventoryResult<Reservation>> => {
+      // ── Deduplication ────────────────────────────────────────────────────
+      //
+      // Checked before anything is written. A repeat of the same logical
+      // operation returns the existing reservation rather than holding the
+      // material twice — E2E-03's `mustFail` condition, at the inventory end.
+      const alreadyHeld = await deps.reservations.listByWorkOrder(
+        input.organizationId,
+        input.workOrderId,
+      );
+      const duplicate = alreadyHeld.find((r) => sameLogicalOperation(r, input));
+      if (duplicate) {
+        // No events. Nothing happened, and emitting `material.reserved` again
+        // would tell every consumer a second hold was placed — which is the
+        // bug this returns early to avoid.
+        return { ok: true, data: duplicate, events: [] };
+      }
+
       const position = await deps.stock.position(
         input.organizationId,
         input.materialId,
@@ -158,6 +228,21 @@ export function createReserveMaterialUseCase(deps: InventoryDeps): ReserveMateri
       }
 
       return { ok: true, data: reservation, events };
+  };
+
+  return {
+    async execute(input) {
+      const key = operationKey(input);
+      const joined = inFlight.get(key);
+      if (joined) return joined;
+
+      const run = reserveOnce(input);
+      inFlight.set(key, run);
+      try {
+        return await run;
+      } finally {
+        inFlight.delete(key);
+      }
     },
   };
 }
