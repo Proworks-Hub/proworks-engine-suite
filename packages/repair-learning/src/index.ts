@@ -16,3 +16,8 @@ export * from "./diagnostics/invariants.js";
 export * from "./diagnostics/causal.js";
 export * from "./diagnostics/diagnosis.js";
 export * from "./diagnostics/diagnosticBot.js";
+
+// Phase C — Repair
+export * from "./repair/candidate.js";
+export * from "./repair/lease.js";
+export * from "./repair/workspace.js";
