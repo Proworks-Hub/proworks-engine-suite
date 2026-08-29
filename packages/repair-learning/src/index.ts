@@ -21,6 +21,7 @@ export * from "./diagnostics/diagnosticBot.js";
 export * from "./repair/candidate.js";
 export * from "./repair/lease.js";
 export * from "./repair/workspace.js";
+export * from "./repair/repairBot.js";
 
 // Phase D — Validate
 export * from "./validation/validators.js";
