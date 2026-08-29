@@ -269,6 +269,15 @@ describe("createWorkOrderUseCase", () => {
 
     expect(result.ok).toBe(false);
     if (result.ok) return;
+
+    // Bad data is not a reused key. MIS-E2E03 added a second `ok: false`
+    // member for idempotency conflicts, so `!ok` no longer narrows to the
+    // validation branch on its own. Asserted rather than cast: if a validation
+    // failure ever started coming back as a conflict, a cast would hide it and
+    // this line fails loudly.
+    expect("conflict" in result).toBe(false);
+    if ("conflict" in result) return;
+
     expect(result.attemptedWorkOrderId).toBe("wo-1");
     expect(result.errors.length).toBeGreaterThan(0);
 

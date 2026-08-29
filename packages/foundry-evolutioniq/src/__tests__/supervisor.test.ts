@@ -697,7 +697,7 @@ describe("the sandbox freeze the supervisor depends on", () => {
         lease: lease(),
       });
     }
-    expect(sandbox.workspacesOf("bot_1").sort()).toEqual(["ws_1", "ws_2"]);
+    expect([...sandbox.workspacesOf("bot_1")].sort()).toEqual(["ws_1", "ws_2"]);
     expect(sandbox.workspacesOf("bot_other")).toEqual([]);
   });
 });

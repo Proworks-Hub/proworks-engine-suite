@@ -244,6 +244,11 @@ describe("retrieval is deterministic before it is similar", () => {
   });
 
   it("does not surface an unrelated failure", () => {
+    // `readingTenant` is "ksix" and that is load-bearing. This call used to
+    // omit it, which typechecked as an error and passed anyway: with the
+    // argument undefined the tenant gate excluded every stored case, so the
+    // empty result proved the gate worked rather than proving the signature
+    // was unrelated. Same assertion, opposite meaning.
     const found = populated().similarTo(
       signature({
         primarySymptom: "completely different thing",
@@ -251,8 +256,16 @@ describe("retrieval is deterministic before it is similar", () => {
         affectedComponents: ["hive.specialized.visioniq"],
         suspectedDependencies: [],
       }),
+      "ksix",
     );
     expect(found).toHaveLength(0);
+  });
+
+  it("would have surfaced a related failure for the same tenant", () => {
+    // The control for the test above. Without this, "no results" is equally
+    // consistent with a store that never returns anything.
+    const found = populated().similarTo(signature(), "ksix");
+    expect(found.length).toBeGreaterThan(0);
   });
 });
 

@@ -510,7 +510,11 @@ describe("the diagnostic bot reads, analyzes and proposes — nothing else", () 
     scope.runIds.push("run_99");
     expect(b.mayRead({ runId: "run_99" }).within).toBe(false);
     expect(() => {
-      (b.scope as { runIds: string[] }).runIds.push("run_98");
+      // Through `unknown`: the whole point of this probe is to reach past
+      // `readonly` and confirm the freeze is enforced at runtime rather than
+      // only in the type. A direct cast is rejected because the types do not
+      // overlap — which is the type system doing its job, not an obstacle.
+      (b.scope as unknown as { runIds: string[] }).runIds.push("run_98");
     }).toThrow();
   });
 

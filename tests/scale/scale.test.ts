@@ -12,7 +12,10 @@ import {
 import {
   createCreateWorkOrderUseCase,
   createInMemoryEventLog,
+  type AppendEventInput,
   type EventActor,
+  type EventLog,
+  type WorkOrderEvent,
 } from "@proworks-hub/workorderiq";
 import { createReceiptIqEngine } from "@proworks-hub/receiptiq";
 import { createInMemoryEventBus } from "@proworks-hub/platform-events";
@@ -73,14 +76,21 @@ describe("work-order creation at volume", () => {
       // Spread rather than hand-listing: the interface has optional members
       // (`subscribe` is not on the in-memory implementation), and a wrapper
       // that enumerated methods would break whenever one was added.
-      const counting = {
+      const counting: EventLog = {
         ...inner,
         // Appends are counted too. Counting only reads measured nothing here:
         // creating a work order appends and never reads, so the counter stayed
         // at zero and the test passed while proving nothing.
-        async append(...args: Parameters<typeof inner.append>) {
+        //
+        // Written generically rather than through `Parameters<typeof …>`,
+        // which erases the type parameter to `unknown` and so does not satisfy
+        // the port. The annotation on `counting` is what makes that a
+        // compile error instead of a surprise at the call site.
+        async append<TPayload = unknown>(
+          input: AppendEventInput<TPayload>,
+        ): Promise<WorkOrderEvent<TPayload>> {
           countOperation();
-          return inner.append(...args);
+          return inner.append(input);
         },
         async listByWorkOrder(...args: Parameters<typeof inner.listByWorkOrder>) {
           countOperation();

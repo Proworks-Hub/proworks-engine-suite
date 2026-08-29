@@ -23,7 +23,14 @@ import {
   demoPressBrakeSpecs,
 } from "@proworks-hub/forgeiq/demo/firepit";
 
-import { assertMustFailDidNotHappen, pass, printReport, scenario, seedShop } from "./harness.js";
+import {
+  assertMustFailDidNotHappen,
+  pass,
+  printReport,
+  record,
+  scenario,
+  seedShop,
+} from "./harness.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // E2E-01..12 — THE GATE. No skips.
@@ -259,15 +266,52 @@ describe("E2E-01..12 — shop path GATE", () => {
 
     // mustPass: identical correlationId at every hop that carries one.
     expect(chain.context.subject.reference).toBe(correlationId);
-    expect(chain.decision.subject?.reference ?? correlationId).toBe(correlationId);
 
-    // mustFail: id dropped or regenerated
+    // ── The Prime hop ─────────────────────────────────────────────────────
+    //
+    // This line used to read `chain.decision.subject?.reference ?? correlationId`,
+    // which was a type error and a tautology at once: `DecisionResult` has no
+    // `subject`, so the expression was always `correlationId` and the assertion
+    // compared it to itself. It could not have failed.
+    //
+    // The corpus names two distinct failures here — "id dropped OR regenerated"
+    // — and they deserve different treatment. Minting a new id is the forbidden
+    // repair action and is a hard failure. Omitting the id is a gap: the trace
+    // stops rather than lying.
+    const decided = chain.decision.trace?.correlationId ?? null;
+
+    // Regeneration: a hard failure whichever way it happens.
     assertMustFailDidNotHappen(
       s,
       "id dropped or regenerated",
-      chain.context.subject.reference !== correlationId,
+      chain.context.subject.reference !== correlationId ||
+        (decided !== null && decided !== correlationId),
     );
 
+    if (decided === null) {
+      // `decisionResultSchema.trace` exists and documents itself as "what makes
+      // a wrong answer traceable back through the engines that produced it".
+      // Prime never writes it. A declared field that nothing populates is the
+      // same defect shape this suite has now found four times, and the old
+      // assertion is what kept it invisible.
+      //
+      // Recorded rather than repaired: propagating trace through Prime is a
+      // behavioural change to a constitutional-plane engine, and it belongs to
+      // a mission, not to a typecheck cleanup.
+      record({
+        scenarioId: s.scenarioId,
+        family: s.family,
+        outcome: "engine-defect",
+        reason:
+          "Prime's DecisionResult carries no trace.correlationId, so the correlation stops at the Prime hop. " +
+          "The id is not regenerated — it is absent. decisionResultSchema declares the field; primeEngine never writes it.",
+        mustPassChecked: 1,
+        mustFailChecked: 1,
+      });
+      return;
+    }
+
+    expect(decided).toBe(correlationId);
     pass(s, 1, 1);
   });
 

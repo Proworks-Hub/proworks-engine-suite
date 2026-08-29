@@ -339,7 +339,7 @@ describe("two missions never mutate one component at the same time", () => {
     scheduler.enqueue("mis_a", "NORMAL");
     scheduler.enqueue("mis_b", "NORMAL");
 
-    expect(scheduler.admit().admit.sort()).toEqual(["mis_a", "mis_b"]);
+    expect([...scheduler.admit().admit].sort()).toEqual(["mis_a", "mis_b"]);
   });
 
   it("frees the component when a mission is released", () => {
