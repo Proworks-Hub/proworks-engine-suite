@@ -95,3 +95,6 @@ export * from "./principal.js";
 
 // What may run, given what is left: classes, quotas, budgets, degradation.
 export * from "./scheduling.js";
+
+// What an instance may still do when things are broken.
+export * from "./continuity.js";

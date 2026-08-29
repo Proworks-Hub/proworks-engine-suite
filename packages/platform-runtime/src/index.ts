@@ -24,3 +24,6 @@ export * from "./instanceAdmission.js";
 
 // Is there room, and is this important enough to have it.
 export * from "./capacityGate.js";
+
+// The instance operating mode, the local queue, and the way back.
+export * from "./continuityMode.js";
