@@ -52,6 +52,39 @@ import type { HiveTier } from "./hiveArchitecture.js";
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
+ * What KIND of thing a component is, before asking what class of engine it is.
+ *
+ * DEC-005. `HOST` was briefly an engine classification here, and that was a
+ * category error: approved §23.3 recognizes four capability-layer engine
+ * classifications — Core, Shared Platform, Specialized, Industry — and the
+ * glossary defines a Host Application as something that consumes Hive
+ * capabilities "without owning the engines providing them". A Host is not an
+ * engine, so it cannot hold an engine classification.
+ *
+ * Only `ENGINE` carries a `HiveClassification`. Everything else is a component
+ * the Hive recognizes without chartering as an engine — which is precisely why
+ * agents, hosts and frameworks kept needing exceptions in the old model.
+ */
+export const componentKindSchema = z.enum([
+  /** A chartered engine. The only kind that carries an EngineClassification. */
+  "ENGINE",
+  /** Consumes Hive capability. Owns its own experience, never a portable engine. */
+  "HOST_APPLICATION",
+  /** Operates under a leased subset of another component's authority. */
+  "AGENT",
+  /** Outside the trust boundary. A dependency, never an authority. */
+  "EXTERNAL_PROVIDER",
+  /** A coordination relationship between components, such as Overwatch. */
+  "FRAMEWORK",
+]);
+export type ComponentKind = z.infer<typeof componentKindSchema>;
+
+/** True only for the one kind that may carry an engine classification. */
+export function carriesEngineClassification(kind: ComponentKind): boolean {
+  return kind === "ENGINE";
+}
+
+/**
  * What a component constitutionally is.
  *
  * The identifiers are the directive's own, verbatim, because this vocabulary is
@@ -84,8 +117,6 @@ export const hiveClassificationSchema = z.enum([
   "SPECIALIZED",
   /** An industry pack composing reusable capabilities. */
   "INDUSTRY",
-  /** An application presenting the Hive to humans and organizations. */
-  "HOST",
 ]);
 export type HiveClassification = z.infer<typeof hiveClassificationSchema>;
 
@@ -133,11 +164,6 @@ export function tierFor(classification: HiveClassification): HiveTier | null {
       return "specialized";
     case "INDUSTRY":
       return "industry";
-    case "HOST":
-      // Hosts consume the Hive and are not part of its dependency graph. They
-      // are classified so a manifest can describe one, not so the tier law can
-      // rank one.
-      return null;
     default:
       return null;
   }
@@ -247,4 +273,6 @@ export const NOT_CLASSIFIED: Readonly<Record<string, string>> = Object.freeze({
     "The governed communication substrate formed from Communication Core, EventIQ, engine contracts, IntegrationIQ, Governance, IdentityIQ, AuditIQ and Prime. There is no single component to classify, and creating one would centralize what the Fabric exists to keep distributed.",
   IdentityIQ:
     "Classified SHARED_PLATFORM, not constitutional. It establishes operational identity; Governance determines authority. Authentication proves who is asking, which is not permission.",
+  HostApplication:
+    "componentKind HOST_APPLICATION, not an engine classification. Approved §23.3 recognizes four capability-layer engine classifications and a Host is none of them: it consumes Hive capability without owning the engines providing it. Host governance belongs in a Host Integration Profile, not the Engine Charter registry.",
 });

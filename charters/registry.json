@@ -752,5 +752,16 @@
   "integrityHash": "sha256:24bb45af601e94a769f615c0075165dc212df6124b7cc39c120bf5a4564317ce",
   "sourceDocument": "WorkOrderIQ_Charter_V1_0.docx",
   "implementationLifecycle": "CHARTERED"
+ },
+ {
+  "charterId": "framework.overwatch",
+  "canonicalName": "Overwatch Framework",
+  "charterVersion": "1.0",
+  "status": "ACTIVE",
+  "ratificationState": "APPROVED_SOURCE",
+  "constitutionVersion": "1.0",
+  "integrityHash": "sha256:f9b1e0e0ca922d2c179eae31cfe8c07209b411e4a17aff2f6ade633053f27ef7",
+  "sourceDocument": "00_Hive_Overwatch_Charter_Framework.docx",
+  "implementationLifecycle": "CHARTERED"
  }
 ]

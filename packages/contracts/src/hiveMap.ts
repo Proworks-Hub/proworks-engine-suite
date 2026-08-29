@@ -134,7 +134,12 @@ export const HIVE_MAP: readonly HiveComponent[] = [
     responsibility: "What is on hand, reserved, consumed and short.",
   }),
   component({
-    id: "assetiq", name: "AssetIQ", tier: "specialized", core: "resources", status: "conceptual",
+    // CORRECTED 2026-08-28. This read `status: "conceptual"`, which was stale:
+    // AssetIQ is CHARTERED in the approved library (AssetIQ_Charter_V1_0). The
+    // charter is the architectural fact; `planned` here records that no code
+    // exists yet. Architectural existence and implementation maturity are
+    // different questions and this entry previously conflated them.
+    id: "assetiq", name: "AssetIQ", tier: "specialized", core: "resources", status: "planned",
     responsibility: "Equipment and asset registry, condition and maintenance state.",
   }),
 

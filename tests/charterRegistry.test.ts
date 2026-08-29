@@ -19,7 +19,10 @@ describe("the approved charter registry", () => {
 
   it("loads every record without a problem", () => {
     expect(registry.problems()).toEqual([]);
-    expect(registry.all()).toHaveLength(58);
+    // 58 engine charters + 1 framework document. The framework does not
+    // increase the engine count and must not: Overwatch is a relationship.
+    expect(registry.all()).toHaveLength(59);
+    expect(registry.all().filter((r) => r.canonicalEngineId).length).toBe(58);
   });
 
   it("matches the approved registry counts exactly", () => {
@@ -59,8 +62,15 @@ describe("the approved charter registry", () => {
     expect(c?.classification).toBe("SPECIALIZED");
   });
 
-  it("gives Overwatch no engine charter", () => {
-    // It is a framework document. A relationship is not a component.
-    expect(registry.all().some((r) => /overwatch/i.test(r.canonicalName))).toBe(false);
+  it("records Overwatch as a framework, with neither engine id nor classification", () => {
+    // The approved framework document says it plainly: "Overwatch is not an
+    // independent engine. It possesses no separate sovereignty, data ownership,
+    // execution authority, or constitutional power beyond the authority already
+    // granted to its participating systems."
+    const ow = registry.byId("framework.overwatch");
+    expect(ow).not.toBeNull();
+    expect(ow!.canonicalEngineId).toBeUndefined();
+    expect(ow!.classification).toBeUndefined();
+    expect(registry.forEngine("hive.overwatch")).toBeNull();
   });
 });

@@ -9,6 +9,8 @@ import {
   NOT_CLASSIFIED,
   OVERWATCH_MEMBERS,
   charterReferenceSchema,
+  carriesEngineClassification,
+  componentKindSchema,
   hiveClassificationSchema,
   isConstitutional,
   lifecycleStateSchema,
@@ -41,11 +43,30 @@ describe("the two planes stay separate", () => {
     expect(tierFor("INDUSTRY")).toBe("industry");
   });
 
-  it("keeps HOST outside the dependency graph", () => {
-    // A host consumes the Hive. It is classified so a manifest can describe
-    // one, not so the tier law can rank one.
-    expect(tierFor("HOST")).toBeNull();
+  it("gives a Host no engine classification at all", () => {
+    // DEC-005. HOST was briefly an engine classification and that was a
+    // category error: approved §23.3 recognizes four capability-layer engine
+    // classifications, and a Host consumes Hive capability "without owning the
+    // engines providing them". It is a componentKind, not an engine class.
+    expect(hiveClassificationSchema.options).not.toContain("HOST");
+    expect(componentKindSchema.options).toContain("HOST_APPLICATION");
+    expect(carriesEngineClassification("HOST_APPLICATION")).toBe(false);
     expect(hiveTierSchema.options).not.toContain("host");
+  });
+
+  it("lets only an ENGINE carry an engine classification", () => {
+    // The rule that stops agents, hosts and frameworks each needing their own
+    // exception, which is how HOST got into the enum in the first place.
+    expect(carriesEngineClassification("ENGINE")).toBe(true);
+    for (const kind of componentKindSchema.options.filter((k) => k !== "ENGINE")) {
+      expect(carriesEngineClassification(kind), kind).toBe(false);
+    }
+  });
+
+  it("recognizes a framework as a component kind, not an engine", () => {
+    // Overwatch. It is recognized without being chartered.
+    expect(componentKindSchema.options).toContain("FRAMEWORK");
+    expect(carriesEngineClassification("FRAMEWORK")).toBe(false);
   });
 
   it("leaves the existing dependency law untouched", () => {
