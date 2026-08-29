@@ -374,18 +374,18 @@ describe("Sentinel supervises Foundry's agents", () => {
 // two different identifiers for the same relationship, and NOTHING requires
 // them to agree.
 //
-// A host that files findings under the session id while the runtime queries by
-// agent id gets supervision that returns nothing, terminates nothing, and
-// looks perfectly healthy. That is the worst available failure mode for an
-// overwatch component: not an error, an absence.
+// A host filing findings under the session id while the runtime queried by
+// agent id got supervision that returned nothing, terminated nothing, and
+// looked perfectly healthy — not an error, an absence, which is the worst
+// failure available to an overwatch component.
 //
-// Recorded rather than repaired. Which identifier findings are filed under is a
-// decision about how the two engines address each other, and it belongs to
-// whoever owns the §37 contract, not to a test that noticed the ambiguity.
+// Closed by asking under both names. That costs one extra lookup and removes
+// the possibility, which is a better trade than picking a convention and
+// trusting every host to have read it.
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe("the agent id and the Sentinel session id have to agree", () => {
-  it("supervises nothing when findings are filed under the session id instead", async () => {
+  it("terminates on a finding filed under the session id, not just the agent id", async () => {
     const sentinel = createSentinelIq({ now: () => AT });
     const missions = createMissionControl({ now: () => AT, governance: allowAll() });
     missions.propose({ missionId: "MIS-OW-2", objective, scope });
@@ -456,9 +456,13 @@ describe("the agent id and the Sentinel session id have to agree", () => {
     // Sentinel HAS the finding, at the highest severity there is.
     expect(sentinel.find({ atLeastSeverity: "catastrophic" })).toHaveLength(1);
 
-    // And the agent runs on, because the runtime asked about "bot_2" and the
-    // finding is filed under "sentinel-session-bot_2". No error anywhere.
-    expect(await runtime.supervise()).toHaveLength(0);
+    // Terminated. The runtime asks under BOTH names now. Before this it asked
+    // only about "bot_2", the finding was filed under
+    // "sentinel-session-bot_2", and the agent ran on with no error anywhere —
+    // which is what made this worth closing rather than documenting.
+    const terminated = await runtime.supervise();
+    expect(terminated).toHaveLength(1);
+    expect(terminated[0]!.agentId).toBe("bot_2");
   });
 });
 
@@ -533,11 +537,10 @@ describe("what spawn checks, and what it does not", () => {
     if (!result.spawned) expect(result.reason).toContain("budget");
   });
 
-  it("accepts a lease the lease schema would reject", () => {
-    // The gap. `expiresAt` before `startedAt` — which
-    // `repairBotLeaseSchema.refine` explicitly forbids, because an expired
-    // lease is absent authority rather than stale authority — and the agent
-    // spawns anyway, because nothing parses the lease here.
+  it("refuses a lease the lease schema rejects", () => {
+    // `expiresAt` before `startedAt`, which the schema explicitly forbids
+    // because an expired lease is ABSENT authority rather than stale
+    // authority. Previously this spawned.
     const missions = createMissionControl({ now: () => AT, governance: allowAll() });
     missions.propose({ missionId: "MIS-OW-4", objective, scope });
     missions.authorize("MIS-OW-4", "human-authorization", "human.steven");
@@ -580,9 +583,7 @@ describe("what spawn checks, and what it does not", () => {
       budget: { maxActions: 20, maxDurationMs: 600_000, maxValidationRuns: 3 },
     });
 
-    // Spawned. This assertion documents current behaviour rather than
-    // endorsing it — if lease validation is added at spawn, this test fails
-    // and should be rewritten to expect the refusal.
-    expect(result.spawned).toBe(true);
+    expect(result.spawned).toBe(false);
+    if (!result.spawned) expect(result.reason).toContain("Not a valid lease");
   });
 });

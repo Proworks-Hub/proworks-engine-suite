@@ -4,7 +4,13 @@
 
 import { z } from "zod";
 
-import { changeWithinScope, leasePermits, type AgentAction, type AgentLease } from "@proworks-hub/repair-learning";
+import {
+  agentLeaseSchema,
+  changeWithinScope,
+  leasePermits,
+  type AgentAction,
+  type AgentLease,
+} from "@proworks-hub/repair-learning";
 
 import {
   isTerminal,
@@ -426,6 +432,27 @@ export function createAgentRuntime(options: AgentRuntimeOptions): AgentRuntime {
         };
       }
 
+      // ── The lease is parsed, not merely typed ────────────────────────
+      //
+      // The budget was already checked here and the lease was not — it was
+      // taken on its TypeScript type alone. Inside one compiled program that
+      // is nearly sufficient. It stops being sufficient the moment a lease
+      // arrives deserialized from JSON, read from a database, or sent between
+      // processes, because a type is not present at runtime and this schema
+      // never ran.
+      //
+      // `agentLeaseSchema` is not decorative: its refinements include the
+      // rules about expiry ordering and about deployment authority requiring
+      // validators. None of them were being evaluated at the one point where
+      // an agent starts being able to act.
+      const parsedLease = agentLeaseSchema.safeParse(lease);
+      if (!parsedLease.success) {
+        return {
+          spawned: false,
+          reason: `Not a valid lease: ${JSON.stringify(parsedLease.error.flatten())}`,
+        };
+      }
+
       const parsedBudget = agentBudgetSchema.safeParse(budget);
       if (!parsedBudget.success) {
         return {
@@ -438,7 +465,9 @@ export function createAgentRuntime(options: AgentRuntimeOptions): AgentRuntime {
       const agent: RunningAgent = {
         agentId,
         missionId,
-        lease,
+        // The PARSED lease, so what the agent runs under is what was
+        // validated rather than what was handed in beside it.
+        lease: parsedLease.data,
         state: "PROVISIONED",
         credential: {
           credentialId: `cred_${agentId}`,
@@ -538,7 +567,25 @@ export function createAgentRuntime(options: AgentRuntimeOptions): AgentRuntime {
         // Before anything else, because a compromised agent should not get the
         // benefit of a tidier reason. If Sentinel wants it isolated, that is
         // the cause on the record.
-        const findings = options.sentinel?.findingsAgainst(agent.agentId) ?? [];
+        // ── Both identifiers, because there are two ──────────────────────
+        //
+        // The lease names a `sentinelSession` (§37, "the Sentinel session
+        // observing this agent") and this runtime knows the agent by
+        // `agentId`. Those are two names for one relationship, and nothing
+        // required them to agree — so a host that filed findings under the
+        // session id got supervision that returned nothing, terminated
+        // nothing, and looked perfectly healthy.
+        //
+        // That is the worst failure available to an overwatch component: not
+        // an error, an absence. Asking under both names costs one extra
+        // lookup and removes the possibility.
+        const sessionId = agent.lease.sentinelSession;
+        const findings = [
+          ...(options.sentinel?.findingsAgainst(agent.agentId) ?? []),
+          ...(sessionId && sessionId !== agent.agentId
+            ? (options.sentinel?.findingsAgainst(sessionId) ?? [])
+            : []),
+        ];
         const forcing = findings.find((f) => isolateOn.has(f.severity));
         if (forcing) {
           produced.push(

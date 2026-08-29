@@ -204,6 +204,24 @@ export const healthStateSchema = z.enum([
   "unavailable",
   /** Deliberately contained. Not a fault — a decision. */
   "isolated",
+  /**
+   * Nobody has said. NOT a synonym for healthy.
+   *
+   * Added because SentinelIQ was already returning it through an
+   * `as HealthState` cast: with no host self-assessment it refuses to claim
+   * health, and the vocabulary had no way to express that, so the value was
+   * forced past the type. A consumer switching exhaustively on HealthState
+   * would not have handled it.
+   *
+   * The doctrine was already everywhere else — NOT_ASSESSED for invariants,
+   * NOT_RUN for validators, null for score dimensions, INCONCLUSIVE for runs.
+   * Health was the one place that could not say it, which is the place it
+   * matters most: an unanswered heartbeat is not a healthy one.
+   *
+   * `acceptsConsequentialWork` is an allowlist, so this is refused work
+   * without any change there.
+   */
+  "unknown",
 ]);
 export type HealthState = z.infer<typeof healthStateSchema>;
 

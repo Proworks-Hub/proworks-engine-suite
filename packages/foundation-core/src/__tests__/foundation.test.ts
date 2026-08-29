@@ -175,20 +175,30 @@ describe("version compatibility", () => {
 });
 
 describe("health states", () => {
-  it("carries all five, including isolated", () => {
+  it("carries all six, including isolated and unknown", () => {
     // `isolated` is the one most easily omitted, and Sentinel containment is
     // meaningless without it: an isolated component would otherwise report as
     // unavailable, which reads as a fault to fix rather than a decision to
     // respect.
+    //
+    // `unknown` was added after SentinelIQ was found returning it through an
+    // `as HealthState` cast — with no host self-assessment it refuses to claim
+    // health, and the vocabulary had no way to say so. The doctrine was
+    // already everywhere else (NOT_ASSESSED, NOT_RUN, INCONCLUSIVE); health
+    // was the one place that could not express it, which is the place it
+    // matters most.
     expect(healthStateSchema.options).toEqual([
-      "healthy", "degraded", "recovering", "unavailable", "isolated",
+      "healthy", "degraded", "recovering", "unavailable", "isolated", "unknown",
     ]);
   });
 
   it("accepts consequential work only when healthy or degraded", () => {
     expect(acceptsConsequentialWork("healthy")).toBe(true);
     expect(acceptsConsequentialWork("degraded")).toBe(true);
-    for (const s of ["recovering", "unavailable", "isolated"] as const) {
+    // `unknown` included, and it needed no change to the function: the gate is
+    // an allowlist, so a state nobody has assessed is refused work by default
+    // rather than by remembering to add it.
+    for (const s of ["recovering", "unavailable", "isolated", "unknown"] as const) {
       expect(acceptsConsequentialWork(s), s).toBe(false);
     }
   });

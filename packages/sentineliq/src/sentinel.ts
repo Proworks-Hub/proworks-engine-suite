@@ -234,10 +234,12 @@ export function createSentinelIq(options: SentinelIqOptions = {}): SentinelIq {
       }
 
       // No host assessment means Sentinel does not know its own reachability.
-      // `unknown`, never `healthy` — the whole point of the five-state
-      // vocabulary is that an unanswered heartbeat is not a healthy one.
+      // `unknown`, never `healthy` — an unanswered heartbeat is not a healthy
+      // one, and the vocabulary can now say so rather than being cast past.
       return {
-        state: "unknown" as HealthState,
+        // No cast. "unknown" is in the vocabulary now; it was forced past the
+        // type before, which is why an exhaustive consumer would have missed it.
+        state: "unknown",
         detail:
           "No host self-assessment was supplied, so Sentinel cannot claim to be healthy. An unreported state is unknown, never healthy.",
         openFindings: open.length,
