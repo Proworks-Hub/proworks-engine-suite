@@ -308,30 +308,177 @@ describe("the receipt pipeline at volume", () => {
   });
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// MIS-SCALE-QD — the queue-depth gate, deterministic.
+//
+// WHAT THE OLD GATE DID
+//
+// It timed a block containing `size` enqueues AND one claim, then required the
+// elapsed-time ratio between doubling sizes to stay under 2.5. Two problems,
+// and the second is worse than the flakiness that prompted this:
+//
+//   1. Wall clock. The ratio moved with whatever else the machine was doing;
+//      it passed 5/5 in isolation and failed at 2.86 under worker contention.
+//
+//   2. It measured the wrong thing. At depth 16,000 the enqueue loop cost
+//      ~98ms and the single claim inside the same block cost ~0.25ms. The
+//      ratio was ~400:1 dominated by enqueue, so it tracked the linear cost of
+//      the loop that SET UP the measurement, not the claim it named. A claim
+//      that became quadratic would have moved that ratio by a fraction of a
+//      percent.
+//
+// WHAT IS COUNTED NOW
+//
+// `observeClaimWork` fires once per job visited inside `claim`, and once per
+// comparison while ordering survivors. Nothing else in the queue is observed,
+// so the enqueue loop contributes zero and cannot mask the measurement again.
+// The counts are integers produced by the algorithm: no clock, and no other
+// process on the box can move them.
+//
+// One claim against a queue of N jobs costs exactly 2N units — one lease-sweep
+// pass and one candidate-scan pass, both over EVERY job regardless of type.
+// Measured at four depths, per-job work is 2.000 at all of them.
+//
+// WHAT THIS GATE PROTECTS, AND WHAT IT DOES NOT
+//
+// It holds the per-job constant at exactly 2 and the growth ratio at 1.0, so a
+// third traversal or a quadratic scan fails immediately.
+//
+// It does NOT establish the property the old test was named for. "Keeps claim
+// cost flat as the queue deepens" is false: one claim costs 2N, so it is linear
+// in depth, and the bulkhead comment in inMemoryJobQueue.ts — "if fifty
+// thousand receipts arrive, the receipt workers get busy and the manufacturing
+// workers do not notice" — is not upheld by `claim`. A forgeiq.nest claim walks
+// all fifty thousand receipts, twice.
+//
+// That is a queue behaviour change to fix (an index by jobType, so selection
+// visits candidates rather than everything) and this mission is authorized to
+// OBSERVE the queue, not to alter it. Recorded here, asserted below as the
+// truth it is, and left for a separate decision.
+// ─────────────────────────────────────────────────────────────────────────────
+
 describe("the job queue under a flood", () => {
-  it("keeps claim cost flat as the queue deepens", async () => {
-    // The bulkhead only helps if claiming is not linear in queue depth. If it
-    // is, a receipt flood slows manufacturing after all — through the claim
-    // path rather than the worker pool.
-    const profile = await scalingProfile(
-      async (size) => {
-        const q = createInMemoryJobQueue();
-        for (let i = 0; i < size; i += 1) q.enqueue({ jobType: "receipt.parse", trace: trace() });
-        q.enqueue({ jobType: "forgeiq.nest", trace: trace(), jobId: "nest_1" });
-        // The measurement that matters: one claim against a deep queue.
-        q.claim(["forgeiq.nest"], "forge", 30_000);
-      },
-      // Raised for the same reason as work-order creation above: the ratio has
-      // to be taken over samples large enough to survive scheduler noise.
-      [4000, 8000, 16000],
-      "claim against a deep queue",
+  /** One claim against a queue holding exactly `depth` jobs. */
+  const claimAtDepth = (depth: number, countOperation: () => void): void => {
+    const q = createInMemoryJobQueue({ observeClaimWork: () => countOperation() });
+    // depth - 1 receipts plus the one nest job, so the queue holds exactly
+    // `depth` jobs and per-job work is an exact integer ratio.
+    for (let i = 0; i < depth - 1; i += 1) {
+      q.enqueue({ jobType: "receipt.parse", trace: trace() });
+    }
+    q.enqueue({ jobType: "forgeiq.nest", trace: trace(), jobId: "nest_1" });
+    // Enqueues are not observed. Only this line produces counts.
+    const claimed = q.claim(["forgeiq.nest"], "forge", 30_000);
+    if (claimed?.jobId !== "nest_1") {
+      throw new Error(
+        `the measured claim did not return the nest job (got ${claimed?.jobId ?? "null"})`,
+      );
+    }
+  };
+
+  it("costs exactly two work units per queued job, at every depth", async () => {
+    const profile = await workCountProfile(
+      async (size, countOperation) => claimAtDepth(size, countOperation),
+      [1000, 2000, 4000, 8000],
     );
 
     for (const row of profile) {
-      console.log(`  queue of ${row.size}: ${row.totalMs.toFixed(0)}ms (scaling ×${row.scalingFactor.toFixed(2)})`);
+      console.log(
+        `  queue of ${row.size}: ${row.operations} claim work units (${row.operationsPerItem.toFixed(3)} per queued job)`,
+      );
     }
 
-    const worst = Math.max(...profile.slice(1).map((r) => r.scalingFactor));
-    expect(worst).toBeLessThan(2.5);
+    // The absolute constant. A third full pass over the queue takes this to
+    // 3.000 and fails here, which a growth ratio alone would not catch —
+    // constant-factor regressions keep the ratio at 1.0.
+    for (const row of profile) {
+      expect(row.operationsPerItem, `depth ${row.size}`).toBe(2);
+      expect(row.operations, `depth ${row.size}`).toBe(2 * row.size);
+    }
+
+    // And the growth. 1.0 exactly, because these are integer call counts.
+    expect(costPerItemGrowth(profile)).toBe(1);
+  });
+
+  it("counts nothing when the observer is absent, and the helper refuses to call that healthy", async () => {
+    // The failure this whole rewrite exists to avoid. My first deterministic
+    // replacement for the work-order gate counted only reads, recorded zero at
+    // every size, and passed — "unmeasured" silently became "satisfied".
+    //
+    // Here: a queue built without the seam produces no counts, and the helper
+    // throws rather than reporting healthy growth from no data.
+    const unobserved = await workCountProfile(async (size) => {
+      const q = createInMemoryJobQueue();
+      for (let i = 0; i < size; i += 1) q.enqueue({ jobType: "receipt.parse", trace: trace() });
+      q.claim(["receipt.parse"], "w", 30_000);
+    }, [1000, 2000]);
+
+    expect(unobserved[0]!.operations).toBe(0);
+    expect(() => costPerItemGrowth(unobserved)).toThrow(/zero operations/);
+  });
+
+  it("catches a quadratic regression", () => {
+    // A synthetic profile rather than a broken queue: the directive forbids
+    // injecting a regression into production logic, and a shape is enough to
+    // prove the assertion discriminates.
+    const quadratic = [1000, 2000, 4000, 8000].map((size) => ({
+      size,
+      operations: 2 * size * size,
+      operationsPerItem: 2 * size,
+    }));
+
+    expect(costPerItemGrowth(quadratic)).toBeGreaterThan(1.5);
+    expect(() => expect(quadratic[0]!.operationsPerItem).toBe(2)).toThrow();
+  });
+
+  it("catches a constant-factor regression that leaves growth flat", () => {
+    // Three passes instead of two. Growth stays at exactly 1.0, so the ratio
+    // assertion alone would pass it — this is why the absolute constant is
+    // asserted too.
+    const thirdPass = [1000, 2000, 4000, 8000].map((size) => ({
+      size,
+      operations: 3 * size,
+      operationsPerItem: 3,
+    }));
+
+    expect(costPerItemGrowth(thirdPass)).toBe(1);
+    expect(() => expect(thirdPass[0]!.operationsPerItem).toBe(2)).toThrow();
+  });
+
+  it("is unaffected by machine speed", async () => {
+    // The same depth measured twice returns identical integers. The old gate
+    // could not make this claim about any two of its runs.
+    const a = await workCountProfile(async (size, c) => claimAtDepth(size, c), [4000]);
+    const b = await workCountProfile(async (size, c) => claimAtDepth(size, c), [4000]);
+    expect(a[0]!.operations).toBe(b[0]!.operations);
+    expect(a[0]!.operations).toBe(8000);
+  });
+
+  it("records that claim cost is linear in depth, which the old test's name denied", async () => {
+    // Stated as an assertion rather than a comment so it cannot quietly become
+    // untrue in either direction. If someone indexes the queue by jobType, this
+    // fails and should — the finding above would then be stale.
+    const shallow = await workCountProfile(async (size, c) => claimAtDepth(size, c), [1000]);
+    const deep = await workCountProfile(async (size, c) => claimAtDepth(size, c), [8000]);
+
+    expect(deep[0]!.operations).toBe(8 * shallow[0]!.operations);
+
+    console.log(
+      `  one claim costs ${shallow[0]!.operations} units at depth 1000 and ` +
+        `${deep[0]!.operations} at depth 8000 — linear, not flat. See the MIS-SCALE-QD note above.`,
+    );
+  });
+
+  it("completes a claim against a deep queue", async () => {
+    // A benchmark, not a gate. It asserts completion and prints a duration for
+    // whoever is curious; nothing here decides pass or fail on a clock.
+    const result = await measure(
+      () => {
+        claimAtDepth(8000, () => {});
+      },
+      { label: "claim against a queue of 8000", operations: 5, warmup: 1 },
+    );
+    console.log(`  ${formatResult(result)}`);
+    expect(result.errors).toBe(0);
   });
 });

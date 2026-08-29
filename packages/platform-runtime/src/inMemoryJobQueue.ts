@@ -41,11 +41,40 @@ export interface InMemoryJobQueue extends JobQueue {
   clear(): void;
 }
 
+/**
+ * Where a unit of claim work was spent.
+ *
+ * `claim` does two full passes over the queue and then sorts what survives.
+ * Naming the phases separately is what lets a test say WHICH traversal grew,
+ * rather than only that something did.
+ */
+export type ClaimWorkPhase = "lease-sweep" | "candidate-scan" | "candidate-compare";
+
+/**
+ * An observation seam for the work `claim` performs. Counting only.
+ *
+ * Deliberately the narrowest thing that answers "how much work did selecting
+ * this job take": one call per job visited, and one per comparison made while
+ * ordering the survivors. It receives the PHASE and nothing else -- no job, no
+ * id, no payload, no tenant, no trace. It cannot select, reject, reorder,
+ * claim, modify or delete anything, because it is handed nothing to act on and
+ * its return value is discarded.
+ *
+ * It exists because the old queue-depth gate measured elapsed time, and elapsed
+ * time on a shared machine is not a property of the algorithm.
+ */
+export type ClaimWorkObserver = (phase: ClaimWorkPhase) => void;
+
 export interface InMemoryJobQueueOptions {
   now?: () => Date;
   generateId?: () => string;
   /** Injected so a test need not wait out a retry backoff. */
   random?: () => number;
+  /**
+   * Counts the work `claim` does. Optional, absent in every production path,
+   * and observational only -- see {@link ClaimWorkObserver}.
+   */
+  observeClaimWork?: ClaimWorkObserver;
 }
 
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
@@ -53,6 +82,9 @@ const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 export function createInMemoryJobQueue(options: InMemoryJobQueueOptions = {}): InMemoryJobQueue {
   const jobs = new Map<string, Job>();
   const now = options.now ?? (() => new Date());
+  // Read once into a local. Nothing reassigns it, so the observer cannot be
+  // swapped for something with authority after construction.
+  const observeClaimWork = options.observeClaimWork;
   const random = options.random ?? Math.random;
   const generateId =
     options.generateId ??
@@ -101,17 +133,27 @@ export function createInMemoryJobQueue(options: InMemoryJobQueueOptions = {}): I
 
       // Reclaim anything a crashed worker was holding, before looking at new
       // work. Otherwise a queue can look busy while nothing is progressing.
+      //
+      // Note for anyone reading the work counts: this pass visits EVERY job,
+      // not only those of the requested types. So does the scan below.
       for (const job of jobs.values()) {
+        observeClaimWork?.("lease-sweep");
         if (job.status === "running" && leaseExpired(job, at)) {
           jobs.set(job.jobId, { ...job, status: "queued", claimedBy: undefined, claimedUntil: undefined });
         }
       }
 
       const candidates = [...jobs.values()]
-        .filter((j) => jobTypes.includes(j.jobType) && available(j, at))
+        .filter((j) => {
+          observeClaimWork?.("candidate-scan");
+          return jobTypes.includes(j.jobType) && available(j, at);
+        })
         // Priority first, then oldest — so an urgent job jumps the queue but
         // equal work is still fair, and nothing starves behind a busy type.
-        .sort((a, b) => b.priority - a.priority || a.createdAt.localeCompare(b.createdAt));
+        .sort((a, b) => {
+          observeClaimWork?.("candidate-compare");
+          return b.priority - a.priority || a.createdAt.localeCompare(b.createdAt);
+        });
 
       const next = candidates[0];
       if (!next) return null;
