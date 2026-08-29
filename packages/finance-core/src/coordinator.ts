@@ -5,11 +5,13 @@
 import {
   coreRequest,
   createCoordinator,
+  type CoreRequest,
+  defaultAuthorityFor,
   type CoreFailure,
   type CoreOutcome,
   type Coordinator,
 } from "@proworks-hub/core-kit";
-import type { RequestContext } from "@proworks-hub/contracts";
+import type { AuthorityEnvelope, Governance, RequestContext } from "@proworks-hub/contracts";
 
 import type { FinanceCapability, FinanceRegistry, FinanceRequest } from "./registry.js";
 
@@ -33,6 +35,14 @@ export type FinanceCoordinator = Coordinator<FinanceCapability>;
 
 export interface CoordinatorOptions {
   registry: FinanceRegistry;
+  /**
+   * REQUIRED. Decides whether the caller may use the capability, before the
+   * registry is consulted. Pass `createDenyAllGovernance()` to deny explicitly;
+   * there is no way to express "no governance" other than saying so.
+   */
+  governance: Governance;
+  /** Defaults to `defaultAuthorityFor`. Supply one to state a real purpose. */
+  authorityFor?: (request: CoreRequest<FinanceCapability>) => AuthorityEnvelope;
   timeoutMs?: number;
   allowFallback?: boolean;
   now?: () => number;
@@ -43,6 +53,8 @@ export function createFinanceCoordinator(options: CoordinatorOptions): FinanceCo
   return createCoordinator<FinanceCapability>({
     core: "finance",
     registry: options.registry,
+    governance: options.governance,
+    authorityFor: options.authorityFor ?? defaultAuthorityFor,
     ...(options.timeoutMs === undefined ? {} : { timeoutMs: options.timeoutMs }),
     ...(options.allowFallback === undefined ? {} : { allowFallback: options.allowFallback }),
     ...(options.now === undefined ? {} : { now: options.now }),

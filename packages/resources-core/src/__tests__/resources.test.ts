@@ -16,7 +16,24 @@ import {
   type ResourcesSpecialist,
 } from "../resources.js";
 
-const context = { requestId: "req-1" } as unknown as RequestContext;
+
+import { createAllowAllGovernanceForTests } from "@proworks-hub/contracts";
+
+// Allow-all Governance. These tests exercise coordination, not authorization;
+// the authorization path is tested in tests/governedResolution.test.ts.
+const testGovernance = createAllowAllGovernanceForTests({
+  reason: "core coordination tests; authorization tested separately",
+  env: {},
+});
+
+const context = {
+  requestId: "req-1",
+  tenant: { organizationId: "test-org", roles: [] },
+  identity: { subject: "test-actor", kind: "user", roles: [], assertedCapabilities: [] },
+  trace: { correlationId: "cor-1" },
+  apiVersion: "v1",
+  receivedAt: "2026-08-28T00:00:00.000Z",
+} as unknown as RequestContext;
 
 const specialist = (
   id: string,
@@ -64,7 +81,7 @@ describe("a reading is not a hold", () => {
   });
 
   it("stamps an availability answer as a reading, not a guarantee", async () => {
-    const coordinator = createResourcesCoordinator({
+    const coordinator = createResourcesCoordinator({ governance: testGovernance,
       registry: createResourcesRegistry([inventoryIq()]),
     });
 
@@ -77,7 +94,7 @@ describe("a reading is not a hold", () => {
   });
 
   it("stamps a reservation as a commitment", async () => {
-    const coordinator = createResourcesCoordinator({
+    const coordinator = createResourcesCoordinator({ governance: testGovernance,
       registry: createResourcesRegistry([inventoryIq()]),
     });
 
@@ -95,7 +112,7 @@ describe("a reading is not a hold", () => {
         onHand: 4,
       })),
     ]);
-    const coordinator = createResourcesCoordinator({
+    const coordinator = createResourcesCoordinator({ governance: testGovernance,
       registry,
       now: () => Date.parse("2026-08-28T12:00:00.000Z"),
     });
@@ -156,7 +173,7 @@ describe("staleness", () => {
 
 describe("the machinery inherited from core-kit still holds here", () => {
   it("reports its own domain in status", async () => {
-    const status = await createResourcesCoordinator({
+    const status = await createResourcesCoordinator({ governance: testGovernance,
       registry: createResourcesRegistry([inventoryIq()]),
     }).status();
     expect(status.core).toBe("resources");
@@ -165,7 +182,7 @@ describe("the machinery inherited from core-kit still holds here", () => {
   it("refuses a capability nobody registered", async () => {
     // AssetIQ does not exist. Refusing locate_asset by name beats answering it
     // with an empty result that reads as "no assets".
-    const outcome = await createResourcesCoordinator({
+    const outcome = await createResourcesCoordinator({ governance: testGovernance,
       registry: createResourcesRegistry([inventoryIq()]),
     }).ask(ask("locate_asset"));
 
@@ -177,7 +194,7 @@ describe("the machinery inherited from core-kit still holds here", () => {
     const registry = createResourcesRegistry([
       specialist("inventoryiq", ["check_availability"], () => new Promise(() => {})),
     ]);
-    const outcome = await createResourcesCoordinator({ registry, timeoutMs: 20 }).ask(
+    const outcome = await createResourcesCoordinator({ governance: testGovernance, registry, timeoutMs: 20 }).ask(
       ask("check_availability"),
     );
     expect(outcome.ok).toBe(false);
@@ -185,7 +202,7 @@ describe("the machinery inherited from core-kit still holds here", () => {
   });
 
   it("stamps every answer in an askAll batch", async () => {
-    const result = await createResourcesCoordinator({
+    const result = await createResourcesCoordinator({ governance: testGovernance,
       registry: createResourcesRegistry([inventoryIq()]),
     }).askAll([
       ask("check_availability", "c1"),
@@ -208,7 +225,7 @@ describe("the machinery inherited from core-kit still holds here", () => {
         health: async () => ({ healthy: false, detail: "Asset registry unreachable." }),
       }),
     ]);
-    const status = await createResourcesCoordinator({ registry }).status();
+    const status = await createResourcesCoordinator({ governance: testGovernance, registry }).status();
     const byId = Object.fromEntries(status.specialists.map((s) => [s.id, s]));
 
     expect(byId["inventoryiq"]!.healthy).toBeNull();
@@ -218,7 +235,7 @@ describe("the machinery inherited from core-kit still holds here", () => {
   it("does not offer a rollback it cannot perform", () => {
     // A Core cannot un-consume material. Offering it would be a lie that costs
     // somebody a second reservation against stock that is already gone.
-    const coordinator = createResourcesCoordinator({
+    const coordinator = createResourcesCoordinator({ governance: testGovernance,
       registry: createResourcesRegistry([inventoryIq()]),
     });
     expect("rollback" in coordinator).toBe(false);

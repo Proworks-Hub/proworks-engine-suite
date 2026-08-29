@@ -31,16 +31,21 @@ export const identityClaimsSchema = z
     /** Stable identifier for the human or service. */
     subject: z.string().min(1),
     kind: z.enum(["user", "service", "api-key", "anonymous"]),
-    /** Coarse role names. Authorization decisions read permissions, not these. */
+    /** Coarse role names. Evidence for Governance, never a decision. */
     roles: z.array(z.string()).default([]),
     /**
-     * What the caller may do, resolved at the boundary.
+     * What the caller CLAIMS it may do. Renamed from `permissions` (DEC-017).
      *
-     * Resolved once rather than re-derived per call: an engine that recomputes
-     * permissions from roles has quietly become a second authorization system,
-     * and two authorization systems eventually disagree.
+     * EVIDENCE, NOT AUTHORITY. The old name invited the collapse the
+     * Constitution forbids in §1.9 — "Capability does not imply permission" —
+     * because a downstream engine reading a field called `permissions` will
+     * eventually treat it as one. Nothing consumed it, so the rename is clean
+     * rather than staged.
+     *
+     * Only a `GovernanceDecision` authorizes. These claims may inform that
+     * decision and can never substitute for it.
      */
-    permissions: z.array(z.string()).default([]),
+    assertedCapabilities: z.array(z.string()).default([]),
     /** When these stop being believable. */
     expiresAt: z.string().optional(),
   })

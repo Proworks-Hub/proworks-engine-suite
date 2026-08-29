@@ -6,6 +6,7 @@ import { z } from "zod";
 import {
   coreRequest,
   createCoordinator,
+  defaultAuthorityFor,
   createSpecialistRegistry,
   type CoreAnswer,
   type CoreFailure,
@@ -16,6 +17,7 @@ import {
   type Specialist,
   type SpecialistRegistry,
 } from "@proworks-hub/core-kit";
+import type { AuthorityEnvelope, Governance } from "@proworks-hub/contracts";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Resources Core: what an organization has.
@@ -122,6 +124,14 @@ export function createResourcesRegistry(
 
 export interface ResourcesCoordinatorOptions {
   registry: ResourcesRegistry;
+  /**
+   * REQUIRED. Decides whether the caller may use the capability, before the
+   * registry is consulted. Pass `createDenyAllGovernance()` to deny explicitly;
+   * there is no way to express "no governance" other than saying so.
+   */
+  governance: Governance;
+  /** Defaults to `defaultAuthorityFor`. Supply one to state a real purpose. */
+  authorityFor?: (request: CoreRequest<ResourcesCapability>) => AuthorityEnvelope;
   timeoutMs?: number;
   allowFallback?: boolean;
   now?: () => number;
@@ -148,6 +158,8 @@ export function createResourcesCoordinator(
   const inner = createCoordinator<ResourcesCapability>({
     core: "resources",
     registry: options.registry,
+    governance: options.governance,
+    authorityFor: options.authorityFor ?? defaultAuthorityFor,
     ...(options.timeoutMs === undefined ? {} : { timeoutMs: options.timeoutMs }),
     ...(options.allowFallback === undefined ? {} : { allowFallback: options.allowFallback }),
     ...(options.now === undefined ? {} : { now: options.now }),

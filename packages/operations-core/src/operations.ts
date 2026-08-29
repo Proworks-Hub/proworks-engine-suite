@@ -6,6 +6,7 @@ import { z } from "zod";
 import {
   coreRequest,
   createCoordinator,
+  defaultAuthorityFor,
   createSpecialistRegistry,
   type CoreAnswer,
   type CoreRefusal,
@@ -14,7 +15,7 @@ import {
   type Specialist,
   type SpecialistRegistry,
 } from "@proworks-hub/core-kit";
-import type { RequestContext } from "@proworks-hub/contracts";
+import type { AuthorityEnvelope, Governance, RequestContext } from "@proworks-hub/contracts";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Operations Core: what must happen, in what order.
@@ -120,6 +121,14 @@ export interface OperationsCoordinator extends Coordinator<OperationsCapability>
 
 export interface OperationsCoordinatorOptions {
   registry: OperationsRegistry;
+  /**
+   * REQUIRED. Decides whether the caller may use the capability, before the
+   * registry is consulted. Pass `createDenyAllGovernance()` to deny explicitly;
+   * there is no way to express "no governance" other than saying so.
+   */
+  governance: Governance;
+  /** Defaults to `defaultAuthorityFor`. Supply one to state a real purpose. */
+  authorityFor?: (request: CoreRequest<OperationsCapability>) => AuthorityEnvelope;
   timeoutMs?: number;
   allowFallback?: boolean;
   now?: () => number;
@@ -132,6 +141,8 @@ export function createOperationsCoordinator(
   const base = createCoordinator<OperationsCapability>({
     core: "operations",
     registry: options.registry,
+    governance: options.governance,
+    authorityFor: options.authorityFor ?? defaultAuthorityFor,
     ...(options.timeoutMs === undefined ? {} : { timeoutMs: options.timeoutMs }),
     ...(options.allowFallback === undefined ? {} : { allowFallback: options.allowFallback }),
     ...(options.now === undefined ? {} : { now: options.now }),

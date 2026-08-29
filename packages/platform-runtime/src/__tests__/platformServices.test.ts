@@ -33,7 +33,7 @@ const trace = { correlationId: "cor_1" };
 const requestContext = (overrides: Partial<RequestContext> = {}): RequestContext => ({
   requestId: "req_1",
   tenant,
-  identity: { subject: "user_1", kind: "user", roles: ["operator"], permissions: ["quote.read"] },
+  identity: { subject: "user_1", kind: "user", roles: ["operator"], assertedCapabilities: ["quote.read"] },
   trace,
   apiVersion: "v1",
   receivedAt: "2026-08-27T00:00:00.000Z",
@@ -147,7 +147,13 @@ describe("rate limiting", () => {
 
 describe("authorization at the boundary", () => {
   it("throws rather than returning false", async () => {
-    const authorizer = { can: (ctx: RequestContext, p: string) => ctx.identity.permissions.includes(p) };
+    // Reads assertedCapabilities (DEC-017). This test authorizer treats a
+    // caller claim as sufficient, which is exactly what a real Governance
+    // implementation must NOT do -- it stands in for one here only to exercise
+    // requirePermission's throw-vs-return behaviour.
+    const authorizer = {
+      can: (ctx: RequestContext, p: string) => ctx.identity.assertedCapabilities.includes(p),
+    };
     await expect(requirePermission(authorizer, requestContext(), "quote.read")).resolves.toBeUndefined();
     // A boolean a caller can ignore is a boolean a caller will ignore.
     await expect(requirePermission(authorizer, requestContext(), "quote.delete")).rejects.toThrow(

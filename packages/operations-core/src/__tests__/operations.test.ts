@@ -12,7 +12,24 @@ import {
   type OperationsSpecialist,
 } from "../operations.js";
 
-const context = { requestId: "req-1" } as unknown as RequestContext;
+
+import { createAllowAllGovernanceForTests } from "@proworks-hub/contracts";
+
+// Allow-all Governance. These tests exercise coordination, not authorization;
+// the authorization path is tested in tests/governedResolution.test.ts.
+const testGovernance = createAllowAllGovernanceForTests({
+  reason: "core coordination tests; authorization tested separately",
+  env: {},
+});
+
+const context = {
+  requestId: "req-1",
+  tenant: { organizationId: "test-org", roles: [] },
+  identity: { subject: "test-actor", kind: "user", roles: [], assertedCapabilities: [] },
+  trace: { correlationId: "cor-1" },
+  apiVersion: "v1",
+  receivedAt: "2026-08-28T00:00:00.000Z",
+} as unknown as RequestContext;
 
 const specialist = (
   id: string,
@@ -54,7 +71,7 @@ const sequenceInput = (steps: ReturnType<typeof orderIntakeSequence>) => ({
 describe("three specialists, one domain", () => {
   it("routes each question to whoever claims it", async () => {
     const registry = createOperationsRegistry([orderIngestion(), workOrderIq(), tracking()]);
-    const coordinator = createOperationsCoordinator({ registry });
+    const coordinator = createOperationsCoordinator({ governance: testGovernance, registry });
 
     expect(registry.capabilities()).toEqual([
       "advance_work_order", "create_work_order", "locate_order", "normalize_order", "route_work_order",
@@ -68,7 +85,7 @@ describe("three specialists, one domain", () => {
 
   it("does not claim a capability nobody registered", async () => {
     // SchedulerIQ does not exist. Saying so beats failing obscurely.
-    const coordinator = createOperationsCoordinator({
+    const coordinator = createOperationsCoordinator({ governance: testGovernance,
       registry: createOperationsRegistry([orderIngestion()]),
     });
     const outcome = await coordinator.ask({
@@ -84,7 +101,7 @@ describe("dependent steps, which finance does not have", () => {
     // The reason sequences exist: an order must be normalized before a work
     // order can be created from it.
     const registry = createOperationsRegistry([orderIngestion(), workOrderIq()]);
-    const coordinator = createOperationsCoordinator({ registry });
+    const coordinator = createOperationsCoordinator({ governance: testGovernance, registry });
 
     const result = await coordinator.sequence(
       sequenceInput(orderIntakeSequence({ externalId: "shopify-991" })),
@@ -110,7 +127,7 @@ describe("dependent steps, which finance does not have", () => {
     ]);
     const create = vi.fn();
 
-    const result = await createOperationsCoordinator({ registry }).sequence(
+    const result = await createOperationsCoordinator({ governance: testGovernance, registry }).sequence(
       sequenceInput(orderIntakeSequence({ externalId: "bad" })),
     );
 
@@ -130,7 +147,7 @@ describe("dependent steps, which finance does not have", () => {
       }),
     ]);
 
-    const result = await createOperationsCoordinator({ registry }).sequence(
+    const result = await createOperationsCoordinator({ governance: testGovernance, registry }).sequence(
       sequenceInput(orderIntakeSequence({ externalId: "shopify-991" })),
     );
 
@@ -144,7 +161,7 @@ describe("dependent steps, which finance does not have", () => {
   it("does not offer a rollback it cannot perform", async () => {
     // A Core cannot un-create a work order. Offering one would be a lie that
     // costs somebody a duplicate.
-    const coordinator = createOperationsCoordinator({
+    const coordinator = createOperationsCoordinator({ governance: testGovernance,
       registry: createOperationsRegistry([orderIngestion(), workOrderIq()]),
     });
     expect("rollback" in coordinator).toBe(false);
@@ -159,7 +176,7 @@ describe("dependent steps, which finance does not have", () => {
       specialist("workorderiq", ["create_work_order"], async () => ({ workOrderId: "wo-1" })),
     ]);
 
-    const result = await createOperationsCoordinator({ registry }).sequence(
+    const result = await createOperationsCoordinator({ governance: testGovernance, registry }).sequence(
       sequenceInput(orderIntakeSequence({ externalId: "shopify-991" })),
     );
 
@@ -187,7 +204,7 @@ describe("dependent steps, which finance does not have", () => {
       }),
     ]);
 
-    await createOperationsCoordinator({ registry }).sequence(
+    await createOperationsCoordinator({ governance: testGovernance, registry }).sequence(
       sequenceInput(orderIntakeSequence({ externalId: "x" })),
     );
 
@@ -209,7 +226,7 @@ describe("dependent steps, which finance does not have", () => {
       }),
     ]);
 
-    await createOperationsCoordinator({ registry }).sequence(
+    await createOperationsCoordinator({ governance: testGovernance, registry }).sequence(
       sequenceInput(orderIntakeSequence({ externalId: "x" })),
     );
     expect(new Set(seen)).toEqual(new Set(["ord-7781"]));
@@ -221,7 +238,7 @@ describe("the machinery inherited from core-kit still holds here", () => {
     const registry = createOperationsRegistry([
       specialist("workorderiq", ["create_work_order"], () => new Promise(() => {})),
     ]);
-    const outcome = await createOperationsCoordinator({ registry, timeoutMs: 20 }).ask({
+    const outcome = await createOperationsCoordinator({ governance: testGovernance, registry, timeoutMs: 20 }).ask({
       capability: "create_work_order", input: {}, context, correlationId: "c1",
     });
     expect(outcome.ok).toBe(false);
@@ -229,7 +246,7 @@ describe("the machinery inherited from core-kit still holds here", () => {
   });
 
   it("reports its own domain in status", async () => {
-    const status = await createOperationsCoordinator({
+    const status = await createOperationsCoordinator({ governance: testGovernance,
       registry: createOperationsRegistry([tracking()]),
     }).status();
     expect(status.core).toBe("operations");
@@ -242,7 +259,7 @@ describe("the machinery inherited from core-kit still holds here", () => {
         health: async () => ({ healthy: false, detail: "Event log unavailable." }),
       }),
     ]);
-    const status = await createOperationsCoordinator({ registry }).status();
+    const status = await createOperationsCoordinator({ governance: testGovernance, registry }).status();
     const byId = Object.fromEntries(status.specialists.map((s) => [s.id, s]));
 
     expect(byId["tracking"]!.healthy).toBeNull();

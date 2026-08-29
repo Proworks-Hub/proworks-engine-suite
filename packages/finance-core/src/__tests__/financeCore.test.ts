@@ -7,9 +7,24 @@ import type { RequestContext } from "@proworks-hub/contracts";
 
 import { createFinanceCoordinator, financeRequest } from "../coordinator.js";
 import { createFinanceRegistry, type FinanceSpecialist } from "../registry.js";
+import { createAllowAllGovernanceForTests } from "@proworks-hub/contracts";
 
+// Allow-all Governance. These tests exercise coordination, not authorization;
+// the authorization path has its own tests in tests/governedResolution.test.ts.
+const testGovernance = createAllowAllGovernanceForTests({
+  env: {},
+  reason: "core coordination tests; authorization is tested separately",
+});
+
+// A complete context. It needs identity and tenant now, because an authority
+// question with no actor cannot be answered and the coordinator refuses rather
+// than proceeding — which is the point of the change these tests now run under.
 const context = {
   requestId: "req-1",
+  tenant: { organizationId: "test-org", roles: [] },
+  identity: { subject: "test-actor", kind: "user", roles: [], assertedCapabilities: [] },
+  trace: { correlationId: "corr-1" },
+  apiVersion: "v1",
   receivedAt: "2026-08-28T09:00:00.000Z",
 } as unknown as RequestContext;
 
@@ -29,7 +44,7 @@ const costiq = (output: unknown = { totalCents: 41_200 }) =>
 describe("a Core coordinates specialists it does not import", () => {
   it("answers a domain question through whoever claims the capability", async () => {
     const registry = createFinanceRegistry([costiq()]);
-    const coordinator = createFinanceCoordinator({ registry });
+    const coordinator = createFinanceCoordinator({ governance: testGovernance, registry });
 
     const outcome = await coordinator.ask(ask("calculate_cost"));
     expect(outcome.ok).toBe(true);
@@ -52,7 +67,7 @@ describe("a Core coordinates specialists it does not import", () => {
   it("says plainly when this installation has no specialist for something", async () => {
     // Not an error. A host with no BudgetIQ genuinely cannot forecast, and
     // saying so beats a stack trace.
-    const coordinator = createFinanceCoordinator({ registry: createFinanceRegistry([costiq()]) });
+    const coordinator = createFinanceCoordinator({ governance: testGovernance, registry: createFinanceRegistry([costiq()]) });
     const outcome = await coordinator.ask(ask("forecast_spend"));
 
     expect(outcome.ok).toBe(false);
@@ -75,7 +90,7 @@ describe("a Core coordinates specialists it does not import", () => {
       specialist("legacy", ["calculate_cost"], async () => ({ from: "legacy" }), { preference: 200 }),
       specialist("costiq", ["calculate_cost"], async () => ({ from: "costiq" }), { preference: 10 }),
     ]);
-    const outcome = await createFinanceCoordinator({ registry }).ask(ask("calculate_cost"));
+    const outcome = await createFinanceCoordinator({ governance: testGovernance, registry }).ask(ask("calculate_cost"));
     expect(outcome.ok && outcome.answer.servedBy).toBe("costiq");
   });
 });
@@ -87,7 +102,7 @@ describe("one failing specialist does not collapse the Hive", () => {
         throw new Error("database unreachable");
       }),
     ]);
-    const outcome = await createFinanceCoordinator({ registry }).ask(ask("calculate_cost"));
+    const outcome = await createFinanceCoordinator({ governance: testGovernance, registry }).ask(ask("calculate_cost"));
 
     expect(outcome.ok).toBe(false);
     if (!outcome.ok) {
@@ -101,7 +116,7 @@ describe("one failing specialist does not collapse the Hive", () => {
     const registry = createFinanceRegistry([
       specialist("costiq", ["calculate_cost"], () => new Promise(() => {})),
     ]);
-    const outcome = await createFinanceCoordinator({ registry, timeoutMs: 20 }).ask(ask("calculate_cost"));
+    const outcome = await createFinanceCoordinator({ governance: testGovernance, registry, timeoutMs: 20 }).ask(ask("calculate_cost"));
 
     expect(outcome.ok).toBe(false);
     if (!outcome.ok) expect(outcome.refusal.failure).toBe("timeout");
@@ -118,7 +133,7 @@ describe("one failing specialist does not collapse the Hive", () => {
       specialist("backup", ["calculate_cost"], backup, { preference: 20 }),
     ]);
 
-    const outcome = await createFinanceCoordinator({ registry }).ask(ask("calculate_cost"));
+    const outcome = await createFinanceCoordinator({ governance: testGovernance, registry }).ask(ask("calculate_cost"));
     expect(outcome.ok).toBe(false);
     expect(backup).not.toHaveBeenCalled();
   });
@@ -131,7 +146,7 @@ describe("one failing specialist does not collapse the Hive", () => {
       specialist("backup", ["calculate_cost"], async () => ({ from: "backup" }), { preference: 20 }),
     ]);
 
-    const outcome = await createFinanceCoordinator({ registry, allowFallback: true }).ask(ask("calculate_cost"));
+    const outcome = await createFinanceCoordinator({ governance: testGovernance, registry, allowFallback: true }).ask(ask("calculate_cost"));
     expect(outcome.ok && outcome.answer.servedBy).toBe("backup");
   });
 });
@@ -147,7 +162,7 @@ describe("partial is a first-class answer", () => {
       }),
     ]);
 
-    const result = await createFinanceCoordinator({ registry }).askAll([
+    const result = await createFinanceCoordinator({ governance: testGovernance, registry }).askAll([
       ask("calculate_cost"),
       ask("forecast_spend"),
       ask("allocate_budget"),
@@ -163,7 +178,7 @@ describe("partial is a first-class answer", () => {
 
   it("reports complete only when nothing was refused", async () => {
     const registry = createFinanceRegistry([costiq()]);
-    const result = await createFinanceCoordinator({ registry }).askAll([
+    const result = await createFinanceCoordinator({ governance: testGovernance, registry }).askAll([
       ask("calculate_cost"), ask("estimate_margin"),
     ]);
     expect(result.complete).toBe(true);
@@ -184,7 +199,7 @@ describe("partial is a first-class answer", () => {
       }),
     ]);
 
-    await createFinanceCoordinator({ registry }).askAll([
+    await createFinanceCoordinator({ governance: testGovernance, registry }).askAll([
       ask("calculate_cost"), ask("estimate_margin"), ask("compare_cost_scenarios"),
     ]);
     expect(peak).toBe(1);
@@ -206,7 +221,7 @@ describe("what the Core reports about itself", () => {
       }),
     ]);
 
-    const status = await createFinanceCoordinator({ registry }).status();
+    const status = await createFinanceCoordinator({ governance: testGovernance, registry }).status();
     const byId = Object.fromEntries(status.specialists.map((entry) => [entry.id, entry]));
 
     expect(byId["quiet"]!.healthy).toBeNull();
@@ -220,12 +235,12 @@ describe("what the Core reports about itself", () => {
         health: () => new Promise(() => {}),
       }),
     ]);
-    const status = await createFinanceCoordinator({ registry, timeoutMs: 20 }).status();
+    const status = await createFinanceCoordinator({ governance: testGovernance, registry, timeoutMs: 20 }).status();
     expect(status.specialists[0]!.healthy).toBe(false);
   });
 
   it("reports the capabilities it can currently answer", async () => {
-    const status = await createFinanceCoordinator({
+    const status = await createFinanceCoordinator({ governance: testGovernance,
       registry: createFinanceRegistry([costiq()]),
     }).status();
     expect(status.core).toBe("finance");
@@ -243,7 +258,7 @@ describe("observability", () => {
       specialist("backup", ["calculate_cost"], async () => ({}), { preference: 20 }),
     ]);
 
-    await createFinanceCoordinator({ registry, allowFallback: true, onAttempt }).ask(ask("calculate_cost"));
+    await createFinanceCoordinator({ governance: testGovernance, registry, allowFallback: true, onAttempt }).ask(ask("calculate_cost"));
 
     expect(onAttempt).toHaveBeenCalledTimes(2);
     expect(onAttempt.mock.calls[0]![0]).toMatchObject({ outcome: "failure", specialist: "primary" });
@@ -252,7 +267,7 @@ describe("observability", () => {
 
   it("carries the correlation id through", async () => {
     const onAttempt = vi.fn();
-    await createFinanceCoordinator({
+    await createFinanceCoordinator({ governance: testGovernance,
       registry: createFinanceRegistry([costiq()]),
       onAttempt,
     }).ask(financeRequest({

@@ -2,7 +2,13 @@
 // Proprietary and confidential. Unauthorized copying, modification, or
 // distribution of this file, via any medium, is strictly prohibited.
 
-import type { RequestContext } from "@proworks-hub/contracts";
+import {
+  isPermitted,
+  type AuthorityEnvelope,
+  type Governance,
+  type GovernanceDecision,
+  type RequestContext,
+} from "@proworks-hub/contracts";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // What every Core coordinator does identically.
@@ -123,6 +129,31 @@ export interface CoordinatorOptions<TCapability extends string> {
   /** The domain this Core owns. Reported in status. */
   core: string;
   registry: SpecialistRegistry<TCapability>;
+  /**
+   * Decides whether the caller may use the capability. REQUIRED.
+   *
+   * Constitution §1.9: "Capability does not imply permission." Before this
+   * existed, resolving a capability WAS authorizing it — being able to reach a
+   * Core meant being allowed to use it, and the only gate was a bearer token at
+   * the router.
+   *
+   * Required rather than optional, because the identical mistake was already
+   * made once in this codebase: eight services took an optional
+   * `PermissionService` and treated its absence as permission. An optional
+   * authorizer is an authorizer somebody forgets, and the forgetting is
+   * invisible — every call site still reads as guarded.
+   *
+   * Pass `createDenyAllGovernance()` to deny everything explicitly. There is no
+   * way to express "no governance" other than saying so.
+   */
+  governance: Governance;
+  /**
+   * Builds the authority question for a request.
+   *
+   * The host supplies this because only the host knows what its actions mean:
+   * purpose, target and risk are domain facts, not coordinator facts.
+   */
+  authorityFor(request: CoreRequest<TCapability>): AuthorityEnvelope;
   /** Per-specialist ceiling. A hung specialist must not hold Prime open. */
   timeoutMs?: number;
   allowFallback?: boolean;
@@ -131,11 +162,57 @@ export interface CoordinatorOptions<TCapability extends string> {
     core: string;
     capability: TCapability;
     specialist: string;
-    outcome: "success" | "failure";
+    outcome: "success" | "failure" | "denied";
     failure?: CoreFailure;
+    /** Present when Governance refused. Denials must be observable. */
+    decision?: GovernanceDecision;
     latencyMs: number;
     correlationId: string;
   }): void;
+}
+
+/**
+ * Builds an authority question from a request, when a host has nothing more
+ * specific to say.
+ *
+ * `purpose` becomes `capability:<name>`, which is honest rather than
+ * decorative: the caller's purpose genuinely is to invoke that capability. A
+ * host that knows a richer purpose — "quote a customer", "close the month" —
+ * should supply its own builder, because purpose-bound authority (Constitution
+ * §1.7) is only as meaningful as the purpose stated.
+ */
+export function defaultAuthorityFor<TCapability extends string>(
+  request: CoreRequest<TCapability>,
+): AuthorityEnvelope {
+  const context = request.context as RequestContext | undefined;
+
+  // Fail closed, and say what is missing. A context with no identity has no
+  // actor, and an authority question with no actor cannot be answered -- the
+  // raw TypeError this replaces said "cannot read properties of undefined",
+  // which tells an operator nothing about why nothing was authorized.
+  if (!context?.identity?.subject || !context.tenant) {
+    throw new Error(
+      "Cannot build an authority envelope: the request context carries no identity or no tenant. " +
+        "Nothing is authorized without an actor and a tenant.",
+    );
+  }
+
+  return {
+    requestId: context.requestId,
+    actorId: context.identity.subject,
+    tenant: context.tenant,
+    purpose: `capability:${request.capability}`,
+    requestedAction: request.capability,
+    delegationChain: [],
+    riskClass: "routine",
+    claims: {
+      roles: context.identity.roles,
+      // Carried as CLAIMS, never as authority. Governance may consider them.
+      assertedCapabilities: context.identity.assertedCapabilities,
+    },
+    trace: context.trace,
+    issuedAt: context.receivedAt,
+  };
 }
 
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -223,6 +300,56 @@ export function createCoordinator<TCapability extends string>(
 
   const coordinator: Coordinator<TCapability> = {
     async ask<TOutput>(request: CoreRequest<TCapability>) {
+      // ── Governance decides BEFORE the registry is consulted ──────────────
+      //
+      // Ordered this way deliberately. Resolving first and authorizing second
+      // would leak which capabilities exist to a caller who may not use them,
+      // and invites a later refactor to drop the second step. Asking first also
+      // means an unauthorized caller learns nothing about the installation.
+      let decision: GovernanceDecision;
+      try {
+        // Envelope construction is inside the try on purpose: a request that
+        // cannot even be described as an authority question must be refused,
+        // not thrown out of the coordinator.
+        decision = await options.governance.authorize(options.authorityFor(request));
+      } catch (cause) {
+        // Governance failing is not permission. Fail closed, and say which of
+        // the two happened -- "Governance is down" and "you may not" need
+        // different responses from an operator.
+        return {
+          ok: false as const,
+          refusal: {
+            capability: request.capability,
+            failure: "not_permitted" as const,
+            reason: `Governance could not decide, so nothing is authorized: ${
+              cause instanceof Error ? cause.message : String(cause)
+            }`,
+          },
+        };
+      }
+
+      if (!isPermitted(decision)) {
+        options.onAttempt?.({
+          core: options.core,
+          capability: request.capability,
+          specialist: "<governance>",
+          outcome: "denied",
+          failure: "not_permitted",
+          decision,
+          latencyMs: 0,
+          correlationId: request.correlationId,
+        });
+
+        return {
+          ok: false as const,
+          refusal: {
+            capability: request.capability,
+            failure: "not_permitted" as const,
+            reason: decision.reason,
+          },
+        };
+      }
+
       const candidates = options.registry.candidates(request.capability);
 
       if (candidates.length === 0) {
