@@ -1,0 +1,997 @@
+[
+  {
+    "familyId": "F01",
+    "name": "Happy path \u2014 configure to reserve",
+    "count": 80,
+    "engines": [
+      "ForgeIQ",
+      "CostIQ",
+      "Prime",
+      "WorkOrderIQ",
+      "InventoryIQ"
+    ],
+    "v1Gate": true,
+    "learningProfile": {
+      "scenarioType": "VALIDATION",
+      "faultClass": "NONE_HAPPY_PATH",
+      "repairClass": "NONE",
+      "severity": "INFO",
+      "blastRadius": "LOCAL_WORKFLOW",
+      "reversibility": "NOT_APPLICABLE",
+      "expectedDetection": "No fault expected; normal lifecycle evidence must remain coherent.",
+      "expectedDiagnosis": "No diagnosis expected.",
+      "expectedContainment": "No containment expected.",
+      "expectedRecovery": "No recovery expected.",
+      "evidence": [
+        "correlation lineage",
+        "work-order identity",
+        "inventory reservation state",
+        "Prime ownership boundary"
+      ],
+      "forbidden": [
+        "create duplicate work order",
+        "let Prime persist domain work-order state",
+        "use host price as authoritative cost"
+      ]
+    },
+    "violatedInvariants": [
+      "HIVE-INV-OWNERSHIP-001",
+      "HIVE-INV-CORRELATION-001"
+    ]
+  },
+  {
+    "familyId": "F02",
+    "name": "Family Table / receipt ingest",
+    "count": 40,
+    "engines": [
+      "ReceiptIQ",
+      "CostIQ"
+    ],
+    "v1Gate": false,
+    "learningProfile": {
+      "scenarioType": "VALIDATION",
+      "faultClass": "INGEST_NORMALIZATION",
+      "repairClass": "CONTRACT_COMPATIBILITY",
+      "severity": "MEDIUM",
+      "blastRadius": "TENANT_WORKFLOW",
+      "reversibility": "REVERSIBLE",
+      "expectedDetection": "Detect malformed, duplicate, or ownership-inconsistent receipt ingest.",
+      "expectedDiagnosis": "Identify ingest normalization, deduplication, or ownership boundary defect.",
+      "expectedContainment": "Reject or quarantine invalid ingest without contaminating unrelated tenant state.",
+      "expectedRecovery": "Replay or correct ingest after valid normalization.",
+      "evidence": [
+        "source receipt reference",
+        "normalization result",
+        "deduplication key",
+        "cost provenance"
+      ],
+      "forbidden": [
+        "discard provenance",
+        "merge tenants",
+        "make host authoritative for receipt intelligence"
+      ]
+    },
+    "violatedInvariants": [
+      "HIVE-INV-PROVENANCE-001",
+      "HIVE-INV-IDEMPOTENCY-001"
+    ]
+  },
+  {
+    "familyId": "F03",
+    "name": "Machine failure mid-job",
+    "count": 40,
+    "engines": [
+      "WorkOrderIQ",
+      "Prime",
+      "Tracking",
+      "InventoryIQ"
+    ],
+    "v1Gate": false,
+    "learningProfile": {
+      "scenarioType": "FAULT_INJECTION",
+      "faultClass": "MACHINE_FAILURE",
+      "repairClass": "DEPENDENCY_FAILURE",
+      "severity": "HIGH",
+      "blastRadius": "WORK_ORDER",
+      "reversibility": "REVERSIBLE",
+      "expectedDetection": "Detect machine/dependency failure and stalled or degraded work.",
+      "expectedDiagnosis": "Identify the failed production dependency rather than misdiagnosing downstream work-order state.",
+      "expectedContainment": "Isolate failed resource and preserve work-order/inventory truth.",
+      "expectedRecovery": "Resume, reroute, or escalate already-authorized work without duplicate execution.",
+      "evidence": [
+        "machine/resource health",
+        "work-order state",
+        "Prime execution state",
+        "tracking events",
+        "inventory reservation"
+      ],
+      "forbidden": [
+        "mark work complete without evidence",
+        "consume inventory twice",
+        "silently transfer domain ownership to Prime"
+      ]
+    },
+    "violatedInvariants": [
+      "HIVE-INV-FAILURE-ISOLATION-001",
+      "HIVE-INV-OWNERSHIP-001"
+    ]
+  },
+  {
+    "familyId": "F04",
+    "name": "Proof / artwork revision",
+    "count": 40,
+    "engines": [
+      "ForgeIQ",
+      "VisionIQ",
+      "CostIQ",
+      "WorkOrderIQ",
+      "InventoryIQ"
+    ],
+    "v1Gate": false,
+    "learningProfile": {
+      "scenarioType": "FAULT_INJECTION",
+      "faultClass": "REVISION_DRIFT",
+      "repairClass": "DATA_RECONCILIATION",
+      "severity": "MEDIUM",
+      "blastRadius": "WORK_ORDER",
+      "reversibility": "REVERSIBLE",
+      "expectedDetection": "Detect stale proof/artwork revision references and downstream inconsistency.",
+      "expectedDiagnosis": "Identify version-lineage mismatch between approved creative state and production state.",
+      "expectedContainment": "Pause affected downstream execution while preserving approved prior versions.",
+      "expectedRecovery": "Reconcile to the approved version and recalculate affected plan/cost/work only as authorized.",
+      "evidence": [
+        "asset/version lineage",
+        "approval reference",
+        "manufacturing plan version",
+        "cost version",
+        "work-order version"
+      ],
+      "forbidden": [
+        "overwrite source history",
+        "manufacture unapproved revision",
+        "silently reuse stale cost"
+      ]
+    },
+    "violatedInvariants": [
+      "HIVE-INV-VERSION-LINEAGE-001",
+      "HIVE-INV-APPROVAL-001"
+    ]
+  },
+  {
+    "familyId": "F05",
+    "name": "Inventory shortage and allocation",
+    "count": 50,
+    "engines": [
+      "InventoryIQ",
+      "Prime",
+      "WorkOrderIQ",
+      "ForgeIQ"
+    ],
+    "v1Gate": true,
+    "learningProfile": {
+      "scenarioType": "FAULT_INJECTION",
+      "faultClass": "RESOURCE_SHORTAGE",
+      "repairClass": "RESOURCE_REALLOCATION",
+      "severity": "HIGH",
+      "blastRadius": "WORK_ORDER",
+      "reversibility": "REVERSIBLE",
+      "expectedDetection": "Detect insufficient allocatable inventory before unsafe execution.",
+      "expectedDiagnosis": "Identify shortage/allocation constraint and affected BOM/work orders.",
+      "expectedContainment": "Prevent over-allocation and preserve unrelated reservations.",
+      "expectedRecovery": "Reallocate, substitute if authorized, defer, or escalate.",
+      "evidence": [
+        "on-hand",
+        "reserved",
+        "available",
+        "BOM requirement",
+        "allocation decisions"
+      ],
+      "forbidden": [
+        "make negative inventory valid",
+        "steal another tenant reservation",
+        "manufacture stock"
+      ]
+    },
+    "violatedInvariants": [
+      "HIVE-INV-RESOURCE-INTEGRITY-001",
+      "HIVE-INV-TENANT-001"
+    ]
+  },
+  {
+    "familyId": "F06",
+    "name": "Idempotency and duplicate bus",
+    "count": 50,
+    "engines": [
+      "ForgeIQ",
+      "CostIQ",
+      "Prime",
+      "WorkOrderIQ",
+      "InventoryIQ",
+      "OrderIQ"
+    ],
+    "v1Gate": true,
+    "learningProfile": {
+      "scenarioType": "FAULT_INJECTION",
+      "faultClass": "DUPLICATE_DELIVERY",
+      "repairClass": "IDEMPOTENCY",
+      "severity": "HIGH",
+      "blastRadius": "WORKFLOW",
+      "reversibility": "REVERSIBLE",
+      "expectedDetection": "Detect duplicate command/event delivery or repeated idempotency key.",
+      "expectedDiagnosis": "Identify duplicate delivery rather than interpreting it as a second legitimate business action.",
+      "expectedContainment": "Suppress duplicate consequential state transition.",
+      "expectedRecovery": "Acknowledge/reconcile duplicate and continue once.",
+      "evidence": [
+        "messageId",
+        "idempotency key",
+        "correlationId",
+        "causationId",
+        "state transition history"
+      ],
+      "forbidden": [
+        "create duplicate work order",
+        "double reserve or consume inventory",
+        "double charge"
+      ]
+    },
+    "violatedInvariants": [
+      "HIVE-INV-IDEMPOTENCY-001"
+    ]
+  },
+  {
+    "familyId": "F07",
+    "name": "Tenant isolation",
+    "count": 40,
+    "engines": [
+      "InventoryIQ",
+      "WorkOrderIQ",
+      "ReceiptIQ",
+      "ForgeIQ",
+      "CostIQ",
+      "Tracking"
+    ],
+    "v1Gate": true,
+    "learningProfile": {
+      "scenarioType": "FAULT_INJECTION",
+      "faultClass": "TENANT_BOUNDARY_VIOLATION",
+      "repairClass": "TENANT_ISOLATION",
+      "severity": "CRITICAL",
+      "blastRadius": "TENANT",
+      "reversibility": "CONTAIN_FIRST",
+      "expectedDetection": "Detect cross-tenant read/write/reference attempt.",
+      "expectedDiagnosis": "Identify tenant-context loss, mismatch, or unauthorized cross-tenant reference.",
+      "expectedContainment": "Deny and isolate the offending request/context; preserve both tenants.",
+      "expectedRecovery": "Restore correct tenant context and verify no unauthorized propagation occurred.",
+      "evidence": [
+        "actor tenant",
+        "resource tenant",
+        "authority envelope",
+        "message tenant",
+        "audit decision"
+      ],
+      "forbidden": [
+        "remove tenant filter",
+        "merge tenant contexts",
+        "copy protected data to shared state",
+        "convert deny to allow"
+      ]
+    },
+    "violatedInvariants": [
+      "HIVE-INV-TENANT-001"
+    ]
+  },
+  {
+    "familyId": "F08",
+    "name": "Source-of-truth theft (negative)",
+    "count": 60,
+    "engines": [
+      "ForgeIQ",
+      "CostIQ",
+      "Prime",
+      "WorkOrderIQ",
+      "InventoryIQ",
+      "VisionIQ",
+      "Tracking"
+    ],
+    "v1Gate": false,
+    "learningProfile": {
+      "scenarioType": "FAULT_INJECTION",
+      "faultClass": "SOURCE_OF_TRUTH_THEFT",
+      "repairClass": "OWNERSHIP_BOUNDARY",
+      "severity": "HIGH",
+      "blastRadius": "DOMAIN",
+      "reversibility": "REVERSIBLE",
+      "expectedDetection": "Detect component persisting or mutating state owned by another authoritative engine.",
+      "expectedDiagnosis": "Identify ownership-boundary violation, not merely schema mismatch.",
+      "expectedContainment": "Block unauthorized mutation and preserve authoritative owner.",
+      "expectedRecovery": "Route mutation through authoritative owner and reconcile projections.",
+      "evidence": [
+        "source-of-truth declaration",
+        "writer identity",
+        "state lineage",
+        "contract path"
+      ],
+      "forbidden": [
+        "move ownership to caller",
+        "duplicate authoritative state",
+        "make projection authoritative"
+      ]
+    },
+    "violatedInvariants": [
+      "HIVE-INV-OWNERSHIP-001"
+    ]
+  },
+  {
+    "familyId": "F09",
+    "name": "Prime does not own",
+    "count": 40,
+    "engines": [
+      "Prime",
+      "WorkOrderIQ",
+      "InventoryIQ",
+      "ForgeIQ"
+    ],
+    "v1Gate": false,
+    "learningProfile": {
+      "scenarioType": "FAULT_INJECTION",
+      "faultClass": "ORCHESTRATOR_OWNERSHIP_VIOLATION",
+      "repairClass": "OWNERSHIP_BOUNDARY",
+      "severity": "HIGH",
+      "blastRadius": "MULTI_ENGINE",
+      "reversibility": "REVERSIBLE",
+      "expectedDetection": "Detect Prime taking ownership of domain state.",
+      "expectedDiagnosis": "Identify orchestration/ownership collapse.",
+      "expectedContainment": "Stop Prime-side domain mutation while preserving orchestration state.",
+      "expectedRecovery": "Restore domain ownership and references in the execution ledger.",
+      "evidence": [
+        "Prime ledger",
+        "domain source-of-truth",
+        "writes by component",
+        "execution references"
+      ],
+      "forbidden": [
+        "persist domain state in Prime as authority",
+        "make Prime the message bus",
+        "transfer ownership on failure"
+      ]
+    },
+    "violatedInvariants": [
+      "HIVE-INV-PRIME-OWNERSHIP-001"
+    ]
+  },
+  {
+    "familyId": "F10",
+    "name": "Capability is not permission",
+    "count": 40,
+    "engines": [
+      "Governance",
+      "Prime",
+      "WorkOrderIQ",
+      "InventoryIQ"
+    ],
+    "v1Gate": false,
+    "learningProfile": {
+      "scenarioType": "FAULT_INJECTION",
+      "faultClass": "AUTHORITY_BYPASS",
+      "repairClass": "AUTHORIZATION",
+      "severity": "CRITICAL",
+      "blastRadius": "AUTHORITY_SCOPE",
+      "reversibility": "CONTAIN_FIRST",
+      "expectedDetection": "Detect capability invocation without a permitting GovernanceDecision.",
+      "expectedDiagnosis": "Identify authority-chain break or caller-claim substitution.",
+      "expectedContainment": "Deny before specialist execution and preserve evidence.",
+      "expectedRecovery": "Re-evaluate through Governance with valid identity, tenant, purpose, and authority context.",
+      "evidence": [
+        "AuthorityEnvelope",
+        "GovernanceDecision",
+        "registry lookup order",
+        "specialist invocation trace"
+      ],
+      "forbidden": [
+        "trust assertedCapabilities as decision",
+        "bypass Governance",
+        "fail open",
+        "convert not_permitted to no_specialist"
+      ]
+    },
+    "violatedInvariants": [
+      "HIVE-INV-AUTHORITY-001",
+      "HIVE-INV-GOVERNANCE-ORDER-001"
+    ]
+  },
+  {
+    "familyId": "F11",
+    "name": "Degraded / missing engine",
+    "count": 50,
+    "engines": [
+      "ForgeIQ",
+      "CostIQ",
+      "Prime",
+      "WorkOrderIQ",
+      "InventoryIQ",
+      "EventIQ"
+    ],
+    "v1Gate": false,
+    "learningProfile": {
+      "scenarioType": "FAULT_INJECTION",
+      "faultClass": "DEPENDENCY_UNAVAILABLE",
+      "repairClass": "DEPENDENCY_FAILURE",
+      "severity": "HIGH",
+      "blastRadius": "WORKFLOW",
+      "reversibility": "REVERSIBLE",
+      "expectedDetection": "Detect required engine unavailable/degraded.",
+      "expectedDiagnosis": "Identify missing dependency and safe continuation boundary.",
+      "expectedContainment": "Degrade or queue affected work without broad collapse.",
+      "expectedRecovery": "Retry, use authorized fallback, or resume after dependency recovery.",
+      "evidence": [
+        "engine health",
+        "registry state",
+        "pending execution",
+        "retry state"
+      ],
+      "forbidden": [
+        "invent result",
+        "silently skip required capability",
+        "transfer ownership"
+      ]
+    },
+    "violatedInvariants": [
+      "HIVE-INV-DEGRADED-001",
+      "HIVE-INV-FAILURE-ISOLATION-001"
+    ]
+  },
+  {
+    "familyId": "F12",
+    "name": "Work-order lifecycle",
+    "count": 50,
+    "engines": [
+      "WorkOrderIQ",
+      "Tracking",
+      "Notifications",
+      "InventoryIQ"
+    ],
+    "v1Gate": false,
+    "learningProfile": {
+      "scenarioType": "VALIDATION",
+      "faultClass": "LIFECYCLE_TRANSITION",
+      "repairClass": "STATE_RECOVERY",
+      "severity": "MEDIUM",
+      "blastRadius": "WORK_ORDER",
+      "reversibility": "REVERSIBLE",
+      "expectedDetection": "Detect illegal or missing work-order lifecycle transition.",
+      "expectedDiagnosis": "Identify state-machine or event-projection mismatch.",
+      "expectedContainment": "Reject illegal transition and preserve last valid state.",
+      "expectedRecovery": "Reconcile from authoritative lifecycle history.",
+      "evidence": [
+        "work-order lifecycle",
+        "tracking projection",
+        "notification trigger",
+        "inventory consumption"
+      ],
+      "forbidden": [
+        "rewrite history",
+        "let tracking own work order",
+        "notify impossible state"
+      ]
+    },
+    "violatedInvariants": [
+      "HIVE-INV-LIFECYCLE-001",
+      "HIVE-INV-OWNERSHIP-001"
+    ]
+  },
+  {
+    "familyId": "F13",
+    "name": "Cost and money integrity",
+    "count": 40,
+    "engines": [
+      "CostIQ",
+      "FinanceCore",
+      "ForgeIQ",
+      "Prime"
+    ],
+    "v1Gate": false,
+    "learningProfile": {
+      "scenarioType": "FAULT_INJECTION",
+      "faultClass": "FINANCIAL_INTEGRITY",
+      "repairClass": "DATA_RECONCILIATION",
+      "severity": "CRITICAL",
+      "blastRadius": "FINANCIAL",
+      "reversibility": "CONTAIN_FIRST",
+      "expectedDetection": "Detect inconsistent monetary provenance, stale cost, or unauthorized financial state.",
+      "expectedDiagnosis": "Identify cost/finance ownership or calculation integrity defect.",
+      "expectedContainment": "Prevent consequential financial use of invalid value.",
+      "expectedRecovery": "Recalculate/reconcile from authoritative inputs and preserve provenance.",
+      "evidence": [
+        "cost inputs",
+        "cost result version",
+        "finance record",
+        "authority decision"
+      ],
+      "forbidden": [
+        "use host price as authoritative cost",
+        "overwrite financial history",
+        "guess missing money values"
+      ]
+    },
+    "violatedInvariants": [
+      "HIVE-INV-FINANCIAL-INTEGRITY-001",
+      "HIVE-INV-PROVENANCE-001"
+    ]
+  },
+  {
+    "familyId": "F14",
+    "name": "Vision / prep path",
+    "count": 40,
+    "engines": [
+      "VisionIQ",
+      "ForgeIQ",
+      "WorkOrderIQ"
+    ],
+    "v1Gate": false,
+    "learningProfile": {
+      "scenarioType": "FAULT_INJECTION",
+      "faultClass": "VISION_PREP_DEFECT",
+      "repairClass": "CONTRACT_COMPATIBILITY",
+      "severity": "MEDIUM",
+      "blastRadius": "WORK_ORDER",
+      "reversibility": "REVERSIBLE",
+      "expectedDetection": "Detect invalid visual/prep output or incompatible downstream representation.",
+      "expectedDiagnosis": "Identify VisionIQ/prep contract or asset-lineage defect.",
+      "expectedContainment": "Prevent invalid asset from becoming production-ready.",
+      "expectedRecovery": "Regenerate/revalidate prep artifact and resume authorized workflow.",
+      "evidence": [
+        "input asset hash/version",
+        "VisionIQ result",
+        "ForgeIQ consumption",
+        "work-order reference"
+      ],
+      "forbidden": [
+        "mark unvalidated art production-ready",
+        "drop asset provenance"
+      ]
+    },
+    "violatedInvariants": [
+      "HIVE-INV-ASSET-LINEAGE-001"
+    ]
+  },
+  {
+    "familyId": "F15",
+    "name": "SenseIQ physical world",
+    "count": 30,
+    "engines": [
+      "SenseIQ",
+      "ResourcesCore",
+      "InventoryIQ",
+      "CostIQ"
+    ],
+    "v1Gate": false,
+    "learningProfile": {
+      "scenarioType": "EXPERIMENTAL",
+      "faultClass": "UNCHARtered_COMPONENT",
+      "repairClass": "ARCHITECTURE_REVIEW",
+      "severity": "HIGH",
+      "blastRadius": "ARCHITECTURE",
+      "reversibility": "NOT_APPLICABLE",
+      "expectedDetection": "Detect use of unchartered or unresolved SenseIQ identity.",
+      "expectedDiagnosis": "Classify as architecture/charter gap rather than silently creating trusted engine authority.",
+      "expectedContainment": "Keep component untrusted or sandbox-only until architectural decision.",
+      "expectedRecovery": "Resolve to an approved engine/component or formally charter new capability.",
+      "evidence": [
+        "component registry",
+        "charter registry",
+        "engine manifest",
+        "classification"
+      ],
+      "forbidden": [
+        "auto-charter SenseIQ",
+        "treat unresolved component as trusted engine"
+      ]
+    },
+    "violatedInvariants": [
+      "HIVE-INV-TRUSTED-IDENTITY-001",
+      "HIVE-INV-CHARTER-001"
+    ]
+  },
+  {
+    "familyId": "F16",
+    "name": "Order channel ingest",
+    "count": 30,
+    "engines": [
+      "OrderIQ",
+      "ForgeIQ",
+      "WorkOrderIQ"
+    ],
+    "v1Gate": false,
+    "learningProfile": {
+      "scenarioType": "VALIDATION",
+      "faultClass": "ORDER_INGEST",
+      "repairClass": "CONTRACT_COMPATIBILITY",
+      "severity": "MEDIUM",
+      "blastRadius": "TENANT_WORKFLOW",
+      "reversibility": "REVERSIBLE",
+      "expectedDetection": "Detect malformed/duplicate/channel-specific order ingest inconsistencies.",
+      "expectedDiagnosis": "Identify normalization or order ownership defect.",
+      "expectedContainment": "Reject/quarantine invalid order without creating duplicate downstream work.",
+      "expectedRecovery": "Normalize then replay through canonical OrderIQ contract.",
+      "evidence": [
+        "source channel",
+        "canonical order id",
+        "idempotency key",
+        "downstream refs"
+      ],
+      "forbidden": [
+        "let channel adapter own canonical order",
+        "create duplicate work order"
+      ]
+    },
+    "violatedInvariants": [
+      "HIVE-INV-IDEMPOTENCY-001",
+      "HIVE-INV-OWNERSHIP-001"
+    ]
+  },
+  {
+    "familyId": "F17",
+    "name": "Correlation and tracing",
+    "count": 30,
+    "engines": [
+      "ForgeIQ",
+      "CostIQ",
+      "Prime",
+      "WorkOrderIQ",
+      "InventoryIQ",
+      "Tracking"
+    ],
+    "v1Gate": false,
+    "learningProfile": {
+      "scenarioType": "FAULT_INJECTION",
+      "faultClass": "TRACE_CONTEXT_LOSS",
+      "repairClass": "OBSERVABILITY",
+      "severity": "HIGH",
+      "blastRadius": "CROSS_ENGINE_TRACE",
+      "reversibility": "REVERSIBLE",
+      "expectedDetection": "Detect lost or mutated correlation/causation context.",
+      "expectedDiagnosis": "Identify exact boundary where trace context was dropped.",
+      "expectedContainment": "Flag affected execution evidence as incomplete; avoid false attribution.",
+      "expectedRecovery": "Restore envelope propagation and validate end-to-end lineage.",
+      "evidence": [
+        "messageId",
+        "executionId",
+        "correlationId",
+        "causationId",
+        "component spans"
+      ],
+      "forbidden": [
+        "generate unrelated new correlation id mid-flow",
+        "fabricate missing provenance"
+      ]
+    },
+    "violatedInvariants": [
+      "HIVE-INV-CORRELATION-001"
+    ]
+  },
+  {
+    "familyId": "F18",
+    "name": "Reservation / consume / variance",
+    "count": 40,
+    "engines": [
+      "InventoryIQ",
+      "WorkOrderIQ"
+    ],
+    "v1Gate": false,
+    "learningProfile": {
+      "scenarioType": "FAULT_INJECTION",
+      "faultClass": "INVENTORY_STATE_VARIANCE",
+      "repairClass": "DATA_RECONCILIATION",
+      "severity": "HIGH",
+      "blastRadius": "INVENTORY",
+      "reversibility": "REVERSIBLE",
+      "expectedDetection": "Detect reserve/consume/release mismatch.",
+      "expectedDiagnosis": "Identify lifecycle step or idempotency defect causing inventory variance.",
+      "expectedContainment": "Prevent further inconsistent consumption.",
+      "expectedRecovery": "Reconcile against authoritative reservation and work-order evidence.",
+      "evidence": [
+        "on-hand",
+        "reserved",
+        "consumed",
+        "work-order lifecycle",
+        "idempotency history"
+      ],
+      "forbidden": [
+        "zero out variance without provenance",
+        "rewrite source history",
+        "double consume"
+      ]
+    },
+    "violatedInvariants": [
+      "HIVE-INV-INVENTORY-001",
+      "HIVE-INV-IDEMPOTENCY-001"
+    ]
+  },
+  {
+    "familyId": "F19",
+    "name": "Constitutional / charter conformance",
+    "count": 40,
+    "engines": [
+      "Governance",
+      "Sentinel",
+      "Foundry",
+      "ARIA",
+      "ForgeIQ",
+      "CostIQ",
+      "Prime",
+      "WorkOrderIQ",
+      "InventoryIQ"
+    ],
+    "v1Gate": false,
+    "learningProfile": {
+      "scenarioType": "FAULT_INJECTION",
+      "faultClass": "CONSTITUTIONAL_DRIFT",
+      "repairClass": "CONSTITUTIONAL_RECONCILIATION",
+      "severity": "CRITICAL",
+      "blastRadius": "HIVE",
+      "reversibility": "CONTAIN_FIRST",
+      "expectedDetection": "Detect classification, authority, charter, or constitutional invariant violation.",
+      "expectedDiagnosis": "Name the violated constitutional/charter invariant and responsible boundary.",
+      "expectedContainment": "Block or isolate violating candidate/action without suppressing evidence.",
+      "expectedRecovery": "Reconcile implementation/documentation to authoritative Constitution/Charter through proper process.",
+      "evidence": [
+        "constitution version",
+        "charter version",
+        "component classification",
+        "Governance decision",
+        "Sentinel finding"
+      ],
+      "forbidden": [
+        "silently amend Constitution",
+        "self-authorize material change",
+        "classify Host/Overwatch as engine",
+        "delete failing invariant"
+      ]
+    },
+    "violatedInvariants": [
+      "HIVE-INV-CONSTITUTION-001",
+      "HIVE-INV-CHARTER-001"
+    ]
+  },
+  {
+    "familyId": "F20",
+    "name": "Multi-engine blast / partial failure",
+    "count": 40,
+    "engines": [
+      "ForgeIQ",
+      "CostIQ",
+      "Prime",
+      "WorkOrderIQ",
+      "InventoryIQ",
+      "EventIQ",
+      "Notifications"
+    ],
+    "v1Gate": false,
+    "learningProfile": {
+      "scenarioType": "FAULT_INJECTION",
+      "faultClass": "MULTI_ENGINE_PARTIAL_FAILURE",
+      "repairClass": "STATE_RECOVERY",
+      "severity": "CRITICAL",
+      "blastRadius": "MULTI_ENGINE",
+      "reversibility": "REVERSIBLE",
+      "expectedDetection": "Detect partial success/failure across multiple engines.",
+      "expectedDiagnosis": "Identify which actions committed, which failed, and safe compensation/retry boundary.",
+      "expectedContainment": "Stop unsafe forward progress while preserving completed authoritative state.",
+      "expectedRecovery": "Reconcile, compensate, retry idempotently, or escalate.",
+      "evidence": [
+        "execution ledger",
+        "per-engine results",
+        "events",
+        "audit trail",
+        "retry/compensation state"
+      ],
+      "forbidden": [
+        "blind replay",
+        "roll back irreversible action as if reversible",
+        "assume all incomplete steps failed"
+      ]
+    },
+    "violatedInvariants": [
+      "HIVE-INV-RECOVERY-001",
+      "HIVE-INV-NO-BLIND-REPLAY-001"
+    ]
+  },
+  {
+    "familyId": "F21",
+    "name": "Customer-safe projections",
+    "count": 30,
+    "engines": [
+      "Tracking",
+      "WorkOrderIQ",
+      "Notifications"
+    ],
+    "v1Gate": false,
+    "learningProfile": {
+      "scenarioType": "VALIDATION",
+      "faultClass": "PROJECTION_SAFETY",
+      "repairClass": "DATA_MINIMIZATION",
+      "severity": "HIGH",
+      "blastRadius": "CUSTOMER_VIEW",
+      "reversibility": "REVERSIBLE",
+      "expectedDetection": "Detect customer projection exposing internal/protected state or false lifecycle state.",
+      "expectedDiagnosis": "Identify projection boundary or source-of-truth mismatch.",
+      "expectedContainment": "Withhold unsafe projection while preserving internal truth.",
+      "expectedRecovery": "Rebuild projection from authorized source fields.",
+      "evidence": [
+        "source state",
+        "projection schema",
+        "tenant/customer scope",
+        "notification payload"
+      ],
+      "forbidden": [
+        "expose internal notes/secrets",
+        "let projection become authoritative"
+      ]
+    },
+    "violatedInvariants": [
+      "HIVE-INV-DATA-MINIMIZATION-001",
+      "HIVE-INV-OWNERSHIP-001"
+    ]
+  },
+  {
+    "familyId": "F22",
+    "name": "Portability standalone engines",
+    "count": 30,
+    "engines": [
+      "ForgeIQ",
+      "CostIQ",
+      "Prime",
+      "WorkOrderIQ",
+      "InventoryIQ"
+    ],
+    "v1Gate": false,
+    "learningProfile": {
+      "scenarioType": "VALIDATION",
+      "faultClass": "PORTABILITY_VIOLATION",
+      "repairClass": "DECOUPLING",
+      "severity": "HIGH",
+      "blastRadius": "ENGINE",
+      "reversibility": "REVERSIBLE",
+      "expectedDetection": "Detect hidden Host/provider/repository dependency in portable engine.",
+      "expectedDiagnosis": "Identify coupling boundary and replacement contract needed.",
+      "expectedContainment": "Prevent coupling from becoming required constitutional dependency.",
+      "expectedRecovery": "Extract adapter/configuration and restore host/provider neutrality.",
+      "evidence": [
+        "imports/dependencies",
+        "manifest",
+        "contract boundary",
+        "host/provider references"
+      ],
+      "forbidden": [
+        "encode Host name into engine identity",
+        "make provider permanent architecture"
+      ]
+    },
+    "violatedInvariants": [
+      "HIVE-INV-PORTABILITY-001"
+    ]
+  },
+  {
+    "familyId": "F23",
+    "name": "Authorization context binding",
+    "count": 30,
+    "engines": [
+      "Governance",
+      "IdentityIQ",
+      "ForgeIQ",
+      "CostIQ",
+      "Prime",
+      "WorkOrderIQ",
+      "InventoryIQ"
+    ],
+    "v1Gate": false,
+    "learningProfile": {
+      "scenarioType": "FAULT_INJECTION",
+      "faultClass": "AUTHORITY_CONTEXT_MISMATCH",
+      "repairClass": "AUTHORIZATION",
+      "severity": "CRITICAL",
+      "blastRadius": "AUTHORITY_SCOPE",
+      "reversibility": "CONTAIN_FIRST",
+      "expectedDetection": "Detect actor/tenant/purpose/action mismatch in authority context.",
+      "expectedDiagnosis": "Identify exact binding mismatch or expired/delegated authority defect.",
+      "expectedContainment": "Deny before execution.",
+      "expectedRecovery": "Obtain a correctly scoped Governance decision.",
+      "evidence": [
+        "AuthorityEnvelope",
+        "identity claims",
+        "tenant context",
+        "GovernanceDecision",
+        "delegation chain"
+      ],
+      "forbidden": [
+        "widen scope",
+        "ignore purpose",
+        "reuse expired decision",
+        "trust caller assertion"
+      ]
+    },
+    "violatedInvariants": [
+      "HIVE-INV-AUTHORITY-001",
+      "HIVE-INV-TENANT-001"
+    ]
+  },
+  {
+    "familyId": "F24",
+    "name": "Industry profile vs specialist reuse",
+    "count": 20,
+    "engines": [
+      "ManufacturingIQ",
+      "ForgeIQ",
+      "CostIQ",
+      "Prime",
+      "WorkOrderIQ",
+      "InventoryIQ"
+    ],
+    "v1Gate": false,
+    "learningProfile": {
+      "scenarioType": "VALIDATION",
+      "faultClass": "INDUSTRY_DUPLICATION",
+      "repairClass": "ARCHITECTURE_RECONCILIATION",
+      "severity": "HIGH",
+      "blastRadius": "ARCHITECTURE",
+      "reversibility": "REVERSIBLE",
+      "expectedDetection": "Detect Industry engine recreating portable specialist capability.",
+      "expectedDiagnosis": "Identify duplication/domain leakage and correct reusable owner.",
+      "expectedContainment": "Prevent duplicate authoritative implementation from becoming canonical.",
+      "expectedRecovery": "Compose existing specialist through governed contract.",
+      "evidence": [
+        "charter ownership",
+        "engine registry",
+        "dependency graph",
+        "source-of-truth map"
+      ],
+      "forbidden": [
+        "fork specialist per industry",
+        "make industry engine own portable capability"
+      ]
+    },
+    "violatedInvariants": [
+      "HIVE-INV-NO-DUPLICATION-001",
+      "HIVE-INV-OWNERSHIP-001"
+    ]
+  },
+  {
+    "familyId": "F25",
+    "name": "Chaos / fuzz of legal fields",
+    "count": 20,
+    "engines": [
+      "ForgeIQ",
+      "CostIQ",
+      "Prime",
+      "WorkOrderIQ",
+      "InventoryIQ"
+    ],
+    "v1Gate": false,
+    "learningProfile": {
+      "scenarioType": "CHAOS_FUZZ",
+      "faultClass": "LEGAL_FIELD_FUZZ",
+      "repairClass": "INPUT_VALIDATION",
+      "severity": "HIGH",
+      "blastRadius": "REQUEST",
+      "reversibility": "REVERSIBLE",
+      "expectedDetection": "Detect invalid, edge-case, or adversarial combinations of otherwise legal fields.",
+      "expectedDiagnosis": "Identify validation/invariant failure without relaxing unrelated constraints.",
+      "expectedContainment": "Reject/quarantine malformed input safely.",
+      "expectedRecovery": "Accept only corrected input satisfying structural and behavioral invariants.",
+      "evidence": [
+        "raw input",
+        "schema validation",
+        "invariant results",
+        "decision path"
+      ],
+      "forbidden": [
+        "disable validator",
+        "add always-true condition",
+        "coerce dangerous input silently"
+      ]
+    },
+    "violatedInvariants": [
+      "HIVE-INV-VALIDATION-001"
+    ]
+  }
+]

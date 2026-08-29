@@ -1,0 +1,133 @@
+{
+  "ARIA": {
+    "sourceName": "ARIA",
+    "componentId": "hive.constitutional.aria",
+    "componentKind": "ENGINE",
+    "engineClassification": "CONSTITUTIONAL_INTELLIGENCE"
+  },
+  "CostIQ": {
+    "sourceName": "CostIQ",
+    "componentId": "hive.specialized.costiq",
+    "componentKind": "ENGINE",
+    "engineClassification": "SPECIALIZED"
+  },
+  "EventIQ": {
+    "sourceName": "EventIQ",
+    "componentId": "hive.platform.eventiq",
+    "componentKind": "ENGINE",
+    "engineClassification": "SHARED_PLATFORM"
+  },
+  "FinanceCore": {
+    "sourceName": "FinanceCore",
+    "componentId": "hive.core.finance",
+    "componentKind": "ENGINE",
+    "engineClassification": "CORE"
+  },
+  "ForgeIQ": {
+    "sourceName": "ForgeIQ",
+    "componentId": "hive.specialized.forgeiq",
+    "componentKind": "ENGINE",
+    "engineClassification": "SPECIALIZED"
+  },
+  "Foundry": {
+    "sourceName": "Foundry",
+    "componentId": "hive.constitutional.foundry",
+    "componentKind": "ENGINE",
+    "engineClassification": "CONSTITUTIONAL_EVOLUTION"
+  },
+  "Governance": {
+    "sourceName": "Governance",
+    "componentId": "hive.constitutional.governance",
+    "componentKind": "ENGINE",
+    "engineClassification": "CONSTITUTIONAL_GOVERNANCE"
+  },
+  "Host": {
+    "sourceName": "Host",
+    "componentId": "hive.component.host_application",
+    "componentKind": "HOST_APPLICATION"
+  },
+  "IdentityIQ": {
+    "sourceName": "IdentityIQ",
+    "componentId": "hive.platform.identityiq",
+    "componentKind": "ENGINE",
+    "engineClassification": "SHARED_PLATFORM"
+  },
+  "InventoryIQ": {
+    "sourceName": "InventoryIQ",
+    "componentId": "hive.specialized.inventoryiq",
+    "componentKind": "ENGINE",
+    "engineClassification": "SPECIALIZED"
+  },
+  "ManufacturingIQ": {
+    "sourceName": "ManufacturingIQ",
+    "componentId": "hive.industry.manufacturingiq",
+    "componentKind": "ENGINE",
+    "engineClassification": "INDUSTRY"
+  },
+  "Notifications": {
+    "sourceName": "Notifications",
+    "componentId": "hive.platform.notificationiq",
+    "componentKind": "ENGINE",
+    "engineClassification": "SHARED_PLATFORM"
+  },
+  "OrderIQ": {
+    "sourceName": "OrderIQ",
+    "componentId": "hive.specialized.orderiq",
+    "componentKind": "ENGINE",
+    "engineClassification": "SPECIALIZED"
+  },
+  "Prime": {
+    "sourceName": "Prime",
+    "componentId": "hive.constitutional.prime",
+    "componentKind": "ENGINE",
+    "engineClassification": "CONSTITUTIONAL_ORCHESTRATION"
+  },
+  "ReceiptIQ": {
+    "sourceName": "ReceiptIQ",
+    "componentId": "hive.specialized.receiptiq",
+    "componentKind": "ENGINE",
+    "engineClassification": "SPECIALIZED"
+  },
+  "ResourcesCore": {
+    "sourceName": "ResourcesCore",
+    "componentId": "hive.core.resources",
+    "componentKind": "ENGINE",
+    "engineClassification": "CORE"
+  },
+  "SenseIQ": {
+    "sourceName": "SenseIQ",
+    "componentId": "unresolved.senseiq",
+    "componentKind": "UNRESOLVED_COMPONENT",
+    "engineClassification": "UNCHARtered",
+    "resolutionStatus": "REQUIRES_ARCHITECTURE_REVIEW"
+  },
+  "Sentinel": {
+    "sourceName": "Sentinel",
+    "componentId": "hive.constitutional.sentinel",
+    "componentKind": "ENGINE",
+    "engineClassification": "CONSTITUTIONAL_SENTINEL"
+  },
+  "Tracking": {
+    "sourceName": "Tracking",
+    "componentId": "hive.specialized.trackingiq",
+    "componentKind": "ENGINE",
+    "engineClassification": "SPECIALIZED"
+  },
+  "VisionIQ": {
+    "sourceName": "VisionIQ",
+    "componentId": "hive.specialized.visioniq",
+    "componentKind": "ENGINE",
+    "engineClassification": "SPECIALIZED"
+  },
+  "WorkOrderIQ": {
+    "sourceName": "WorkOrderIQ",
+    "componentId": "hive.specialized.workorderiq",
+    "componentKind": "ENGINE",
+    "engineClassification": "SPECIALIZED"
+  },
+  "contracts": {
+    "sourceName": "contracts",
+    "componentId": "hive.component.contracts",
+    "componentKind": "INFRASTRUCTURE"
+  }
+}

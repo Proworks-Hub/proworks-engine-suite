@@ -1,0 +1,268 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hive.local/schemas/simulation-run-v2.schema.json",
+  "title": "Hive Simulation Run / Repair-Learning Evidence V2",
+  "type": "object",
+  "required": [
+    "runId",
+    "scenarioId",
+    "startedAt",
+    "environment",
+    "versions",
+    "observations",
+    "diagnosis",
+    "repair",
+    "validation",
+    "outcome"
+  ],
+  "properties": {
+    "runId": {
+      "type": "string"
+    },
+    "scenarioId": {
+      "type": "string"
+    },
+    "startedAt": {
+      "type": "string"
+    },
+    "completedAt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "environment": {
+      "type": "object",
+      "required": [
+        "zone"
+      ],
+      "properties": {
+        "zone": {
+          "enum": [
+            "SANDBOX",
+            "VALIDATION",
+            "DEVELOPMENT",
+            "TRUSTED_PRODUCTION"
+          ]
+        },
+        "tenantId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "failureInjectionEnabled": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": true
+    },
+    "versions": {
+      "type": "object",
+      "properties": {
+        "constitutionVersion": {
+          "type": "string"
+        },
+        "charterVersions": {
+          "type": "object"
+        },
+        "engineVersions": {
+          "type": "object"
+        },
+        "contractVersions": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    },
+    "observations": {
+      "type": "object",
+      "properties": {
+        "events": {
+          "type": "array"
+        },
+        "telemetry": {
+          "type": "array"
+        },
+        "governanceDecisions": {
+          "type": "array"
+        },
+        "sentinelFindings": {
+          "type": "array"
+        },
+        "auditEvidence": {
+          "type": "array"
+        },
+        "stateDiffs": {
+          "type": "array"
+        }
+      },
+      "additionalProperties": true
+    },
+    "failureSignature": {
+      "type": "object",
+      "properties": {
+        "primarySymptom": {
+          "type": "string"
+        },
+        "errorCodes": {
+          "type": "array"
+        },
+        "affectedComponents": {
+          "type": "array"
+        },
+        "precedingEvents": {
+          "type": "array"
+        },
+        "missingEvents": {
+          "type": "array"
+        },
+        "healthStates": {
+          "type": "object"
+        },
+        "governanceState": {
+          "type": "object"
+        },
+        "dependencyState": {
+          "type": "object"
+        },
+        "stateDiff": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    },
+    "diagnosis": {
+      "type": "object",
+      "required": [
+        "candidates",
+        "selected",
+        "confidence"
+      ],
+      "properties": {
+        "candidates": {
+          "type": "array"
+        },
+        "selected": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "rootCause": {},
+        "evidenceReferences": {
+          "type": "array"
+        },
+        "violatedInvariants": {
+          "type": "array"
+        }
+      },
+      "additionalProperties": true
+    },
+    "repair": {
+      "type": "object",
+      "required": [
+        "candidates"
+      ],
+      "properties": {
+        "candidates": {
+          "type": "array"
+        },
+        "selected": {},
+        "repairClass": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "authorityLeaseReference": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "changes": {
+          "type": "array"
+        }
+      },
+      "additionalProperties": true
+    },
+    "validation": {
+      "type": "object",
+      "required": [
+        "originalScenarioReRun",
+        "regressions"
+      ],
+      "properties": {
+        "originalScenarioReRun": {},
+        "regressions": {
+          "type": "array"
+        },
+        "contractChecks": {
+          "type": "array"
+        },
+        "sentinelChecks": {
+          "type": "array"
+        },
+        "rollbackCheck": {},
+        "performanceDelta": {}
+      },
+      "additionalProperties": true
+    },
+    "outcome": {
+      "type": "object",
+      "required": [
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "PASS",
+            "FAIL",
+            "CONTAINED",
+            "RECOVERED",
+            "ESCALATED",
+            "INCONCLUSIVE"
+          ]
+        },
+        "recoveryTimeMs": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "lessonLearned": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "generalizedRule": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "knowledgeDisposition": {
+          "enum": [
+            "DO_NOT_RETAIN",
+            "RETAIN_CASE",
+            "PROPOSE_GENERALIZATION",
+            "APPROVED_GENERALIZATION",
+            "REQUIRES_REVIEW"
+          ]
+        },
+        "provenanceReferences": {
+          "type": "array"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,183 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hive.local/schemas/simulation-v2.schema.json",
+  "title": "Hive Repair-Learning Simulation Scenario V2",
+  "type": "object",
+  "required": [
+    "id",
+    "family",
+    "title",
+    "schemaVersion",
+    "components",
+    "setup",
+    "steps",
+    "mustPass",
+    "mustFailTheEngineIf",
+    "learning"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^SIM-[0-9]{4,}$"
+    },
+    "family": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "schemaVersion": {
+      "const": "2.0"
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "sourceName",
+          "componentId",
+          "componentKind"
+        ],
+        "properties": {
+          "sourceName": {
+            "type": "string"
+          },
+          "componentId": {
+            "type": "string"
+          },
+          "componentKind": {
+            "type": "string"
+          },
+          "engineClassification": {
+            "type": "string"
+          },
+          "resolutionStatus": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "setup": {
+      "type": "string"
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "mustPass": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "mustFailTheEngineIf": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "v1Gate": {
+      "type": "boolean"
+    },
+    "learning": {
+      "type": "object",
+      "required": [
+        "scenarioType",
+        "faultClass",
+        "expectedDetection",
+        "expectedDiagnosis",
+        "expectedContainment",
+        "expectedRecovery",
+        "violatedInvariants",
+        "requiredEvidence",
+        "repairClass",
+        "forbiddenRepairActions",
+        "severity",
+        "blastRadius",
+        "reversibility"
+      ],
+      "properties": {
+        "scenarioType": {
+          "type": "string"
+        },
+        "faultClass": {
+          "type": "string"
+        },
+        "faultInjection": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "expectedDetection": {
+          "type": "string"
+        },
+        "expectedDiagnosis": {
+          "type": "string"
+        },
+        "expectedContainment": {
+          "type": "string"
+        },
+        "expectedRecovery": {
+          "type": "string"
+        },
+        "violatedInvariants": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "requiredEvidence": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "repairClass": {
+          "type": "string"
+        },
+        "allowedRepairActions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "forbiddenRepairActions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "severity": {
+          "type": "string"
+        },
+        "blastRadius": {
+          "type": "string"
+        },
+        "reversibility": {
+          "type": "string"
+        },
+        "tenantAndDataClass": {
+          "type": "object"
+        },
+        "generalizationCandidate": {
+          "type": "boolean"
+        },
+        "metadataConfidence": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": true
+}

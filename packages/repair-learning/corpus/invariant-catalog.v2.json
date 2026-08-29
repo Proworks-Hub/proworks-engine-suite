@@ -1,0 +1,236 @@
+[
+  {
+    "id": "HIVE-INV-APPROVAL-001",
+    "name": "Approval",
+    "description": "Only the currently authorized/approved version may progress where approval is required.",
+    "severity": "HIGH",
+    "validationType": "RUNTIME_OR_TEST",
+    "status": "PROPOSED_CANONICAL_REFERENCE",
+    "source": "Simulation V2 migration; must be reconciled with authoritative Hive invariant catalog when available."
+  },
+  {
+    "id": "HIVE-INV-ASSET-LINEAGE-001",
+    "name": "Asset Lineage",
+    "description": "Creative/visual assets retain source/version integrity through preparation and production.",
+    "severity": "HIGH",
+    "validationType": "RUNTIME_OR_TEST",
+    "status": "PROPOSED_CANONICAL_REFERENCE",
+    "source": "Simulation V2 migration; must be reconciled with authoritative Hive invariant catalog when available."
+  },
+  {
+    "id": "HIVE-INV-AUTHORITY-001",
+    "name": "Authority",
+    "description": "Capability or caller claims do not imply permission; consequential execution requires Governance authority.",
+    "severity": "CRITICAL",
+    "validationType": "RUNTIME_OR_TEST",
+    "status": "PROPOSED_CANONICAL_REFERENCE",
+    "source": "Simulation V2 migration; must be reconciled with authoritative Hive invariant catalog when available."
+  },
+  {
+    "id": "HIVE-INV-CHARTER-001",
+    "name": "Charter",
+    "description": "Material engine authority/capability must remain within an approved Charter.",
+    "severity": "HIGH",
+    "validationType": "RUNTIME_OR_TEST",
+    "status": "PROPOSED_CANONICAL_REFERENCE",
+    "source": "Simulation V2 migration; must be reconciled with authoritative Hive invariant catalog when available."
+  },
+  {
+    "id": "HIVE-INV-CONSTITUTION-001",
+    "name": "Constitution",
+    "description": "Implementation may not silently change constitutional meaning or authority.",
+    "severity": "CRITICAL",
+    "validationType": "RUNTIME_OR_TEST",
+    "status": "PROPOSED_CANONICAL_REFERENCE",
+    "source": "Simulation V2 migration; must be reconciled with authoritative Hive invariant catalog when available."
+  },
+  {
+    "id": "HIVE-INV-CORRELATION-001",
+    "name": "Correlation",
+    "description": "Execution/correlation/causation context remains traceable across participating components.",
+    "severity": "HIGH",
+    "validationType": "RUNTIME_OR_TEST",
+    "status": "PROPOSED_CANONICAL_REFERENCE",
+    "source": "Simulation V2 migration; must be reconciled with authoritative Hive invariant catalog when available."
+  },
+  {
+    "id": "HIVE-INV-DATA-MINIMIZATION-001",
+    "name": "Data Minimization",
+    "description": "Projections and evidence expose only information authorized and necessary for their purpose.",
+    "severity": "HIGH",
+    "validationType": "RUNTIME_OR_TEST",
+    "status": "PROPOSED_CANONICAL_REFERENCE",
+    "source": "Simulation V2 migration; must be reconciled with authoritative Hive invariant catalog when available."
+  },
+  {
+    "id": "HIVE-INV-DEGRADED-001",
+    "name": "Degraded",
+    "description": "Degraded operation preserves authority, ownership, and safety boundaries.",
+    "severity": "HIGH",
+    "validationType": "RUNTIME_OR_TEST",
+    "status": "PROPOSED_CANONICAL_REFERENCE",
+    "source": "Simulation V2 migration; must be reconciled with authoritative Hive invariant catalog when available."
+  },
+  {
+    "id": "HIVE-INV-FAILURE-ISOLATION-001",
+    "name": "Failure Isolation",
+    "description": "A component failure should not unnecessarily collapse unrelated authorized capability.",
+    "severity": "HIGH",
+    "validationType": "RUNTIME_OR_TEST",
+    "status": "PROPOSED_CANONICAL_REFERENCE",
+    "source": "Simulation V2 migration; must be reconciled with authoritative Hive invariant catalog when available."
+  },
+  {
+    "id": "HIVE-INV-FINANCIAL-INTEGRITY-001",
+    "name": "Financial Integrity",
+    "description": "Financial/cost state must derive from authoritative inputs with preserved provenance.",
+    "severity": "CRITICAL",
+    "validationType": "RUNTIME_OR_TEST",
+    "status": "PROPOSED_CANONICAL_REFERENCE",
+    "source": "Simulation V2 migration; must be reconciled with authoritative Hive invariant catalog when available."
+  },
+  {
+    "id": "HIVE-INV-GOVERNANCE-ORDER-001",
+    "name": "Governance Order",
+    "description": "Governance authorization occurs before consequential capability resolution/execution.",
+    "severity": "HIGH",
+    "validationType": "RUNTIME_OR_TEST",
+    "status": "PROPOSED_CANONICAL_REFERENCE",
+    "source": "Simulation V2 migration; must be reconciled with authoritative Hive invariant catalog when available."
+  },
+  {
+    "id": "HIVE-INV-IDEMPOTENCY-001",
+    "name": "Idempotency",
+    "description": "Duplicate delivery must not duplicate consequential state transitions.",
+    "severity": "HIGH",
+    "validationType": "RUNTIME_OR_TEST",
+    "status": "PROPOSED_CANONICAL_REFERENCE",
+    "source": "Simulation V2 migration; must be reconciled with authoritative Hive invariant catalog when available."
+  },
+  {
+    "id": "HIVE-INV-INVENTORY-001",
+    "name": "Inventory",
+    "description": "Reserve, consume, release, and variance operations preserve authoritative inventory accounting.",
+    "severity": "HIGH",
+    "validationType": "RUNTIME_OR_TEST",
+    "status": "PROPOSED_CANONICAL_REFERENCE",
+    "source": "Simulation V2 migration; must be reconciled with authoritative Hive invariant catalog when available."
+  },
+  {
+    "id": "HIVE-INV-LIFECYCLE-001",
+    "name": "Lifecycle",
+    "description": "Illegal lifecycle transitions are rejected and history is not silently rewritten.",
+    "severity": "HIGH",
+    "validationType": "RUNTIME_OR_TEST",
+    "status": "PROPOSED_CANONICAL_REFERENCE",
+    "source": "Simulation V2 migration; must be reconciled with authoritative Hive invariant catalog when available."
+  },
+  {
+    "id": "HIVE-INV-NO-BLIND-REPLAY-001",
+    "name": "No Blind Replay",
+    "description": "Recovery must not blindly replay actions whose prior completion is uncertain.",
+    "severity": "HIGH",
+    "validationType": "RUNTIME_OR_TEST",
+    "status": "PROPOSED_CANONICAL_REFERENCE",
+    "source": "Simulation V2 migration; must be reconciled with authoritative Hive invariant catalog when available."
+  },
+  {
+    "id": "HIVE-INV-NO-DUPLICATION-001",
+    "name": "No Duplication",
+    "description": "Industry specialization should compose reusable capability rather than duplicate portable authoritative engines.",
+    "severity": "HIGH",
+    "validationType": "RUNTIME_OR_TEST",
+    "status": "PROPOSED_CANONICAL_REFERENCE",
+    "source": "Simulation V2 migration; must be reconciled with authoritative Hive invariant catalog when available."
+  },
+  {
+    "id": "HIVE-INV-OWNERSHIP-001",
+    "name": "Ownership",
+    "description": "Coordination, possession, projection, or transport does not transfer authoritative domain ownership.",
+    "severity": "HIGH",
+    "validationType": "RUNTIME_OR_TEST",
+    "status": "PROPOSED_CANONICAL_REFERENCE",
+    "source": "Simulation V2 migration; must be reconciled with authoritative Hive invariant catalog when available."
+  },
+  {
+    "id": "HIVE-INV-PORTABILITY-001",
+    "name": "Portability",
+    "description": "Portable engines may not acquire unnecessary permanent Host/provider/repository dependencies.",
+    "severity": "HIGH",
+    "validationType": "RUNTIME_OR_TEST",
+    "status": "PROPOSED_CANONICAL_REFERENCE",
+    "source": "Simulation V2 migration; must be reconciled with authoritative Hive invariant catalog when available."
+  },
+  {
+    "id": "HIVE-INV-PRIME-OWNERSHIP-001",
+    "name": "Prime Ownership",
+    "description": "Prime orchestrates but does not own participating domain state.",
+    "severity": "HIGH",
+    "validationType": "RUNTIME_OR_TEST",
+    "status": "PROPOSED_CANONICAL_REFERENCE",
+    "source": "Simulation V2 migration; must be reconciled with authoritative Hive invariant catalog when available."
+  },
+  {
+    "id": "HIVE-INV-PROVENANCE-001",
+    "name": "Provenance",
+    "description": "Consequential derived values and knowledge retain sufficient provenance for validation and challenge.",
+    "severity": "HIGH",
+    "validationType": "RUNTIME_OR_TEST",
+    "status": "PROPOSED_CANONICAL_REFERENCE",
+    "source": "Simulation V2 migration; must be reconciled with authoritative Hive invariant catalog when available."
+  },
+  {
+    "id": "HIVE-INV-RECOVERY-001",
+    "name": "Recovery",
+    "description": "Recovery must reconcile actual state before resuming consequential execution.",
+    "severity": "HIGH",
+    "validationType": "RUNTIME_OR_TEST",
+    "status": "PROPOSED_CANONICAL_REFERENCE",
+    "source": "Simulation V2 migration; must be reconciled with authoritative Hive invariant catalog when available."
+  },
+  {
+    "id": "HIVE-INV-RESOURCE-INTEGRITY-001",
+    "name": "Resource Integrity",
+    "description": "Resource allocation may not exceed authoritative available capacity without explicit authorized exception.",
+    "severity": "HIGH",
+    "validationType": "RUNTIME_OR_TEST",
+    "status": "PROPOSED_CANONICAL_REFERENCE",
+    "source": "Simulation V2 migration; must be reconciled with authoritative Hive invariant catalog when available."
+  },
+  {
+    "id": "HIVE-INV-TENANT-001",
+    "name": "Tenant",
+    "description": "Tenant context and boundaries must be preserved across consequential processing.",
+    "severity": "CRITICAL",
+    "validationType": "RUNTIME_OR_TEST",
+    "status": "PROPOSED_CANONICAL_REFERENCE",
+    "source": "Simulation V2 migration; must be reconciled with authoritative Hive invariant catalog when available."
+  },
+  {
+    "id": "HIVE-INV-TRUSTED-IDENTITY-001",
+    "name": "Trusted Identity",
+    "description": "Unregistered or unresolved component identity does not automatically become trusted Hive identity.",
+    "severity": "HIGH",
+    "validationType": "RUNTIME_OR_TEST",
+    "status": "PROPOSED_CANONICAL_REFERENCE",
+    "source": "Simulation V2 migration; must be reconciled with authoritative Hive invariant catalog when available."
+  },
+  {
+    "id": "HIVE-INV-VALIDATION-001",
+    "name": "Validation",
+    "description": "A validator that cannot fail the rule it claims to enforce is not valid enforcement.",
+    "severity": "HIGH",
+    "validationType": "RUNTIME_OR_TEST",
+    "status": "PROPOSED_CANONICAL_REFERENCE",
+    "source": "Simulation V2 migration; must be reconciled with authoritative Hive invariant catalog when available."
+  },
+  {
+    "id": "HIVE-INV-VERSION-LINEAGE-001",
+    "name": "Version Lineage",
+    "description": "Material state and assets preserve version lineage across revisions.",
+    "severity": "HIGH",
+    "validationType": "RUNTIME_OR_TEST",
+    "status": "PROPOSED_CANONICAL_REFERENCE",
+    "source": "Simulation V2 migration; must be reconciled with authoritative Hive invariant catalog when available."
+  }
+]
