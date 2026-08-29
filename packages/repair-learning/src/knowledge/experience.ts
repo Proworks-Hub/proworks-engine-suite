@@ -226,7 +226,29 @@ export interface ExperienceStore {
    * component and error-code overlap. Similarity scoring is the tiebreaker,
    * not the mechanism.
    */
-  similarTo(signature: FailureSignature, options?: { minSimilarity?: number; limit?: number }): readonly SimilarCase[];
+  /**
+   * Prior cases resembling a signature, WITHIN A TENANT.
+   *
+   * `readingTenant` is REQUIRED. It was optional in the first version — there
+   * was no tenant parameter at all — and MC-12 demonstrated the consequence:
+   * `signatureSimilarity` weights tenantScope at 0.05, so one shop's failure
+   * matched another's at ~0.95 against a 0.6 threshold and the whole
+   * `RepairCase` came back, root cause and provenance included.
+   *
+   * Required rather than optional because an optional tenant filter is one
+   * somebody forgets, and the forgetting is invisible: every call site still
+   * reads as scoped. The same argument that made Governance required on every
+   * Core coordinator.
+   *
+   * A case whose `crossTenantLearningApproved` is true is visible to any
+   * tenant. That flag is Governance's to set (§36), and until now nothing
+   * read it.
+   */
+  similarTo(
+    signature: FailureSignature,
+    readingTenant: string,
+    options?: { minSimilarity?: number; limit?: number },
+  ): readonly SimilarCase[];
   count(): number;
 }
 
@@ -274,10 +296,22 @@ export function createExperienceStore(): ExperienceStore {
       return query.limit === undefined ? matches : matches.slice(0, query.limit);
     },
 
-    similarTo(signature, options = {}) {
+    similarTo(signature, readingTenant, options = {}) {
       const minSimilarity = options.minSimilarity ?? 0.5;
 
-      const scored = cases.map((c) => {
+      // ── The tenant gate ───────────────────────────────────────────────────
+      //
+      // Applied before scoring, not after. Filtering a scored list would mean
+      // the similarity computation had already read every tenant's case, and
+      // a later refactor that returned the intermediate list would leak
+      // silently.
+      const visible = cases.filter(
+        (c) =>
+          c.failureSignature.tenantScope === readingTenant ||
+          c.applicabilityScope.crossTenantLearningApproved,
+      );
+
+      const scored = visible.map((c) => {
         const matchedOn: string[] = [];
 
         // ── Deterministic signals, checked first and named ──────────────────

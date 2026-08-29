@@ -606,44 +606,63 @@ describe("MC-05..MC-24 — the rest", () => {
     expect(signatureFor(BRIGHTON).signatureHash).not.toBe(signatureFor(KSIX).signatureHash);
 
     const finding = findReusableKnowledge({
+      readingTenant: BRIGHTON,
       signature: signatureFor(BRIGHTON),
       store,
       library: createPatternLibrary(),
       currentVersions: {},
     });
 
-    // ── A REAL DEFECT, FOUND BY THIS SCENARIO ────────────────────────────
+    // ── THE DEFECT THIS SCENARIO FOUND, NOW CLOSED ──────────────────────
     //
-    // Differing hashes are not enough. `similarTo` weights tenantScope at 0.05,
-    // so an otherwise-identical failure scores ~0.95 — well over the 0.6
-    // threshold — and `findReusableKnowledge` hands back `bestPriorCase`: the
-    // whole RepairCase, including `rootCause` and `provenance`.
+    // On first run this returned ksix's whole RepairCase to brighton — root
+    // cause and provenance included — because `signatureSimilarity` weights
+    // tenantScope at 0.05, so an otherwise identical failure scored ~0.95
+    // against a 0.6 threshold. `crossTenantLearningApproved` was stored as
+    // false and nothing read it.
     //
-    // `applicabilityScope.crossTenantLearningApproved` is FALSE on that case
-    // and NOTHING READS IT. It is the same shape of defect as the one MC-24
-    // documents and the one E2E-03 found: a field that is declared, stored,
-    // and never consulted.
+    // MIS-MC12 made `readingTenant` a required parameter on both `similarTo`
+    // and `findReusableKnowledge`, and the gate is applied before scoring.
     //
-    // Not fixed here. Adding a tenant gate to retrieval changes repair-learning
-    // behaviour across every caller, which needs its own authorization — the
-    // same reason E2E-03 was reported rather than patched mid-run.
-    const leakedRawCase =
-      finding.bestPriorCase !== null && finding.bestPriorCase.caseId === "case_ksix";
+    // mustPass: "brighton cannot fetch ksix experience record"
+    expect(finding.bestPriorCase).toBeNull();
+    expect(finding.priorCases).toEqual([]);
+    expect(finding.reusable).toBe(false);
 
-    if (leakedRawCase) {
-      // Recorded as what it is. The scenario's mustFail names it exactly:
-      // "brighton reads ksix raw case".
-      skip(
-        s,
-        "ENGINE DEFECT (reported, not patched): findReusableKnowledge returns ksix's full RepairCase to brighton. " +
-          "crossTenantLearningApproved=false is stored and never read; similarity weights tenantScope at 0.05 so a " +
-          "cross-tenant match scores ~0.95 against a 0.6 threshold. Same shape as the unread terminationConditions.",
-      );
-      expect(finding.bestPriorCase!.rootCause).toContain("ksix");
-      return;
-    }
+    // mustPass: "matchedOn exact signature hash" — brighton's OWN case still
+    // matches, so the gate did not break legitimate reuse.
+    store.record(
+      repairCaseSchema.parse({
+        caseId: "case_brighton",
+        failureSignatureHash: signatureFor(BRIGHTON).signatureHash,
+        failureSignature: signatureFor(BRIGHTON),
+        environment: "SIMULATION",
+        componentVersions: {},
+        diagnosisId: "dx_b",
+        rootCause: "brighton: no delivery-key check",
+        diagnosisConfirmed: true,
+        repairClass: "IDEMPOTENCY",
+        repairAttempts: [{ repairAttemptId: "ra_b", repairCandidateId: "rc_b", outcome: "APPLIED_SUCCEEDED", validatorOutcomes: {}, scores: {}, attemptedAt: "2026-08-29T10:05:00.000Z" }],
+        selectedRepairId: "rc_b",
+        applicabilityScope: { components: ["hive.specialized.workorderiq"], engineVersions: {}, contractVersions: {}, constitutionVersion: "1.0", environments: ["SIMULATION"], crossTenantLearningApproved: false },
+        confidence: "confirmed",
+        provenance: { runId: "run_b", recordedBy: "foundry", recordedAt: "2026-08-29T10:10:00.000Z" },
+        knowledgeStatus: "RECORDED", timings: {}, humanIntervention: false,
+      }),
+    );
 
-    pass(s, "cross-tenant retrieval refused");
+    const own = store.similarTo(signatureFor(BRIGHTON), BRIGHTON);
+    expect(own).toHaveLength(1);
+    expect(own[0]!.matchedOn).toContain("exact signature hash");
+
+    // mustFail: brighton reads ksix raw case
+    assertMustFailDidNotHappen(
+      s,
+      "brighton reads ksix raw case",
+      store.similarTo(signatureFor(BRIGHTON), BRIGHTON).some((c) => c.case.caseId === "case_ksix"),
+    );
+
+    pass(s, "cross-tenant retrieval refused; own-tenant exact match intact");
   });
 
   it("MC-13 audit scope", () => {

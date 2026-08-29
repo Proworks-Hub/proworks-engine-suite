@@ -670,7 +670,7 @@ describe("§46 — the second occurrence is handled better because of the first"
     expect(second.runFingerprint).not.toBe(first.runFingerprint);
 
     // FIRST OCCURRENCE: nothing known.
-    const before = findReusableKnowledge({ signature: first, store, library, currentVersions: versions });
+    const before = findReusableKnowledge({ readingTenant: "ksix", signature: first, store, library, currentVersions: versions });
     expect(before.reusable).toBe(false);
     expect(before.priorCases).toHaveLength(0);
 
@@ -715,7 +715,7 @@ describe("§46 — the second occurrence is handled better because of the first"
     );
 
     // SECOND OCCURRENCE: the prior case is found, with its proven repair.
-    const after = findReusableKnowledge({ signature: second, store, library, currentVersions: versions });
+    const after = findReusableKnowledge({ readingTenant: "ksix", signature: second, store, library, currentVersions: versions });
     expect(after.reusable).toBe(true);
     expect(after.bestPriorCase?.caseId).toBe("case_first");
     expect(after.bestPriorCase?.rootCause).toContain("delivery-key check");
@@ -785,6 +785,7 @@ describe("§46 — the second occurrence is handled better because of the first"
     });
 
     const finding = findReusableKnowledge({
+      readingTenant: "ksix",
       signature,
       store,
       library: createPatternLibrary(),

@@ -2,14 +2,16 @@
 
 Copyright © 2026 Steven Kreutzer. All Rights Reserved. Proprietary — UNLICENSED.
 
-The portable engine suite of **the Hive** — 24 packages, ~1,630 tests, no host
+The portable engine suite of **the Hive** — 30 packages, 2,381 tests, no host
 dependencies anywhere.
 
-> **Rewritten 2026-08-29.** This document previously described a single ForgeIQ
-> package and stated that CostIQ and Prime were *"not implemented here"*. Both
-> have been implemented in this repository for some time — `costiq` is 25 source
-> files, `prime` is 5 — and the README had simply not kept up. If anything below
-> drifts from the code again, the code is right.
+> **Rewritten 2026-08-29, corrected the same day.** The first rewrite fixed a
+> claim that CostIQ and Prime were *"not implemented here"* and then immediately
+> went stale itself: it said 24 packages and ~1,630 tests while the repository
+> held 30 and 2,381. An external scenario library caught it before anybody here
+> did. If anything below drifts from the code again, the code is right — and the
+> counts in this paragraph are the ones most likely to drift, so treat them as
+> the least trustworthy line in the file.
 
 ---
 
@@ -73,10 +75,13 @@ the platform layer — not even on its own Core.
 |---|---|---|---|
 | `governance-engine` | 0.1.0 | Experimental | Decides whether consequential activity is permitted. Grants, Core Protections, purpose-binding, risk ceilings, expiry. Owns authorization decisions and no domain state. |
 | `prime` | 0.13.0 | Experimental | Orchestration and decision-making. Deliberately lightweight and hard-codes no engine. Nexus/Pulse chambers and the durable Execution Ledger are not built. |
+| `sentineliq` | 0.1.0 | Experimental | Constitutional overwatch. Findings, dispositions, the defensive ladder, emergency decay. Detects nothing yet — every finding is handed in. |
+| `foundry-evolutioniq` | 0.1.0 | Experimental | Mission Control, Agent Runtime with a live termination supervisor, Sandbox, Validation Orchestrator, Evolution Control. Holds **no** production deployment authority. |
+| `repair-learning` | 0.1.0 | Experimental | A subsystem of Foundry, not an engine, and deliberately uncharted. Failure signatures, diagnosis, RepairBot, experience, generalization. |
 
-*Sentinel IQ, Foundry EvolutionIQ and ARIA are chartered and unimplemented.*
+*ARIA is chartered and unimplemented.*
 
-### Core engines — 4 of 8 built
+### Core engines — 5 of 8 built
 
 | Package | Version | What it coordinates |
 |---|---|---|
@@ -84,8 +89,9 @@ the platform layer — not even on its own Core.
 | `finance-core` | 0.18.0 | Monetary reasoning. Routes to CostIQ and ReceiptIQ. |
 | `operations-core` | 0.16.0 | Work: ordered sequences with honest partial-failure state. |
 | `resources-core` | 0.2.0 | What an organization has. Distinguishes a **reading** from a **commitment** — stock goes stale, cost does not. |
+| `communication-core` | 0.1.0 | The universal language of exchange: message categories, delivery expectations, acknowledgement, expiry. Moves nothing — EventIQ does that. |
 
-*Knowledge, Communication, Intelligence and Domain Cores are chartered and unbuilt.*
+*Knowledge, Intelligence and Domain Cores are chartered and unbuilt.*
 
 ### Shared platform
 
@@ -99,6 +105,8 @@ the platform layer — not even on its own Core.
 | `intelligence-core` | 0.14.0 | Provider-independent AI contracts. Nothing here names a vendor. |
 | `model-runtime` | 0.14.0 | Provider adapters, model registry, routing, retry, fallback, structured-output validation. |
 | `model-evals` | 0.14.0 | Measurable regression testing for models and instructions. |
+| `auditiq` | 0.1.0 | Tamper-evident, append-only evidence. No update, delete or redact method exists. |
+| `eventiq` | 0.1.0 | The asynchronous event backbone. Durable is the contract, not yet the implementation — the log is in memory. |
 
 ### Specialized portable engines
 

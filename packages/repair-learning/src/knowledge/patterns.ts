@@ -262,12 +262,25 @@ export function findReusableKnowledge(input: {
   store: ExperienceStore;
   library: PatternLibrary;
   currentVersions: Readonly<Record<string, string>>;
+  /**
+   * The tenant asking. REQUIRED.
+   *
+   * Without it this function returned another tenant's whole RepairCase —
+   * root cause, provenance and all. MC-12 found that; the parameter is
+   * required so no caller can omit the scope by accident.
+   *
+   * Note what still crosses freely: a GENERALIZED RULE. That is the whole
+   * point of §27's pipeline — a lesson that has been minimized, stripped of
+   * identifying material and approved by Governance is shareable precisely
+   * because it is no longer anybody's case. The raw case is not.
+   */
+  readingTenant: string;
   repairClass?: string;
   satisfiedPreconditions?: readonly string[];
   presentDisqualifiers?: readonly string[];
   minSimilarity?: number;
 }): ReuseFinding {
-  const priorCases = input.store.similarTo(input.signature, {
+  const priorCases = input.store.similarTo(input.signature, input.readingTenant, {
     minSimilarity: input.minSimilarity ?? 0.6,
   });
 

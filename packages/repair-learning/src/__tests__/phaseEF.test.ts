@@ -231,7 +231,7 @@ describe("retrieval is deterministic before it is similar", () => {
   it("matches an identical signature exactly and says so", () => {
     // §26: deterministic first. An exact hash match is the strongest and
     // cheapest signal, and it short-circuits scoring entirely.
-    const found = populated().similarTo(signature());
+    const found = populated().similarTo(signature(), "ksix");
     expect(found[0]!.similarity).toBe(1);
     expect(found[0]!.matchedOn).toContain("exact signature hash");
   });
@@ -239,7 +239,7 @@ describe("retrieval is deterministic before it is similar", () => {
   it("names the deterministic reason a case surfaced", () => {
     // "Do not make vector similarity the sole retrieval method." Every result
     // says which concrete field matched.
-    const found = populated().similarTo(signature());
+    const found = populated().similarTo(signature(), "ksix");
     expect(found[0]!.matchedOn.join()).toContain("components:");
   });
 
@@ -569,6 +569,7 @@ describe("the reuse loop always demands revalidation", () => {
   it("finds a compatible prior case", () => {
     const { store, library } = setup();
     const finding = findReusableKnowledge({
+      readingTenant: "ksix",
       signature: signature(),
       store,
       library,
@@ -581,6 +582,7 @@ describe("the reuse loop always demands revalidation", () => {
   it("refuses to reuse across a major version", () => {
     const { store, library } = setup();
     const finding = findReusableKnowledge({
+      readingTenant: "ksix",
       signature: signature(),
       store,
       library,
@@ -615,6 +617,7 @@ describe("the reuse loop always demands revalidation", () => {
     );
 
     const finding = findReusableKnowledge({
+      readingTenant: "ksix",
       signature: signature(),
       store,
       library: createPatternLibrary(),
@@ -629,11 +632,101 @@ describe("the reuse loop always demands revalidation", () => {
     // path here that produces knowledge exempt from revalidation.
     const { store, library } = setup();
     const finding = findReusableKnowledge({
+      readingTenant: "ksix",
       signature: signature(),
       store,
       library,
       currentVersions: { "hive.platform.eventiq": "1.2.0" },
     });
     expect(finding.stillRequiresValidation).toBe(true);
+  });
+});
+
+describe("retrieval is scoped to the reading tenant", () => {
+  // MIS-MC12. Before this gate, `findReusableKnowledge` returned another
+  // tenant's whole RepairCase — root cause and provenance included — because
+  // `signatureSimilarity` weights tenantScope at 0.05 and an otherwise
+  // identical failure scored ~0.95 against a 0.6 threshold.
+  //
+  // `crossTenantLearningApproved` was stored as false on every case and nothing
+  // read it. Third instance in this repository of a field declared, stored and
+  // never consulted.
+
+  const caseFor = (tenant: string, over: Record<string, unknown> = {}) =>
+    repairCase({
+      caseId: `case_${tenant}`,
+      failureSignatureHash: signature({ tenantScope: tenant }).signatureHash,
+      failureSignature: signature({ tenantScope: tenant }),
+      rootCause: `${tenant}: no delivery-key check`,
+      ...over,
+    });
+
+  it("does not return another tenant's case", () => {
+    const store = createExperienceStore();
+    store.record(caseFor("ksix"));
+
+    const found = store.similarTo(signature({ tenantScope: "brighton-signs" }), "brighton-signs");
+    expect(found).toEqual([]);
+  });
+
+  it("returns the reading tenant's own case", () => {
+    const store = createExperienceStore();
+    store.record(caseFor("ksix"));
+
+    const found = store.similarTo(signature({ tenantScope: "ksix" }), "ksix");
+    expect(found).toHaveLength(1);
+    expect(found[0]!.case.caseId).toBe("case_ksix");
+  });
+
+  it("honours crossTenantLearningApproved when Governance has set it", () => {
+    // The flag is Governance's to set (§36). Now that something reads it, an
+    // approved case is shareable and an unapproved one is not.
+    const store = createExperienceStore();
+    store.record(
+      caseFor("ksix", {
+        applicabilityScope: {
+          components: ["hive.specialized.workorderiq"],
+          engineVersions: { "hive.platform.eventiq": "1.2.0" },
+          contractVersions: {},
+          constitutionVersion: "1.0",
+          environments: ["SIMULATION"],
+          crossTenantLearningApproved: true,
+        },
+      }),
+    );
+
+    const found = store.similarTo(signature({ tenantScope: "brighton-signs" }), "brighton-signs");
+    expect(found).toHaveLength(1);
+  });
+
+  it("gates the whole reuse loop, not just the store", () => {
+    const store = createExperienceStore();
+    store.record(caseFor("ksix"));
+
+    const finding = findReusableKnowledge({
+      readingTenant: "brighton-signs",
+      signature: signature({ tenantScope: "brighton-signs" }),
+      store,
+      library: createPatternLibrary(),
+      currentVersions: { "hive.platform.eventiq": "1.2.0" },
+    });
+
+    expect(finding.reusable).toBe(false);
+    expect(finding.bestPriorCase).toBeNull();
+    // And nothing at all is surfaced — not even as a "similar case to read".
+    expect(finding.priorCases).toEqual([]);
+  });
+
+  it("filters before scoring rather than after", () => {
+    // Filtering a scored list would mean similarity had already read every
+    // tenant's case, and a refactor returning the intermediate list would leak
+    // silently. Asserted by the only observable consequence: a foreign case
+    // never appears even at similarity 1.
+    const store = createExperienceStore();
+    store.record(caseFor("ksix"));
+
+    const identical = signature({ tenantScope: "ksix" });
+    expect(store.similarTo(identical, "ksix")[0]!.similarity).toBe(1);
+    expect(store.similarTo(identical, "brighton-signs")).toEqual([]);
   });
 });
