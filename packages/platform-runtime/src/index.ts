@@ -15,3 +15,6 @@ export * from "./resilienceRuntime.js";
 export * from "./platformServices.js";
 export * from "./webhooks.js";
 export * from "./outbox.js";
+
+// Binds the identity plane to the existing `Authorizer` port.
+export * from "./principalAuthorizer.js";

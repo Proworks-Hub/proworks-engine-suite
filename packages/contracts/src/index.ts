@@ -89,3 +89,6 @@ export * from "./hiveMap.js";
 
 // The eight operations that may never be performed asynchronously.
 export * from "./synchronousOnly.js";
+
+// WHO is acting: principals, instance identity, trust state, permission grants.
+export * from "./principal.js";
