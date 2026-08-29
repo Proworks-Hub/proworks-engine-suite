@@ -74,7 +74,12 @@ describe("the approved charter registry", () => {
   it("leaves unimplemented engines CHARTERED", () => {
     // The other half. If everything drifted upward the vocabulary would be
     // just as useless in the opposite direction.
-    for (const id of ["hive.sentinel-iq", "hive.aria", "hive.healthcareiq"]) {
+    // `hive.sentinel-iq` used to be the exemplar here and no longer is — Wave H
+    // built it, so it moved to EXPERIMENTAL and this test failed rather than
+    // letting the registry quietly disagree with the repository. Replaced with
+    // `hive.eventiq`, which Communication Core names as its future transport
+    // specialist and which genuinely does not exist yet.
+    for (const id of ["hive.eventiq", "hive.aria", "hive.healthcareiq"]) {
       const r = registry.forEngine(id);
       if (r) expect(r.implementationLifecycle, id).toBe("CHARTERED");
     }

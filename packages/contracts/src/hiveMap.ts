@@ -150,6 +150,13 @@ export const HIVE_MAP: readonly HiveComponent[] = [
     gap: "Baseline evaluator: grants, Core Protections, purpose and risk matching, expiry. No delegation state, no data-use authorization, no human-approval routing, no PolicyIQ integration, no override mechanism. Charter §6 data governance and §13 external development authorization are unimplemented.",
   }),
 
+  component({
+    id: "sentineliq", name: "Sentinel IQ", tier: "platform", status: "partial",
+    packageName: "@proworks-hub/sentineliq",
+    responsibility: "CONSTITUTIONAL_SENTINEL. Verifies that the Hive is behaving the way it is authorized to behave. Owns its own findings, threat classifications and protective state — no business truth, no policy, no repair.",
+    gap: "Findings, dispositions and the defensive ladder exist; nothing detects. There is no monitor, no sensor and no correlation engine, so every finding must be handed in by a caller — Charter §5's fourteen monitoring capabilities are all unimplemented. Protective state is described but not enforced: a restriction is a record, and nothing in this installation stops a quarantined engine from being called. Emergency Protective State can be declared and decays correctly, and activates nothing. Deliberately takes no Governance dependency (§8, §15) — oversight that must ask permission from the system it oversees is not oversight.",
+  }),
+
   // ── Resources Core ─────────────────────────────────────────────────────────
   component({
     id: "resources-core", name: "Resources Core", tier: "core", core: "resources", status: "partial",

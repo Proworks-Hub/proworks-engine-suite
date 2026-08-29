@@ -26,6 +26,7 @@ export default defineConfig({
       "@proworks-hub/governance-engine": pkg("governance-engine", "src/index.ts"),
       "@proworks-hub/foundation-core": pkg("foundation-core", "src/index.ts"),
       "@proworks-hub/communication-core": pkg("communication-core", "src/index.ts"),
+      "@proworks-hub/sentineliq": pkg("sentineliq", "src/index.ts"),
       "@proworks-hub/auditiq": pkg("auditiq", "src/index.ts"),
       "@proworks-hub/intelligence-core": pkg("intelligence-core", "src/index.ts"),
       "@proworks-hub/model-runtime": pkg("model-runtime", "src/index.ts"),

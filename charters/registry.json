@@ -62,7 +62,7 @@
     "constitutionVersion": "1.0",
     "integrityHash": "sha256:d33ad86e03c43601eafde8596049c8fb1bd0836dd0a11c919dc229c8a28bbd23",
     "sourceDocument": "02_Sentinel_IQ_Charter.docx",
-    "implementationLifecycle": "CHARTERED"
+    "implementationLifecycle": "EXPERIMENTAL"
   },
   {
     "charterId": "charter.core.communication-core",
