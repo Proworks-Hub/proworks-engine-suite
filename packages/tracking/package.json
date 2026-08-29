@@ -1,6 +1,6 @@
 {
   "name": "@proworks-hub/tracking",
-  "version": "0.13.0",
+  "version": "0.19.0",
   "type": "module",
   "description": "Tracking — where an order actually is, merged across production and the carrier, narrowed per audience.",
   "author": "Steven Kreutzer",

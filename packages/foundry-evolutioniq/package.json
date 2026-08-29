@@ -1,8 +1,8 @@
 {
   "name": "@proworks-hub/foundry-evolutioniq",
-  "version": "0.1.0",
+  "version": "0.19.0",
   "type": "module",
-  "description": "Foundry EvolutionIQ \u2014 constitutional architecture, engineering, repair and validation. Owns the runtime that repair agents live inside; holds no production deployment authority.",
+  "description": "Foundry EvolutionIQ — constitutional architecture, engineering, repair and validation. Owns the runtime that repair agents live inside; holds no production deployment authority.",
   "author": "Steven Kreutzer",
   "license": "UNLICENSED",
   "repository": {

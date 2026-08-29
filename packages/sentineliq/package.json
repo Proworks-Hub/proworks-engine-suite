@@ -1,8 +1,8 @@
 {
   "name": "@proworks-hub/sentineliq",
-  "version": "0.1.0",
+  "version": "0.19.0",
   "type": "module",
-  "description": "Sentinel IQ \u2014 constitutional overwatch. Observes, verifies and contains; protects without ruling.",
+  "description": "Sentinel IQ — constitutional overwatch. Observes, verifies and contains; protects without ruling.",
   "author": "Steven Kreutzer",
   "license": "UNLICENSED",
   "repository": {

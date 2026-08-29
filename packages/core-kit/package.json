@@ -1,6 +1,6 @@
 {
   "name": "@proworks-hub/core-kit",
-  "version": "0.16.0",
+  "version": "0.19.0",
   "type": "module",
   "description": "The machinery every Core coordinator shares: a specialist registry, routing, timeouts, failure isolation and partial answers.",
   "author": "Steven Kreutzer",

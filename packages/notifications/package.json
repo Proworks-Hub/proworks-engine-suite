@@ -1,6 +1,6 @@
 {
   "name": "@proworks-hub/notifications",
-  "version": "0.13.0",
+  "version": "0.19.0",
   "type": "module",
   "description": "Notifications — deciding who should be told what, and making sure they are told once.",
   "author": "Steven Kreutzer",
