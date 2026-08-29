@@ -65,6 +65,14 @@ export const HIVE_MAP: readonly HiveComponent[] = [
     gap: "No coordinator package. The capabilities exist as contracts (tenancy, capabilities, gateway) and host implementations, with no Core to route between them.",
   }),
 
+  // ── Foundation Core ────────────────────────────────────────────────────────
+  component({
+    id: "foundation-core", name: "Foundation Core", tier: "core", core: "foundation", status: "partial",
+    packageName: "@proworks-hub/foundation-core",
+    responsibility: "The universal structural language: identity, canonical references, versions, relationships, health vocabulary.",
+    gap: "Baseline. The identifier and reference TYPES live in @proworks-hub/contracts, not here, because the dependency law forbids a Specialized engine importing a Core — a structural language no engine may import is not universal. Foundation holds authority over what they mean. No persistence, no relationship store, no entity registry, no schema registry.",
+  }),
+
   // ── Knowledge Core ─────────────────────────────────────────────────────────
   component({
     id: "knowledge-core", name: "Knowledge Core", tier: "core", core: "knowledge", status: "planned",
