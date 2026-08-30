@@ -1,6 +1,6 @@
 {
   "name": "@proworks-hub/forgeiq",
-  "version": "0.20.0",
+  "version": "0.21.0",
   "type": "module",
   "description": "ForgeIQ \u2014 configure it, validate it, manufacture it. Produces the ManufacturingPlan.",
   "author": "Steven Kreutzer",
@@ -46,7 +46,7 @@
     }
   },
   "dependencies": {
-    "@proworks-hub/contracts": "^0.20.0",
+    "@proworks-hub/contracts": "^0.21.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {

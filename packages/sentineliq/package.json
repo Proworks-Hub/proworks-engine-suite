@@ -1,6 +1,6 @@
 {
   "name": "@proworks-hub/sentineliq",
-  "version": "0.20.0",
+  "version": "0.21.0",
   "type": "module",
   "description": "Sentinel IQ \u2014 constitutional overwatch. Observes, verifies and contains; protects without ruling.",
   "author": "Steven Kreutzer",
@@ -22,8 +22,8 @@
     }
   },
   "dependencies": {
-    "@proworks-hub/contracts": "^0.20.0",
-    "@proworks-hub/core-kit": "^0.20.0",
+    "@proworks-hub/contracts": "^0.21.0",
+    "@proworks-hub/core-kit": "^0.21.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {

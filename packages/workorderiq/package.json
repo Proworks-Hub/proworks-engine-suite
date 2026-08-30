@@ -1,6 +1,6 @@
 {
   "name": "@proworks-hub/workorderiq",
-  "version": "0.20.0",
+  "version": "0.21.0",
   "type": "module",
   "description": "WorkOrder Engine \u2014 the canonical work order and its production execution state. Usable at its basic level with no orchestrator and no shop-floor system.",
   "author": "Steven Kreutzer",
@@ -22,7 +22,7 @@
     }
   },
   "dependencies": {
-    "@proworks-hub/contracts": "^0.20.0",
+    "@proworks-hub/contracts": "^0.21.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {
