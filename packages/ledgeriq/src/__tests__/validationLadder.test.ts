@@ -364,6 +364,15 @@ describe("gates 22–25: FX, residue, balance — GD-2c and the invariant", () =
       "FX_RATE_STALE",
     );
   });
+  it("gate 22a — a rate dated AFTER the effective date is not usable: no look-ahead", () => {
+    // Added after mutation `rate-date-ignored` SURVIVED: nothing proved that
+    // a future-dated rate is refused rather than silently used.
+    const future: ExchangeRateRef = { ...SPOT_EUR_USD, effectiveDate: "2026-08-20" };
+    expectRefusal(
+      run(eurEntry("spot-at-transaction-date"), { fxRates: [future] }),
+      "FX_RATE_UNAVAILABLE",
+    );
+  });
   it("GD-2c — the golden conversion: EUR 1,000,000.00 at 1.0850 spot = USD 1,085,000.00", () => {
     const outcome = run(eurEntry("spot-at-transaction-date"), { fxRates: [SPOT_EUR_USD] });
     expect(outcome.ok).toBe(true);
