@@ -83,6 +83,10 @@ export * from "./ports/costIntegration.js";
 // turns "deterministic" from a claim into something CI checks.
 export * from "./security/isolation.js";
 export * from "./security/replayCertification.js";
+
+// Performance budgets and the growth-exponent check that catches the
+// accidental O(n²) an absolute stopwatch never would.
+export * from "./perf/budgets.js";
 export * from "./explanation/explanationLevels.js";
 export * from "./graph/dependencyIndex.js";
 export * from "./services/costBasisService.js";
