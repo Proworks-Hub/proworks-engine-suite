@@ -859,7 +859,7 @@
     "constitutionVersion": "1.0",
     "integrityHash": "sha256:53b58c62f72e5ecb2d5bd5db6b083965a43970760ebcfa89a6190a2c38e62891",
     "sourceDocument": "Documents/ProWorks-Ecosystem/charters/finance-program/ConsolidationIQ/01_ConsolidationIQ_Master_Engineering_Blueprint.md",
-    "implementationLifecycle": "CHARTERED"
+    "implementationLifecycle": "EXPERIMENTAL"
   },
   {
     "charterId": "charter.specialized.creditiq",

@@ -1,0 +1,41 @@
+{
+  "name": "@proworks-hub/consolidationiq",
+  "version": "0.23.0",
+  "type": "module",
+  "description": "ConsolidationIQ \u2014 group structure, integrated ownership (exact rationals), consolidation method as recommendation-plus-assessment, translation, CTA as a sum of causes with an independent proof, eliminations, goodwill, NCI. Never alters an entity ledger.",
+  "author": "Steven Kreutzer",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Proworks-Hub/proworks-engine-suite.git",
+    "directory": "packages/consolidationiq"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@proworks-hub/contracts": "^0.23.0",
+    "@proworks-hub/core-kit": "^0.23.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "@types/node": "^22.10.2"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "prepare": "tsc -b"
+  }
+}

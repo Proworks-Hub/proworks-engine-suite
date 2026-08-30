@@ -188,6 +188,13 @@ export const HIVE_MAP: readonly HiveComponent[] = [
     gap: "Kernel through M3 scope: the 28-gate validation ladder, exact-decimal FX conversion with visible residue lines, intercompany generation, period state machine, balance fold, trial balance, roll-forward, export projection, reference in-memory store. NOT yet: platform-events publication (posting is authoritative in the store; no ledger.entry.posted is emitted), the auditiq immutability chain, explanation levels L0-L6 (the capability refuses honestly), materialized balance cache with watermark, reporting-currency amounts, batch posting, and any durable store — hosts must bind one. Finance Core does not yet route to it (PC-5 pending).",
   }),
   component({
+    id: "consolidationiq", name: "ConsolidationIQ", tier: "specialized", core: "finance", status: "partial",
+    packageName: "@proworks-hub/consolidationiq",
+    // Charter ratified 2026-08-30 (charter.specialized.consolidationiq, DEC-025).
+    responsibility: "Group structure and integrated ownership (exact rationals), consolidation method as recommendation-plus-assessment, functional-to-presentation translation, CTA as a sum of causes with an independent proof, intercompany match and full elimination, goodwill, NCI. NEVER alters an entity's posted ledger to make a group number work.",
+    gap: "Pure kernel scope: M-1 ownership solve (path-sum acyclic, exact-rational linear solve for cross-holdings, singular refusal), M-2 method determination refusing thresholds where an assessment is needed, M-3/M-4 translation with a REQUIRED averaging convention (K-17, spread 1.67%) and the CTA proof, M-6/M-7 match/elimination (tolerance suppresses exceptions never numbers; full elimination regardless of percentage), M-10 goodwill with bargain-purchase refusal, M-11/M-12 NCI (election immutable; NCI may go negative; parent takes the rounding residual), M-13 equity pickup lowest-tier-first with tracked unrecognised losses, M-17 idempotency. NOT yet: M-5 hyperinflation, M-8 FX residual decomposition, M-9 unrealised profit, M-14/15/16 ownership changes, run orchestration/persistence/events, submissions model. Finance Core does not yet route to it.",
+  }),
+  component({
     id: "closeiq", name: "CloseIQ", tier: "specialized", core: "finance", status: "partial",
     packageName: "@proworks-hub/closeiq",
     // Charter ratified 2026-08-30 (charter.specialized.closeiq, DEC-025).
