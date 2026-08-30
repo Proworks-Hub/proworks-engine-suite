@@ -188,6 +188,13 @@ export const HIVE_MAP: readonly HiveComponent[] = [
     gap: "Kernel through M3 scope: the 28-gate validation ladder, exact-decimal FX conversion with visible residue lines, intercompany generation, period state machine, balance fold, trial balance, roll-forward, export projection, reference in-memory store. NOT yet: platform-events publication (posting is authoritative in the store; no ledger.entry.posted is emitted), the auditiq immutability chain, explanation levels L0-L6 (the capability refuses honestly), materialized balance cache with watermark, reporting-currency amounts, batch posting, and any durable store — hosts must bind one. Finance Core does not yet route to it (PC-5 pending).",
   }),
   component({
+    id: "receivablesiq", name: "ReceivablesIQ", tier: "specialized", core: "finance", status: "partial",
+    packageName: "@proworks-hub/receivablesiq",
+    // Charter ratified 2026-08-30 (charter.specialized.receivablesiq, DEC-025).
+    responsibility: "The customer receivable record: open items, cash application, aging, customer balances, payment behaviour as FACT. Never credit decisions (CreditIQ), collections (CollectionsIQ), invoicing (BillingIQ) or the journal (LedgerIQ).",
+    gap: "Kernel scope: append-only fact journal with replay-derived projections (I-1/I-2), the M-4 matching cascade (unique-or-refuse, bounded subset-sum, policy-ordered only when authorized), largest-remainder component allocation with the R2 tripwire, earned/unearned discount, short-pay classification with refer-not-coerce, partial-vs-residual strategy, realized FX gain/loss (rate by value; port unbound refuses), R-1-asserted aging with terms-unknown and separate credits, DSO/countback/CEI with required inputs, three-way unidentified/identified/on-account cash distinction, lockbox duplicate rule. NOT yet: M-12 allowance (draft — capability refuses honestly), M-9 netting evidence, M-10 derecognition inputs, event pub/sub wiring, dependency index, export. Finance Core does not yet route to it.",
+  }),
+  component({
     id: "payablesiq", name: "PayablesIQ", tier: "specialized", core: "finance", status: "partial",
     packageName: "@proworks-hub/payablesiq",
     // Charter ratified 2026-08-30 (charter.specialized.payablesiq, DEC-025).

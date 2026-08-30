@@ -1067,7 +1067,7 @@
     "constitutionVersion": "1.0",
     "integrityHash": "sha256:f01609e8446f694765595eaaae1e7d8caa21dbd88dda4b71169058cec537489e",
     "sourceDocument": "Documents/ProWorks-Ecosystem/charters/finance-program/ReceivablesIQ/01_ReceivablesIQ_Master_Engineering_Blueprint.md",
-    "implementationLifecycle": "CHARTERED"
+    "implementationLifecycle": "EXPERIMENTAL"
   },
   {
     "charterId": "charter.specialized.revenuerecognitioniq",
