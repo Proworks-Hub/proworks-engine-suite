@@ -533,3 +533,36 @@ describe("a diff separates what widens from what only takes away", () => {
     expect(diffTopology(before, shuffled)).toEqual(diffTopology(before, after));
   });
 });
+
+describe("candidateRoutes records the FIRST discovered path per provider", () => {
+  it("a provider reachable directly and via a longer route gets the direct path", () => {
+    // hub -> p directly (capability edge), and hub -> x -> p (transit then
+    // capability). Breadth-first discovery must keep the one-hop path; a
+    // later, longer discovery may not overwrite it.
+    const built = buildGraph({
+      versionId: "v-shortest",
+      parentVersionId: null,
+      instanceId: "ksix",
+      zones: [{ zoneId: "local", kind: "LOCAL", instanceId: "ksix" }],
+      nodes: [
+        { nodeId: "hub", kind: "ENGINE", zoneId: "local", capabilities: ["hub"], workloadIdentityRef: "spiffe://ksix/hub", isTest: true },
+        { nodeId: "x", kind: "ENGINE", zoneId: "local", capabilities: ["transit"], workloadIdentityRef: "spiffe://ksix/x", isTest: true },
+        { nodeId: "p", kind: "ENGINE", zoneId: "local", capabilities: ["work"], workloadIdentityRef: "spiffe://ksix/p", isTest: true },
+      ],
+      adjacencies: [
+        { adjacencyId: "direct", fromNodeId: "hub", toNodeId: "p", lane: "COMMAND", capability: "work", authorizingDecisionRef: "d1", state: "ACTIVE" },
+        { adjacencyId: "via-x", fromNodeId: "hub", toNodeId: "x", lane: "COMMAND", capability: "transit", authorizingDecisionRef: "d2", state: "ACTIVE" },
+        { adjacencyId: "x-p", fromNodeId: "x", toNodeId: "p", lane: "COMMAND", capability: "work", authorizingDecisionRef: "d3", state: "ACTIVE" },
+      ],
+      rationale: "Shortest-path fixture.",
+      createdAt: "2026-08-30T10:00:00.000Z",
+      state: "ACTIVE",
+      activationDecisionRef: "dec",
+    });
+    if (!built.ok) throw new Error("fixture must build");
+
+    const routes = candidateRoutes(built.graph, "hub", "work", "COMMAND");
+    expect(routes.permitted).toHaveLength(1);
+    expect(routes.permitted[0]!.hops.map((h) => h.adjacencyId)).toEqual(["direct"]);
+  });
+});

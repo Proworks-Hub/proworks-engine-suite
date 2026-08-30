@@ -156,9 +156,10 @@ describe("the seven hard gates", () => {
   });
 
   it("says plainly that it does not certify the Fabric works", () => {
-    // Nothing here has moved a message, because no transport is bound.
-    expect(report.summary).toContain("nothing here has moved a message");
-    expect(report.outOfScope.join()).toContain("A bound adapter is where that question starts");
+    // These gates inspect; what was RUN is the layered certification's
+    // business — and the external-broker limit is stated, not hidden.
+    expect(report.summary).toContain("does not say the Fabric works");
+    expect(report.outOfScope.join()).toContain("no NATS or Kafka process has been driven");
   });
 
   it("leaves the constitutional question open", () => {

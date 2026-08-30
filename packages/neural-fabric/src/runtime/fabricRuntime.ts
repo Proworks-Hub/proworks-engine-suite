@@ -127,6 +127,24 @@ export type SendStage =
   | "CIRCUIT"
   | "TRANSPORT";
 
+/**
+ * The pipeline order as a VALUE, so certification can assert it rather than
+ * trust a comment. `satisfies` keeps it in lockstep with the type: add a
+ * stage to one without the other and the build breaks.
+ */
+export const SEND_STAGES = [
+  "ENVELOPE",
+  "POSTURE",
+  "TRUST",
+  "CONTRACT",
+  "EXPIRY",
+  "ROUTING",
+  "ADMISSION",
+  "DELIVERY",
+  "CIRCUIT",
+  "TRANSPORT",
+] as const satisfies readonly SendStage[];
+
 export type SendResult =
   | {
       readonly sent: true;

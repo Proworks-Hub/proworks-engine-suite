@@ -41,10 +41,12 @@ import { spanCarriesPayload } from "./engines/fabricObservabilityIQ.js";
 //
 // WHAT THIS DOES NOT CERTIFY
 //
-// It says the declared invariants hold. It does not say the Fabric works —
-// nothing here has moved a message, because nothing here is bound to a
-// transport. That is the honest limit of a package with no I/O, and stating it
-// is more useful than a score that implies otherwise.
+// It says the declared invariants hold. It does not say the Fabric works.
+// Two in-process reference adapters have moved envelopes in tests, and the
+// layered certification (certificationLayers.ts) checks what was actually
+// run — but no EXTERNAL broker has been driven, and this file still inspects
+// rather than executes. Stating that is more useful than a score that implies
+// otherwise.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface GateResult {
@@ -220,10 +222,10 @@ export function certify(): CertificationReport {
     certified: failed.length === 0 && !isRatifiedClassification() && !RATIFIED_CLASSIFICATIONS.includes(NEURAL_FABRIC_CLASSIFICATION),
     summary:
       failed.length === 0
-        ? `All ${gates.length} hard gates hold. This says the declared invariants are true of the code; it does not say the Fabric works, because nothing here has moved a message — no transport is bound.`
+        ? `All ${gates.length} hard gates hold. This says the declared invariants are true of the code; it does not say the Fabric works — these gates inspect. What was actually RUN is the layered certification's business.`
         : `${failed.length} of ${gates.length} hard gates failed: ${failed.map((g) => g.gateId).join(", ")}.`,
     outOfScope: [
-      "Whether the Fabric actually delivers anything. No provider is bound in this package, so nothing here has carried a signal. A bound adapter is where that question starts.",
+      "Whether the Fabric delivers against an EXTERNAL broker. Two in-process reference adapters (subject bus, durable log) have carried envelopes in tests; no NATS or Kafka process has been driven, and neutrality against real brokers is asserted by port-shape, not demonstrated.",
       "Whether a host wires the ports correctly. A clock port returning a constant, or a governance port that always allows, would pass every gate here.",
       "Whether the topology a deployment builds is sensible. The engine refuses an incoherent one; it cannot judge a coherent one that is wrong for the business.",
       "The constitutional question. §3 reserves placement for a human process, and passing these gates is evidence for that decision rather than a substitute for it.",

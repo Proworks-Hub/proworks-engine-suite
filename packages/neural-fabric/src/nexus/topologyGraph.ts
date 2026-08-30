@@ -302,6 +302,57 @@ export function candidateRoutes(
 
   // Breadth-first, bounded. Sorted frontier so the result does not depend on
   // insertion order — two identical questions must produce identical answers.
+  // ONE breadth-first walk finds every reachable provider at once.
+  //
+  // The first version ran a separate BFS per provider, which the scale
+  // benchmark caught: a hub with 100,000 edges and 1,000 providers of one
+  // capability cost ~10⁸ edge visits PER LOOKUP — every correctness test
+  // passed, because k separate searches and one shared search find the same
+  // shortest paths. This is the k×O(E) → O(E) rewrite, and the fan-out test
+  // at 100,000 nodes is what keeps it honest.
+  //
+  // Semantics preserved exactly: intermediate hops are transit on the lane,
+  // the FINAL hop must name the capability, paths are BFS-shortest, and the
+  // sorted adjacency lists make the discovered path deterministic.
+  const providerSet = new Set(providers);
+  const found = new Map<string, CandidatePath>();
+
+  interface Step {
+    readonly nodeId: string;
+    readonly hops: readonly Adjacency[];
+  }
+  const queue: Step[] = [{ nodeId: fromNodeId, hops: [] }];
+  const seen = new Set<string>([fromNodeId]);
+  let cursor = 0;
+
+  while (cursor < queue.length) {
+    const step = queue[cursor]!;
+    cursor += 1;
+    if (step.hops.length >= maxHops) continue;
+
+    for (const edge of graph.outgoing.get(step.nodeId) ?? []) {
+      if (edge.lane !== lane) continue;
+      const hops = [...step.hops, edge];
+
+      // Final-hop rule: reaching a provider counts only through an edge that
+      // names the capability being addressed. Reachability is not entitlement.
+      // (Self-routes need no guard here — the rejection loop below refuses
+      // them before `found` is ever consulted for the origin.)
+      if (
+        providerSet.has(edge.toNodeId) &&
+        edge.capability === capability &&
+        !found.has(edge.toNodeId)
+      ) {
+        found.set(edge.toNodeId, describePath(graph, fromNodeId, edge.toNodeId, lane, hops));
+      }
+
+      if (!seen.has(edge.toNodeId)) {
+        seen.add(edge.toNodeId);
+        queue.push({ nodeId: edge.toNodeId, hops });
+      }
+    }
+  }
+
   for (const targetId of providers) {
     if (targetId === fromNodeId) {
       rejected.push({
@@ -310,9 +361,8 @@ export function candidateRoutes(
       });
       continue;
     }
-
-    const path = findPath(graph, fromNodeId, targetId, capability, lane, maxHops);
-    if (path === null) {
+    const path = found.get(targetId);
+    if (path === undefined) {
       rejected.push({
         toNodeId: targetId,
         reason: `No active adjacency permits ${fromNodeId} to reach ${targetId} on the ${lane} lane for "${capability}" within ${maxHops} hops. Default-deny: an adjacency has to exist, and none does.`,
@@ -332,49 +382,6 @@ export function candidateRoutes(
         ? `No permitted route from ${fromNodeId} to "${capability}" on the ${lane} lane. ${rejected.length} provider${rejected.length === 1 ? " was" : "s were"} considered and refused; the reasons are the actionable part.`
         : `${permitted.length} permitted route${permitted.length === 1 ? "" : "s"}. This is the set a signal MAY take — choosing among them is RoutingIQ's, using health and locality this function deliberately does not read.`,
   };
-}
-
-function findPath(
-  graph: FabricGraph,
-  fromNodeId: string,
-  targetId: string,
-  capability: string,
-  lane: Lane,
-  maxHops: number,
-): CandidatePath | null {
-  interface Step {
-    readonly nodeId: string;
-    readonly hops: readonly Adjacency[];
-  }
-  const queue: Step[] = [{ nodeId: fromNodeId, hops: [] }];
-  const seen = new Set<string>([fromNodeId]);
-  let cursor = 0;
-
-  while (cursor < queue.length) {
-    const step = queue[cursor]!;
-    cursor += 1;
-    if (step.hops.length >= maxHops) continue;
-
-    for (const edge of graph.outgoing.get(step.nodeId) ?? []) {
-      if (edge.lane !== lane) continue;
-
-      const hops = [...step.hops, edge];
-
-      // The final hop must permit the capability being addressed. Intermediate
-      // hops are transit, and requiring them to name the capability would mean
-      // every gateway had to be re-declared for every capability that passes
-      // through it.
-      if (edge.toNodeId === targetId && edge.capability === capability) {
-        return describePath(graph, fromNodeId, targetId, lane, hops);
-      }
-
-      if (!seen.has(edge.toNodeId)) {
-        seen.add(edge.toNodeId);
-        queue.push({ nodeId: edge.toNodeId, hops });
-      }
-    }
-  }
-  return null;
 }
 
 function describePath(

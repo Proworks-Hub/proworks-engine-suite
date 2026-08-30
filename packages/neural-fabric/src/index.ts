@@ -50,6 +50,7 @@ export * from "./security/governedUpgrade.js";
 
 // The seven hard gates, checked against the code rather than promised.
 export * from "./certification.js";
+export * from "./certificationLayers.js";
 
 // The runtime: the pipeline that runs a signal through every gate in order,
 // and the wall between what decides and what follows. The runtime orchestrates
