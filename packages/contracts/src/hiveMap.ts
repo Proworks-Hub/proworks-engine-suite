@@ -21,6 +21,35 @@ import { hiveComponentSchema, type HiveComponent } from "./hiveArchitecture.js";
 const component = (input: unknown): HiveComponent => hiveComponentSchema.parse(input);
 
 export const HIVE_MAP: readonly HiveComponent[] = [
+  // ── Neural Fabric ──────────────────────────────────────────────────────────
+  //
+  // Placed as `platform` because the map's tiers are prime, core, specialized,
+  // industry and platform, and this is none of the engine tiers. `platform` —
+  // "shared infrastructure that is not an engine at all" — is the closest
+  // existing vocabulary for a transport substrate, and choosing it is NOT a
+  // constitutional placement: the V3 plan (§3) reserves that for a human
+  // process, and the package's own charter classifies itself
+  // PROPOSED_COORDINATION_PLANE, deliberately outside HiveClassification.
+  //
+  // `partial` rather than `existing`, and the gap says why. The alternative
+  // was to leave it out of the map entirely, which this file's own test
+  // rightly calls "a component nobody has placed in the hierarchy" — the exact
+  // condition it exists to catch.
+  component({
+    id: "neural-fabric", name: "Neural Fabric", tier: "platform", status: "partial",
+    packageName: "@proworks-hub/neural-fabric",
+    responsibility:
+      "The governed transport substrate: topology, lane semantics, routing candidates, delivery guarantees, flow control, " +
+      "degraded modes and causal tracing. Two chambers — Nexus owns what paths are valid, Pulse owns what is happening on " +
+      "them. Carries signals; owns no business meaning, no authority and no identity.",
+    gap:
+      "Two things. First, no transport provider is bound, so nothing here has moved a message — the package is a complete " +
+      "contract and flow model with no I/O. Second, and more important, its constitutional placement is UNDECIDED: the V3 " +
+      "plan declines to ratify a tenth Core, and `platform` here is the nearest existing tier rather than a decision. See " +
+      "UNRESOLVED_CONSTITUTIONAL_QUESTIONS in the package charter, which also records the tension with the existing note " +
+      "that the Information Fabric has no single classifiable component.",
+  }),
+
   // ── Prime ──────────────────────────────────────────────────────────────────
   component({
     id: "prime", name: "Prime", tier: "prime", status: "existing",

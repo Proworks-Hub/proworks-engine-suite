@@ -335,6 +335,16 @@ describe("the receipt pipeline at volume", () => {
 // The counts are integers produced by the algorithm: no clock, and no other
 // process on the box can move them.
 //
+// THE FINDING THIS NOTE RECORDED HAS BEEN FIXED
+//
+// It said claim cost was LINEAR in total queue depth — two full passes over
+// every job, regardless of type — and predicted that indexing the queue by
+// jobType would make these assertions fail. It has been indexed. The claim now
+// visits only the queued jobs of the requested type and only the jobs actually
+// running, so a manufacturing worker pays nothing for a backlog of receipts.
+// The assertions below were inverted rather than deleted, so the property is
+// still pinned in both directions.
+//
 // One claim against a queue of N jobs costs exactly 2N units — one lease-sweep
 // pass and one candidate-scan pass, both over EVERY job regardless of type.
 // Measured at four depths, per-job work is 2.000 at all of them.
@@ -376,7 +386,13 @@ describe("the job queue under a flood", () => {
     }
   };
 
-  it("costs exactly two work units per queued job, at every depth", async () => {
+  it("costs the SAME work at every depth, now that the queue is indexed", async () => {
+    // This test used to assert two work units per queued job and record that
+    // as a finding. The note below said what would happen if somebody indexed
+    // the queue by jobType — "this fails and should" — and somebody has. The
+    // claim now visits only the jobs of the type being claimed and only the
+    // jobs currently running, so a queue of 8,000 unrelated receipts costs a
+    // manufacturing worker exactly nothing.
     const profile = await workCountProfile(
       async (size, countOperation) => claimAtDepth(size, countOperation),
       [1000, 2000, 4000, 8000],
@@ -384,20 +400,21 @@ describe("the job queue under a flood", () => {
 
     for (const row of profile) {
       console.log(
-        `  queue of ${row.size}: ${row.operations} claim work units (${row.operationsPerItem.toFixed(3)} per queued job)`,
+        `  queue of ${row.size}: ${row.operations} claim work units (${row.operationsPerItem.toFixed(5)} per queued job)`,
       );
     }
 
-    // The absolute constant. A third full pass over the queue takes this to
-    // 3.000 and fails here, which a growth ratio alone would not catch —
-    // constant-factor regressions keep the ratio at 1.0.
+    // ONE unit at every depth: the single job of the requested type. Nothing
+    // is running, so the lease sweep visits nothing; one candidate means no
+    // comparison. A regression that reintroduces a full pass takes this to
+    // `size` and fails loudly.
     for (const row of profile) {
-      expect(row.operationsPerItem, `depth ${row.size}`).toBe(2);
-      expect(row.operations, `depth ${row.size}`).toBe(2 * row.size);
+      expect(row.operations, `depth ${row.size}`).toBe(1);
     }
 
-    // And the growth. 1.0 exactly, because these are integer call counts.
-    expect(costPerItemGrowth(profile)).toBe(1);
+    // Cost per queued job now FALLS as the queue grows, because the cost is
+    // constant and the divisor is not.
+    expect(costPerItemGrowth(profile)).toBeLessThan(1);
   });
 
   it("counts nothing when the observer is absent, and the helper refuses to call that healthy", async () => {
@@ -451,21 +468,21 @@ describe("the job queue under a flood", () => {
     const a = await workCountProfile(async (size, c) => claimAtDepth(size, c), [4000]);
     const b = await workCountProfile(async (size, c) => claimAtDepth(size, c), [4000]);
     expect(a[0]!.operations).toBe(b[0]!.operations);
-    expect(a[0]!.operations).toBe(8000);
+    expect(a[0]!.operations).toBe(1);
   });
 
-  it("records that claim cost is linear in depth, which the old test's name denied", async () => {
-    // Stated as an assertion rather than a comment so it cannot quietly become
-    // untrue in either direction. If someone indexes the queue by jobType, this
-    // fails and should — the finding above would then be stale.
+  it("records that claim cost is now FLAT in depth, which it was not", async () => {
+    // The inverse of what this test asserted before, and the same discipline:
+    // stated as an assertion so it cannot quietly become untrue in EITHER
+    // direction. If somebody removes the type index, this fails and should.
     const shallow = await workCountProfile(async (size, c) => claimAtDepth(size, c), [1000]);
     const deep = await workCountProfile(async (size, c) => claimAtDepth(size, c), [8000]);
 
-    expect(deep[0]!.operations).toBe(8 * shallow[0]!.operations);
+    expect(deep[0]!.operations).toBe(shallow[0]!.operations);
 
     console.log(
-      `  one claim costs ${shallow[0]!.operations} units at depth 1000 and ` +
-        `${deep[0]!.operations} at depth 8000 — linear, not flat. See the MIS-SCALE-QD note above.`,
+      `  one claim costs ${shallow[0]!.operations} unit at depth 1000 and ` +
+        `${deep[0]!.operations} at depth 8000 — flat, not linear. See the MIS-SCALE-QD note above.`,
     );
   });
 
