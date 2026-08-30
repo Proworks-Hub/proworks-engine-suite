@@ -81,6 +81,13 @@ export * from "./ai/costAiSpecialist.js";
 // entitle a consumer to conclude.
 export * from "./ports/costPorts.js";
 export * from "./ports/costIntegration.js";
+export * from "./ports/governance.js";
+export * from "./ports/externalEvidence.js";
+
+// Answering another engine's economic question without answering it, and
+// rebuilding an old estimate as it stood rather than as it would stand today.
+export * from "./consequence/costConsequence.js";
+export * from "./replay/historicalReplay.js";
 
 // Tenant isolation, redaction and resource limits, and the certification that
 // turns "deterministic" from a claim into something CI checks.
