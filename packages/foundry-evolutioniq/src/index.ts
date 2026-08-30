@@ -16,3 +16,7 @@ export * from "./evolution/repository.js";
 
 // Release channels, health gates, staged rollout, rollback.
 export * from "./evolution/rollout.js";
+
+// Interoperability evidence corpus: scenarios, evidence, research provenance,
+// failure classes, generalized lessons and improvement packets.
+export * from "./interop/evolution.js";

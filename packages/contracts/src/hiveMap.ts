@@ -78,6 +78,12 @@ export const HIVE_MAP: readonly HiveComponent[] = [
     responsibility: "Jobs, outbox, circuit breaking, observability ports.",
   }),
   component({
+    id: "simulation-lab", name: "Hive Simulation Lab", tier: "platform", status: "existing",
+    packageName: "@proworks-hub/simulation-lab",
+    responsibility:
+      "Synthetic organizations, deterministic traffic, fault injection and an adversary harness, judged by an oracle that returns INCONCLUSIVE when the intended fault did not actually occur. Depends on no engine, so it can be used to test any of them.",
+  }),
+  component({
     id: "core-kit", name: "Core Kit", tier: "platform", status: "existing",
     packageName: "@proworks-hub/core-kit",
     responsibility:
