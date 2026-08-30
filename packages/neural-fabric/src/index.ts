@@ -73,3 +73,17 @@ export * from "./interconnect/gateway.js";
 export * from "./distributed/activationConsensus.js";
 export * from "./engines/contractExport.js";
 export * from "./twin/executableTwin.js";
+
+// ── Phase 3 interoperability ────────────────────────────────────────────────
+// Intent in, explainable plan out; bounded mediation; adapters that must prove
+// their claims; mappings nobody guessed at; evidence that carries no payload.
+export * from "./interop/communicationIntent.js";
+export * from "./interop/patternCatalog.js";
+export * from "./interop/patternPlanner.js";
+export * from "./interop/pipelinePlan.js";
+export * from "./interop/pipelineExecutor.js";
+export * from "./interop/adapterManifest.js";
+export * from "./interop/certificationHarness.js";
+export * from "./interop/mappingContract.js";
+export * from "./interop/connectionEvidence.js";
+export * from "./interop/edgeProfiles.js";

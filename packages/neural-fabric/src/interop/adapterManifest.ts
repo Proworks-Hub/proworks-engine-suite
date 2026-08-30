@@ -13,7 +13,7 @@
 import { z } from "zod";
 
 import { classificationSchema } from "../domain/envelope.js";
-import { laneSchema } from "../domain/lanes.js";
+import { laneSchema, orderingScopeSchema } from "../domain/lanes.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // A MANIFEST IS A CLAIM. CERTIFICATION IS EVIDENCE. ADMISSION IS A DECISION.
@@ -54,8 +54,6 @@ export const trustTierSchema = z.enum([
   "UNTRUSTED",
 ]);
 export type TrustTier = z.infer<typeof trustTierSchema>;
-
-export const orderingScopeSchema = z.enum(["NONE", "PER_KEY", "PER_PAIR", "PER_PARTITION", "STRICT_SEQUENCE"]);
 
 /** Where the adapter came from, and who is accountable for it. */
 export const adapterProvenanceSchema = z
