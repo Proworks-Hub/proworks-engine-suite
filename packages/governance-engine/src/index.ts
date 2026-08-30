@@ -4,3 +4,6 @@
 
 export * from "./policy.js";
 export * from "./engine.js";
+
+// The human decision gate.
+export * from "./proposal.js";

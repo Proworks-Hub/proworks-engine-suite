@@ -152,6 +152,46 @@ export type PublishResult =
   | { readonly published: true; readonly release: CollectiveRelease }
   | { readonly published: false; readonly reason: string };
 
+/**
+ * Where published releases live.
+ *
+ * Flagged as debt when this repository was built and closed here rather than
+ * left for later. A collective repository that lost its releases on restart
+ * would lose the provenance, the approval record and the rollback pointer for
+ * every artifact any instance is running — which is precisely the evidence
+ * that only matters after something has gone wrong.
+ *
+ * No `delete`. Withdrawal is a state change and the record stays; a store that
+ * offered deletion would put the method within reach during an incident.
+ */
+export interface CollectiveRepositoryStore {
+  readonly durability: "in-memory" | "durable";
+  all(): readonly CollectiveRelease[];
+  append(release: CollectiveRelease): void;
+  /** Replaces one record in place. Used only to mark a withdrawal. */
+  replace(releaseId: string, release: CollectiveRelease): boolean;
+  nextReleaseId(): string;
+}
+
+export function createInMemoryCollectiveRepositoryStore(): CollectiveRepositoryStore {
+  const held: CollectiveRelease[] = [];
+  let counter = 0;
+  return {
+    durability: "in-memory",
+    all: () => held,
+    append: (r) => {
+      held.push(r);
+    },
+    replace: (releaseId, release) => {
+      const index = held.findIndex((r) => r.releaseId === releaseId);
+      if (index < 0) return false;
+      held[index] = release;
+      return true;
+    },
+    nextReleaseId: () => `rel_${(counter += 1)}`,
+  };
+}
+
 export interface CollectiveRepository {
   /**
    * Publishes an approved, built release.
@@ -181,10 +221,15 @@ export interface CollectiveRepository {
   }): { permitted: boolean; reason: string };
 
   count(): number;
+
+  /** Whether published releases survive a restart. */
+  durability(): "in-memory" | "durable";
 }
 
 export interface CollectiveRepositoryOptions {
   readonly now?: () => Date;
+  /** Where releases live. Defaults to in-memory. */
+  readonly store?: CollectiveRepositoryStore;
   readonly generateId?: () => string;
   /**
    * Sentinel's block list, by engine or by release.
@@ -213,9 +258,8 @@ export function createCollectiveRepository(
   options: CollectiveRepositoryOptions = {},
 ): CollectiveRepository {
   const now = options.now ?? (() => new Date());
-  let counter = 0;
-  const newId = options.generateId ?? (() => `rel_${(counter += 1)}`);
-  const releases: CollectiveRelease[] = [];
+  const store = options.store ?? createInMemoryCollectiveRepositoryStore();
+  const newId = options.generateId ?? (() => store.nextReleaseId());
 
   return {
     publish(input) {
@@ -257,7 +301,7 @@ export function createCollectiveRepository(
       // Versions are immutable. Republishing one would let the artifact behind
       // a version change while every instance pinned to it kept believing it
       // had the build it adopted.
-      const clash = releases.find(
+      const clash = store.all().find(
         (r) => r.engineId === parsed.data.engineId && r.version === parsed.data.version,
       );
       if (clash) {
@@ -270,39 +314,40 @@ export function createCollectiveRepository(
         };
       }
 
-      releases.push(parsed.data);
+      store.append(parsed.data);
       options.onPublished?.(parsed.data);
       return { published: true, release: parsed.data };
     },
 
     releases: (engineId) =>
-      releases
+      store
+        .all()
         .filter((r) => r.engineId === engineId)
         .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt)),
 
     lastKnownGood(engineId, channel) {
       return (
-        releases
+        store
+          .all()
           .filter((r) => r.engineId === engineId && r.channel === channel && !r.withdrawnAt)
           .sort((a, b) => compareVersions(b.version, a.version))[0] ?? null
       );
     },
 
     withdraw(releaseId, reason, by) {
-      const index = releases.findIndex((r) => r.releaseId === releaseId);
-      if (index < 0) return { withdrawn: false, reason: `No release ${releaseId}.` };
-      const existing = releases[index]!;
+      const existing = store.all().find((r) => r.releaseId === releaseId);
+      if (!existing) return { withdrawn: false, reason: `No release ${releaseId}.` };
       if (existing.withdrawnAt) return { withdrawn: false, reason: "Already withdrawn." };
 
       // A new record replacing the old one in the list, with the artifact and
       // every other field carried through. Withdrawal is a state, not a
       // deletion: instances that already adopted it need the record to still
       // explain what they are running.
-      releases[index] = {
+      store.replace(releaseId, {
         ...existing,
         withdrawnAt: now().toISOString(),
         withdrawnReason: `${reason} (withdrawn by ${by})`,
-      };
+      });
       return { withdrawn: true, reason: "Withdrawn; the record and the artifact both remain." };
     },
 
@@ -340,7 +385,8 @@ export function createCollectiveRepository(
       return { permitted: true, reason: "Compatible with what this instance reports running." };
     },
 
-    count: () => releases.length,
+    count: () => store.all().length,
+    durability: () => store.durability,
   };
 }
 

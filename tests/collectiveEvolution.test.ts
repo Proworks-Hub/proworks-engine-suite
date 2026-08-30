@@ -14,6 +14,7 @@ import {
 } from "@proworks-hub/contracts";
 import {
   createCollectiveRepository,
+  createInMemoryCollectiveRepositoryStore,
   foundryHasProductionDeploymentAuthority,
   publishedMeansDeployed,
   tenantMayWriteToRepository,
@@ -253,14 +254,23 @@ describe("the repository takes only approved, packaged releases", () => {
     // id of a Governance decision an instance did not make — so the rule is
     // enforced by there being nothing an instance could construct.
     const r = repo();
+    // An exact surface, so an addition is a decision made here rather than
+    // something that appears. `durability` arrived when releases moved behind
+    // a store; it is a read-only accessor, which is the opposite of a write.
     expect(Object.keys(r).sort()).toEqual([
       "count",
+      "durability",
       "lastKnownGood",
       "mayAdopt",
       "publish",
       "releases",
       "withdraw",
     ]);
+
+    // The claim that actually matters, stated independently of the list.
+    for (const forbidden of ["write", "insert", "upsert", "put", "deploy", "install"]) {
+      expect(Object.keys(r)).not.toContain(forbidden);
+    }
     expect(tenantMayWriteToRepository()).toBe(false);
   });
 
@@ -438,5 +448,27 @@ describe("publishing is not deploying", () => {
     for (const forbidden of ["deploy", "install", "apply", "rollout", "promote"]) {
       expect(Object.keys(r)).not.toContain(forbidden);
     }
+  });
+});
+
+describe("published releases survive a restart", () => {
+  it("comes back with the provenance every adopted artifact depends on", () => {
+    // Flagged as debt when this repository was built and closed rather than
+    // left. A collective repository that lost its releases would lose the
+    // approval record and the rollback pointer for every artifact any instance
+    // is running — the evidence that only matters after something goes wrong.
+    const store = createInMemoryCollectiveRepositoryStore();
+    const before = repo({ store });
+    expect(before.publish(packaged()).published).toBe(true);
+
+    const after = repo({ store });
+    expect(after.count()).toBe(1);
+    expect(after.lastKnownGood("forgeiq", "beta")?.approvalDecisionId).toBe("gd.approve.1");
+    // And the version is still immutable across the restart.
+    expect(after.publish(packaged()).published).toBe(false);
+  });
+
+  it("says which kind of store is bound", () => {
+    expect(repo().durability()).toBe("in-memory");
   });
 });

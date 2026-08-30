@@ -107,3 +107,6 @@ export * from "./migration.js";
 
 // How an instance improvement becomes a collective release.
 export * from "./evolution.js";
+
+// Machines prepare; people decide. The decision package.
+export * from "./proposal.js";
