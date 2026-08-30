@@ -125,3 +125,10 @@ export * from "./security.js";
 
 // The edge, and whose jurisdiction it is.
 export * from "./shield.js";
+
+// Finance primitives: exact-decimal money, quantities, rates, evidence
+// quality, method versioning, freshness (DEC-025, escalation A-1/PC-4).
+export * from "./financePrimitives.js";
+
+// The mechanism of LOCK-1: proposals to the posting monopoly (DEC-025, A-3).
+export * from "./postingProposal.js";

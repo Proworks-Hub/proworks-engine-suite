@@ -166,7 +166,18 @@ export const HIVE_MAP: readonly HiveComponent[] = [
   }),
   component({
     id: "budgetiq", name: "BudgetIQ", tier: "specialized", core: "finance", status: "conceptual",
-    responsibility: "Budgets, allocation, variance and forecasting.",
+    // Narrowed 2026-08-30 (DEC-025): the earlier string claimed allocation,
+    // variance and forecasting — three domains whose charters (AllocationIQ,
+    // VarianceIQ, ForecastIQ) are now ratified. BudgetIQ owns the authorized
+    // plan and nothing else.
+    responsibility: "The authorized plan: budget structures, versions, envelopes, consumption and budget-check semantics.",
+  }),
+  component({
+    id: "ledgeriq", name: "LedgerIQ", tier: "specialized", core: "finance", status: "conceptual",
+    // Charter ratified 2026-08-30 (charter.specialized.ledgeriq, DEC-025).
+    // LOCK-1: the posting monopoly — the only component permitted to create,
+    // amend or reverse a journal entry.
+    responsibility: "The general ledger: chart of accounts, journal, periods, debit/credit integrity, parallel books, balances, trial balance.",
   }),
 
   // ── Shared Platform engines ────────────────────────────────────────────────
