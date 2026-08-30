@@ -188,6 +188,13 @@ export const HIVE_MAP: readonly HiveComponent[] = [
     gap: "Kernel through M3 scope: the 28-gate validation ladder, exact-decimal FX conversion with visible residue lines, intercompany generation, period state machine, balance fold, trial balance, roll-forward, export projection, reference in-memory store. NOT yet: platform-events publication (posting is authoritative in the store; no ledger.entry.posted is emitted), the auditiq immutability chain, explanation levels L0-L6 (the capability refuses honestly), materialized balance cache with watermark, reporting-currency amounts, batch posting, and any durable store — hosts must bind one. Finance Core does not yet route to it (PC-5 pending).",
   }),
   component({
+    id: "assetfinanceiq", name: "AssetFinanceIQ", tier: "specialized", core: "finance", status: "partial",
+    packageName: "@proworks-hub/assetfinanceiq",
+    // Charter ratified 2026-08-30 (charter.specialized.assetfinanceiq, DEC-025).
+    responsibility: "The financial representation of fixed assets: capitalization policy (three-valued, never silently expensing), depreciation as cumulative functions over method epochs, MACRS with a population-scoped mid-quarter determination, framework-bound impairment, disposal. NEVER the physical asset (AssetIQ, unbuilt) and never the journal (LedgerIQ).",
+    gap: "Pure kernel scope: cumulative-function schedules with ONE rounding boundary (Σ charges == base exactly, 480-period building tested — the CostIQ round-per-line drift corrected), straight-line/SYD/declining-balance-with-recorded-SL-switch, MACRS 5-year tables with the G-21 mid-quarter cliff (testBasisConvention REQUIRED, the alternative reading's ratio named on the determination, indeterminate never defaults to half-year), MethodEpochs (history immutable; unauthorized/overlapping epochs refuse), s481(a) catch-up only for tax-framework method revisions, impairment with supplied recoverable amounts and US-GAAP reversal prohibition as a framework rule, disposal outcome, proposal idempotency. NOT yet: units-of-production (UsageMeterPort unbound - refuses), revaluation model, CGU allocation, component derecognition, ARO (unowned, B-1), full multi-year MACRS beyond year-1 goldens, persistence/events. report_asset_tax_basis refuses honestly - its consumer is unowned (B-17). Finance Core does not yet route to it.",
+  }),
+  component({
     id: "consolidationiq", name: "ConsolidationIQ", tier: "specialized", core: "finance", status: "partial",
     packageName: "@proworks-hub/consolidationiq",
     // Charter ratified 2026-08-30 (charter.specialized.consolidationiq, DEC-025).

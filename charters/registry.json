@@ -794,7 +794,7 @@
     "constitutionVersion": "1.0",
     "integrityHash": "sha256:30015d55909fa8f579332e30dda2fa3d34a3e00c8f154aee7347baed66e658bc",
     "sourceDocument": "Documents/ProWorks-Ecosystem/charters/finance-program/AssetFinanceIQ/01_AssetFinanceIQ_Master_Engineering_Blueprint.md",
-    "implementationLifecycle": "CHARTERED"
+    "implementationLifecycle": "EXPERIMENTAL"
   },
   {
     "charterId": "charter.specialized.billingiq",

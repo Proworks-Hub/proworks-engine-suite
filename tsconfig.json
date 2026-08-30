@@ -23,6 +23,7 @@
       "@proworks-hub/receivablesiq": ["./packages/receivablesiq/src/index.ts"],
       "@proworks-hub/closeiq": ["./packages/closeiq/src/index.ts"],
       "@proworks-hub/consolidationiq": ["./packages/consolidationiq/src/index.ts"],
+      "@proworks-hub/assetfinanceiq": ["./packages/assetfinanceiq/src/index.ts"],
       "@proworks-hub/simulation-lab": ["./packages/simulation-lab/src/index.ts"],
       "@proworks-hub/operations-core": ["./packages/operations-core/src/index.ts"],
       "@proworks-hub/resources-core": ["./packages/resources-core/src/index.ts"],
