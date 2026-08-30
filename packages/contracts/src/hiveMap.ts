@@ -188,6 +188,13 @@ export const HIVE_MAP: readonly HiveComponent[] = [
     gap: "Kernel through M3 scope: the 28-gate validation ladder, exact-decimal FX conversion with visible residue lines, intercompany generation, period state machine, balance fold, trial balance, roll-forward, export projection, reference in-memory store. NOT yet: platform-events publication (posting is authoritative in the store; no ledger.entry.posted is emitted), the auditiq immutability chain, explanation levels L0-L6 (the capability refuses honestly), materialized balance cache with watermark, reporting-currency amounts, batch posting, and any durable store — hosts must bind one. Finance Core does not yet route to it (PC-5 pending).",
   }),
   component({
+    id: "revenuerecognitioniq", name: "RevenueRecognitionIQ", tier: "specialized", core: "finance", status: "partial",
+    packageName: "@proworks-hub/revenuerecognitioniq",
+    // Charter ratified 2026-08-30 (charter.specialized.revenuerecognitioniq, DEC-025).
+    responsibility: "Performance obligations, transaction price with the variable-consideration constraint, standalone selling prices with a gated residual approach, exact relative-SSP allocation, over-time vs point-in-time. BILLING IS NOT REVENUE (BillingIQ); cash is not revenue (ReceivablesIQ); the journal is LedgerIQ's. Owns the unbilled unconditional right (B-4, ratified).",
+    gap: "Pure kernel scope: M-1 contract identification (five evidenced criteria, collectibility once at inception — the only credit entry point), M-4/M-5 variable estimation with the method as the ENTITY'S selection, M-6 the constraint ladder (any absent factor finding refuses — the most consequential refusal in the engine), the IP-licence-gated royalty exception, M-7 observable SSP with a corridor that refuses rather than widening, M-10 the gated residual (implausible results refuse), M-11 exact order-independent monotone allocation, M-12/M-13 recorded fallbacks, M-14 satisfaction with NO default to ratable, M-15/M-17 cost-to-cost with uninstalled materials at zero margin, over-time recognition with cumulative catch-up. NOT yet: schedules/versioning persistence, modification accounting, contract combination and netting scope, series-provision mechanics, material rights, financing component, disclosures, events. Finance Core does not yet route to it.",
+  }),
+  component({
     id: "leasefinanceiq", name: "LeaseFinanceIQ", tier: "specialized", core: "finance", status: "partial",
     packageName: "@proworks-hub/leasefinanceiq",
     // Charter ratified 2026-08-30 (charter.specialized.leasefinanceiq, DEC-025).

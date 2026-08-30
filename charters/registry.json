@@ -1080,7 +1080,7 @@
     "constitutionVersion": "1.0",
     "integrityHash": "sha256:ef2259fd4e4adf31456ef539fe72d9e74e98c879b3723ce8e8faedbfde006b8c",
     "sourceDocument": "Documents/ProWorks-Ecosystem/charters/finance-program/RevenueRecognitionIQ/01_RevenueRecognitionIQ_Master_Engineering_Blueprint.md",
-    "implementationLifecycle": "CHARTERED"
+    "implementationLifecycle": "EXPERIMENTAL"
   },
   {
     "charterId": "charter.specialized.scenarioiq",
