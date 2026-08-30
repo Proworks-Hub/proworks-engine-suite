@@ -188,6 +188,27 @@ export const HIVE_MAP: readonly HiveComponent[] = [
     gap: "Kernel through M3 scope: the 28-gate validation ladder, exact-decimal FX conversion with visible residue lines, intercompany generation, period state machine, balance fold, trial balance, roll-forward, export projection, reference in-memory store. NOT yet: platform-events publication (posting is authoritative in the store; no ledger.entry.posted is emitted), the auditiq immutability chain, explanation levels L0-L6 (the capability refuses honestly), materialized balance cache with watermark, reporting-currency amounts, batch posting, and any durable store — hosts must bind one. Finance Core does not yet route to it (PC-5 pending).",
   }),
   component({
+    id: "allocationiq", name: "AllocationIQ", tier: "specialized", core: "finance", status: "partial",
+    packageName: "@proworks-hub/allocationiq",
+    // Charter ratified 2026-08-30 (charter.specialized.allocationiq, DEC-025).
+    responsibility: "Cost pools, drivers, direct/step-down/reciprocal allocation, versioned runs. DERIVES the rate; CostIQ applies it — the rate crosses as a versioned contract value, never a function call.",
+    gap: "Pure kernel scope: largest-remainder distribution (floor toward minus infinity — one rule for credits and debits, no sign branch; recorded ref tie-breaks; the reconciliation identity typed as literal true), reciprocal solve on EXACT RATIONALS with deterministic pivoting (never inversion, never iteration to a tolerance), structural closed-SCC singularity detection with exact leakage (refusal names every member), self-service renormalization, the circulation-ratio model-sanity guard, deterministic step-down ordering. NOT yet: rate derivation/practical capacity/death spiral, ABC and TDABC, joint products, dual-rate, run orchestration/persistence/events, PostingProposal emission. Finance Core does not yet route to it.",
+  }),
+  component({
+    id: "profitabilityiq", name: "ProfitabilityIQ", tier: "specialized", core: "finance", status: "partial",
+    packageName: "@proworks-hub/profitabilityiq",
+    // Charter ratified 2026-08-30 (charter.specialized.profitabilityiq, DEC-025).
+    responsibility: "Profit and margin by dimension with an unknown-propagation algebra: a hole in the cost basis is a NAMED hole, never a zero. Never recomputes a cost; never substitutes its own when CostIQ's is unavailable — it returns unknown for that dimension.",
+    gap: "Pure kernel scope: the Amount algebra (known/unknown propagating to partial-with-floor-and-holes), four NAMED margin definitions differing on the same facts, the IncompletePolicy (refuse, or partial-with-coverage — the only two honest answers over a hole), ranking with a first-class EXCLUDED set (a partial never ranks), the whale curve, reconciliation to a supplied entity total with the gap NAMED and never spread. NOT yet: the sparse dimensional model and roll-up fold (M-1/M-2), tier ladders (M-4/M-5), member retirement and realignment bridges (M-11..M-13), persistence/events. Finance Core does not yet route to it.",
+  }),
+  component({
+    id: "projectfinanceiq", name: "ProjectFinanceIQ", tier: "specialized", core: "finance", status: "partial",
+    packageName: "@proworks-hub/projectfinanceiq",
+    // Charter ratified 2026-08-30 (charter.specialized.projectfinanceiq, DEC-025).
+    responsibility: "The project as a financial object: EAC/ETC/burn, earned-value measures, immutable baselines. NEVER recognises revenue — percentage-of-completion revenue is RevenueRecognitionIQ's judgement even though the input measure comes from here.",
+    gap: "Pure kernel scope: the three EAC formulas as a REQUIRED argument (K-2 golden reproduced exactly: 1,100,000 / 1,250,000 / 1,437,500 — 33.75% of BAC), CPI/SPI with defined-ness traps honoured (zero AC means UNDEFINED, not infinity and not zero), method-circularity detection (cost-incurred progress with a CPI-based EAC can never signal an overrun — refused), immutable authorized baseline versions. NOT yet: commitments, progress-measurement reliability grading, burn tracking, persistence/events. Finance Core does not yet route to it.",
+  }),
+  component({
     id: "revenuerecognitioniq", name: "RevenueRecognitionIQ", tier: "specialized", core: "finance", status: "partial",
     packageName: "@proworks-hub/revenuerecognitioniq",
     // Charter ratified 2026-08-30 (charter.specialized.revenuerecognitioniq, DEC-025).

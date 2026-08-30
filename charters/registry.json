@@ -781,7 +781,7 @@
     "constitutionVersion": "1.0",
     "integrityHash": "sha256:fe7487daf6bcdde607d23009f3909df855162ff8c66b7dab7cf1c19c9f075875",
     "sourceDocument": "Documents/ProWorks-Ecosystem/charters/finance-program/AllocationIQ/01_AllocationIQ_Master_Engineering_Blueprint.md",
-    "implementationLifecycle": "CHARTERED"
+    "implementationLifecycle": "EXPERIMENTAL"
   },
   {
     "charterId": "charter.specialized.assetfinanceiq",
@@ -1041,7 +1041,7 @@
     "constitutionVersion": "1.0",
     "integrityHash": "sha256:7cbc914cd023e7a2f8e7bed7e8821bc6bfae6b25ad9bb17013e95af3b25aad2a",
     "sourceDocument": "Documents/ProWorks-Ecosystem/charters/finance-program/ProfitabilityIQ/01_ProfitabilityIQ_Master_Engineering_Blueprint.md",
-    "implementationLifecycle": "CHARTERED"
+    "implementationLifecycle": "EXPERIMENTAL"
   },
   {
     "charterId": "charter.specialized.projectfinanceiq",
@@ -1054,7 +1054,7 @@
     "constitutionVersion": "1.0",
     "integrityHash": "sha256:98d62bdd5ec1ce7cf3beaadc71756cef8ff584bde1bfc3d946123db6358a1ac5",
     "sourceDocument": "Documents/ProWorks-Ecosystem/charters/finance-program/ProjectFinanceIQ/01_ProjectFinanceIQ_Master_Engineering_Blueprint.md",
-    "implementationLifecycle": "CHARTERED"
+    "implementationLifecycle": "EXPERIMENTAL"
   },
   {
     "charterId": "charter.specialized.receivablesiq",

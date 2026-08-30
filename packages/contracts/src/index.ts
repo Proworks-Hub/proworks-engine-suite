@@ -132,3 +132,7 @@ export * from "./financePrimitives.js";
 
 // The mechanism of LOCK-1: proposals to the posting monopoly (DEC-025, A-3).
 export * from "./postingProposal.js";
+
+// Exact rational arithmetic — shared by the consolidation and allocation
+// solves (a specialist may not import a specialist; shared math is platform).
+export * from "./exactRational.js";
