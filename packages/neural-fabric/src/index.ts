@@ -33,3 +33,9 @@ export * from "./engines/deliveryIQ.js";
 export * from "./engines/contractIQ.js";
 export * from "./engines/routingIQ.js";
 export * from "./engines/streamIQ.js";
+
+// Security posture, containment, immune signalling and governed upgrade.
+// Neural Fabric consumes these controls; it does not own the security system.
+export * from "./security/posture.js";
+export * from "./security/quarantine.js";
+export * from "./security/governedUpgrade.js";
