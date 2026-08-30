@@ -57,3 +57,12 @@ export * from "./certification.js";
 export * from "./ports/securityPorts.js";
 export * from "./runtime/fabricRuntime.js";
 export * from "./runtime/controlPlane.js";
+
+// Reference transport adapters — two providers with opposite semantics, so
+// neutrality is demonstrated rather than declared. Outside the kernel: the
+// kernel never imports them; hosts bind them.
+export * from "./providers/subjectBusProvider.js";
+export * from "./providers/durableLogProvider.js";
+
+// The one door between instances. Everything is re-checked on both sides.
+export * from "./interconnect/gateway.js";
