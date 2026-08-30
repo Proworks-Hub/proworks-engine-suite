@@ -47,3 +47,6 @@ export * from "./ports/providers.js";
 export * from "./security/posture.js";
 export * from "./security/quarantine.js";
 export * from "./security/governedUpgrade.js";
+
+// The seven hard gates, checked against the code rather than promised.
+export * from "./certification.js";
