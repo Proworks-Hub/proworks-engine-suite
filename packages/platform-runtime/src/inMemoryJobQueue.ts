@@ -81,6 +81,49 @@ const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 
 export function createInMemoryJobQueue(options: InMemoryJobQueueOptions = {}): InMemoryJobQueue {
   const jobs = new Map<string, Job>();
+
+  // ── Indexes, and why they exist ────────────────────────────────────────────
+  //
+  // `claim` used to make two full passes over every job in the queue: one to
+  // reclaim lapsed leases, one to find candidates of the requested types. Both
+  // grew with TOTAL queue depth, which made the bulkhead this file documents
+  // ("a worker claiming `receipt.parse` never sees `forgeiq.nest`") true about
+  // what a worker RECEIVES and false about what it costs to receive it. Fifty
+  // thousand receipts did slow the manufacturing workers down — just invisibly,
+  // through the scan rather than through the selection.
+  //
+  //   queuedByType  the queued job ids of one type. The candidate scan reads
+  //                 only the requested types, so an unrelated backlog costs
+  //                 nothing at all.
+  //   running       the job ids currently held by a worker. The lease sweep
+  //                 reads only these, so it is bounded by how much work is in
+  //                 flight rather than by how much is waiting.
+  //
+  // Both are derived state, and derived state that drifts is worse than no
+  // index at all. So NOTHING below writes to `jobs` directly — every mutation
+  // goes through `write`, which is the only place the three can fall out of
+  // step, and therefore the only place to look if they ever do.
+  const queuedByType = new Map<string, Set<string>>();
+  const running = new Set<string>();
+
+  /** The single write path. Keeps `jobs` and both indexes in step by construction. */
+  const write = (job: Job): void => {
+    const previous = jobs.get(job.jobId);
+    if (previous) {
+      if (previous.status === "queued") queuedByType.get(previous.jobType)?.delete(previous.jobId);
+      if (previous.status === "running") running.delete(previous.jobId);
+    }
+    if (job.status === "queued") {
+      let set = queuedByType.get(job.jobType);
+      if (!set) {
+        set = new Set<string>();
+        queuedByType.set(job.jobType, set);
+      }
+      set.add(job.jobId);
+    }
+    if (job.status === "running") running.add(job.jobId);
+    jobs.set(job.jobId, job);
+  };
   const now = options.now ?? (() => new Date());
   // Read once into a local. Nothing reassigns it, so the observer cannot be
   // swapped for something with authority after construction.
@@ -124,7 +167,7 @@ export function createInMemoryJobQueue(options: InMemoryJobQueueOptions = {}): I
         ...(input.availableAt ? { availableAt: input.availableAt } : {}),
         createdAt: now().toISOString(),
       });
-      jobs.set(jobId, job);
+      write(job);
       return clone(job);
     },
 
@@ -134,28 +177,46 @@ export function createInMemoryJobQueue(options: InMemoryJobQueueOptions = {}): I
       // Reclaim anything a crashed worker was holding, before looking at new
       // work. Otherwise a queue can look busy while nothing is progressing.
       //
-      // Note for anyone reading the work counts: this pass visits EVERY job,
-      // not only those of the requested types. So does the scan below.
-      for (const job of jobs.values()) {
+      // Visits only the RUNNING jobs, so this costs what the shop is currently
+      // working on rather than everything it has ever been asked to do.
+      // Snapshotted first, because reclaiming mutates the set being read.
+      for (const jobId of [...running]) {
         observeClaimWork?.("lease-sweep");
-        if (job.status === "running" && leaseExpired(job, at)) {
-          jobs.set(job.jobId, { ...job, status: "queued", claimedBy: undefined, claimedUntil: undefined });
+        const job = jobs.get(jobId);
+        if (job && leaseExpired(job, at)) {
+          write({ ...job, status: "queued", claimedBy: undefined, claimedUntil: undefined });
         }
       }
 
-      const candidates = [...jobs.values()]
-        .filter((j) => {
+      // Priority first, then oldest — so an urgent job jumps the queue but
+      // equal work is still fair, and nothing starves behind a busy type.
+      //
+      // Selected in ONE pass rather than by sorting. The old code sorted every
+      // candidate and then read `[0]`, paying k log k to answer a question that
+      // costs k. Sorting also made fairness depend on the sort being stable;
+      // choosing explicitly says what "best" means instead of inheriting it
+      // from the engine.
+      let next: Job | undefined;
+      // De-duplicated: a caller passing the same type twice must not visit its
+      // jobs twice, or the work counts stop meaning what they say.
+      for (const jobType of new Set(jobTypes)) {
+        for (const jobId of queuedByType.get(jobType) ?? []) {
           observeClaimWork?.("candidate-scan");
-          return jobTypes.includes(j.jobType) && available(j, at);
-        })
-        // Priority first, then oldest — so an urgent job jumps the queue but
-        // equal work is still fair, and nothing starves behind a busy type.
-        .sort((a, b) => {
+          const job = jobs.get(jobId);
+          if (!job || !available(job, at)) continue;
+          if (!next) {
+            next = job;
+            continue;
+          }
           observeClaimWork?.("candidate-compare");
-          return b.priority - a.priority || a.createdAt.localeCompare(b.createdAt);
-        });
+          const better =
+            job.priority !== next.priority
+              ? job.priority > next.priority
+              : job.createdAt.localeCompare(next.createdAt) < 0;
+          if (better) next = job;
+        }
+      }
 
-      const next = candidates[0];
       if (!next) return null;
 
       const claimed: Job = {
@@ -166,7 +227,7 @@ export function createInMemoryJobQueue(options: InMemoryJobQueueOptions = {}): I
         claimedUntil: new Date(at + leaseMs).toISOString(),
         startedAt: next.startedAt ?? now().toISOString(),
       };
-      jobs.set(next.jobId, claimed);
+      write(claimed);
       return clone(claimed);
     },
 
@@ -176,7 +237,7 @@ export function createInMemoryJobQueue(options: InMemoryJobQueueOptions = {}): I
       // rather than honoured — it has already been reclaimed by someone else,
       // and letting it extend the lease would give two workers the same job.
       if (!job || job.claimedBy !== worker) return;
-      jobs.set(jobId, {
+      write({
         ...job,
         ...(progress !== undefined ? { progress: Math.max(0, Math.min(1, progress)) } : {}),
         claimedUntil: new Date(now().getTime() + 30_000).toISOString(),
@@ -186,7 +247,7 @@ export function createInMemoryJobQueue(options: InMemoryJobQueueOptions = {}): I
     complete(jobId, result, resultRef) {
       const job = jobs.get(jobId);
       if (!job) return;
-      jobs.set(jobId, {
+      write({
         ...job,
         status: "completed",
         progress: 1,
@@ -205,7 +266,7 @@ export function createInMemoryJobQueue(options: InMemoryJobQueueOptions = {}): I
       const exhausted = job.attempts >= job.maxAttempts;
 
       if (!retryable || exhausted) {
-        jobs.set(jobId, {
+        write({
           ...job,
           status: "failed",
           error,
@@ -219,7 +280,7 @@ export function createInMemoryJobQueue(options: InMemoryJobQueueOptions = {}): I
       // Back off before it is eligible again, so a failing dependency is not
       // hammered by the same job returning immediately.
       const delay = backoffDelayMs(job.attempts, DEFAULT_RETRY_POLICY, random);
-      jobs.set(jobId, {
+      write({
         ...job,
         status: "queued",
         error,
@@ -251,6 +312,10 @@ export function createInMemoryJobQueue(options: InMemoryJobQueueOptions = {}): I
     },
 
     all: () => [...jobs.values()].map(clone),
-    clear: () => jobs.clear(),
+    clear: () => {
+      jobs.clear();
+      queuedByType.clear();
+      running.clear();
+    },
   };
 }

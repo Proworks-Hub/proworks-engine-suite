@@ -243,19 +243,108 @@ describe("the claim-work observation seam", () => {
     q.enqueue({ jobType: "forgeiq.nest", trace, jobId: "n2", priority: 5, input: { sheet: 2 } });
   };
 
-  it("counts one unit per job visited, in both passes", () => {
+  it("visits only the requested types, and only what is running", () => {
     const phases: ClaimWorkPhase[] = [];
     const q = createInMemoryJobQueue({ observeClaimWork: (p) => phases.push(p) });
     seed(q);
 
     q.claim(["forgeiq.nest"], "forge", 30_000);
 
-    // Four jobs, and BOTH passes visit every one of them regardless of type —
-    // which is the fact the scale gate is built on.
-    expect(phases.filter((p) => p === "lease-sweep")).toHaveLength(4);
-    expect(phases.filter((p) => p === "candidate-scan")).toHaveLength(4);
-    // Two nest jobs survive the filter, so the sort makes one comparison.
+    // Nothing is running, so there are no leases to sweep. This pass used to
+    // visit all four jobs regardless.
+    expect(phases.filter((p) => p === "lease-sweep")).toHaveLength(0);
+    // Two nest jobs. The two receipt jobs are never looked at — the scan reads
+    // the requested type's index rather than the whole queue, which is what
+    // makes the bulkhead this file documents true about COST and not only
+    // about what a worker receives.
+    expect(phases.filter((p) => p === "candidate-scan")).toHaveLength(2);
+    // One comparison to choose between the two survivors.
     expect(phases.filter((p) => p === "candidate-compare")).toHaveLength(1);
+  });
+
+  it("costs the same however deep the OTHER types are backed up", () => {
+    // The property that matters, and the one the old implementation did not
+    // have. Fifty thousand receipts arriving used to slow every manufacturing
+    // claim down — not by giving the worker the wrong job, but by walking past
+    // all fifty thousand to find the right one.
+    const workFor = (receiptBacklog: number): number => {
+      let units = 0;
+      const q = createInMemoryJobQueue({ observeClaimWork: () => (units += 1) });
+      for (let i = 0; i < receiptBacklog; i += 1) {
+        q.enqueue({ jobType: "receipt.parse", trace, jobId: `r${i}` });
+      }
+      q.enqueue({ jobType: "forgeiq.nest", trace, jobId: "n1", priority: 1 });
+      q.enqueue({ jobType: "forgeiq.nest", trace, jobId: "n2", priority: 5 });
+      q.claim(["forgeiq.nest"], "forge", 30_000);
+      return units;
+    };
+
+    expect(workFor(10)).toBe(workFor(50_000));
+  });
+
+  it("sweeps the leases in flight, not the queue behind them", () => {
+    // The other half. A worker holding a lapsed lease must still be reclaimed,
+    // and that cost should track work in flight rather than work waiting.
+    const phases: ClaimWorkPhase[] = [];
+    let clock = new Date("2026-08-29T10:00:00.000Z");
+    const q = createInMemoryJobQueue({
+      now: () => clock,
+      observeClaimWork: (p) => phases.push(p),
+    });
+    seed(q);
+    q.claim(["forgeiq.nest"], "worker-a", 1_000);
+
+    phases.length = 0;
+    clock = new Date("2026-08-29T10:00:05.000Z");
+    const reclaimed = q.claim(["forgeiq.nest"], "worker-b", 1_000);
+
+    // One job was running, so one lease is swept — not the four in the queue.
+    expect(phases.filter((p) => p === "lease-sweep")).toHaveLength(1);
+    expect(reclaimed?.jobId).toBe("n2");
+    expect(reclaimed?.claimedBy).toBe("worker-b");
+  });
+
+  it("does not visit a type twice when the caller names it twice", () => {
+    // Otherwise the work counts stop meaning what they say, and a caller with
+    // a duplicated config quietly pays double.
+    let units = 0;
+    const q = createInMemoryJobQueue({ observeClaimWork: () => (units += 1) });
+    seed(q);
+    q.claim(["forgeiq.nest", "forgeiq.nest"], "forge", 30_000);
+    expect(units).toBe(3);
+  });
+
+  it("keeps its indexes in step across the whole job lifecycle", () => {
+    // The risk the indexes introduce: derived state that drifts is worse than
+    // no index. Drive a job through every transition and check the queue still
+    // agrees with itself at each step.
+    let clock = new Date("2026-08-29T10:00:00.000Z");
+    const q = createInMemoryJobQueue({ now: () => clock, random: () => 0 });
+    q.enqueue({ jobType: "forgeiq.nest", trace, jobId: "n1" });
+
+    expect(q.stats().queued).toBe(1);
+    expect(q.claim(["forgeiq.nest"], "w", 30_000)?.jobId).toBe("n1");
+    expect(q.stats().running).toBe(1);
+    // Claimed, so it must not be claimable again.
+    expect(q.claim(["forgeiq.nest"], "w2", 30_000)).toBeNull();
+
+    // A retryable failure returns it to the queue, but backed off.
+    q.fail("n1", "flaky");
+    expect(q.stats().queued).toBe(1);
+    expect(q.claim(["forgeiq.nest"], "w", 30_000)).toBeNull();
+
+    // Past the backoff it is claimable again.
+    clock = new Date("2026-08-29T10:05:00.000Z");
+    expect(q.claim(["forgeiq.nest"], "w", 30_000)?.jobId).toBe("n1");
+
+    q.complete("n1");
+    expect(q.stats().completed).toBe(1);
+    expect(q.stats().queued).toBe(0);
+    expect(q.claim(["forgeiq.nest"], "w", 30_000)).toBeNull();
+
+    q.clear();
+    expect(q.all()).toEqual([]);
+    expect(q.claim(["forgeiq.nest"], "w", 30_000)).toBeNull();
   });
 
   it("gives the observer nothing to leak", () => {
@@ -350,7 +439,9 @@ describe("the claim-work observation seam", () => {
       return n;
     };
     expect(run()).toBe(run());
-    expect(run()).toBe(9);
+    // Was 9: two full four-job passes plus one comparison. Now two candidate
+    // visits and one comparison, with no lease sweep because nothing is running.
+    expect(run()).toBe(3);
   });
 
   it("does not disturb lease reclaim, retries, or type isolation", () => {
