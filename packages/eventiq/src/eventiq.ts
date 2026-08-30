@@ -367,6 +367,23 @@ export interface EventIqOptions {
    * contexts under future deployment models.
    */
   instance: InstanceIdentity;
+  /**
+   * Whether a message claiming a FOREIGN origin may be accepted.
+   *
+   * A port, bound by a host to its Interconnect gateway. Absent means no —
+   * which is why this is optional rather than required: an instance with no
+   * cross-instance relationships should not have to configure a refusal it
+   * already gets for free.
+   *
+   * EventIQ does not decide this and cannot. It asks, and a `false` from an
+   * unbound port is indistinguishable from a `false` from a revoked link,
+   * which is the correct behaviour for both.
+   */
+  admitForeignOrigin?: (input: {
+    claimedInstanceId: string;
+    messageType: string;
+    messageId: string;
+  }) => { admitted: boolean; reason: string };
   authority: EventAuthority;
   /**
    * Where state lives. Defaults to the deterministic in-memory adapter.
@@ -473,15 +490,34 @@ export function createEventIq(options: EventIqOptions): EventIq {
       // architecture forbids, and it would be the hardest thing to remove
       // later, because by then something would depend on it.
       if (message.origin && message.origin.globalInstanceId !== instanceId) {
-        return {
-          accepted: false,
-          reason:
-            `Message ${message.messageId} claims to originate in instance ` +
-            `${message.origin.globalInstanceId} and this is ${instanceId}. Cross-instance delivery ` +
-            "requires a governed relationship through the Interconnect, which does not exist yet. " +
-            "Refused rather than bridged.",
-          failedClosed: true,
-        };
+        // The Interconnect now exists, and this refusal became CONDITIONAL
+        // rather than being deleted. That distinction is the whole of the
+        // change: a wall with a door still refuses everything by default, and
+        // a wall removed refuses nothing.
+        //
+        // `admitForeignOrigin` is a port a host binds to its Interconnect
+        // gateway. Unbound — which is every deployment that has not
+        // deliberately opened a relationship — the answer is still no, and the
+        // reason still says why.
+        const admitted = options.admitForeignOrigin?.({
+          claimedInstanceId: message.origin.globalInstanceId,
+          messageType: message.messageType,
+          messageId: message.messageId,
+        });
+
+        if (!admitted?.admitted) {
+          return {
+            accepted: false,
+            reason:
+              `Message ${message.messageId} claims to originate in instance ` +
+              `${message.origin.globalInstanceId} and this is ${instanceId}. ` +
+              (admitted
+                ? `The Interconnect refused it: ${admitted.reason}`
+                : "No Interconnect gateway is bound, so no governed relationship can be established. " +
+                  "Refused rather than bridged."),
+            failedClosed: true,
+          };
+        }
       }
 
       const decision = options.authority.mayPublish({

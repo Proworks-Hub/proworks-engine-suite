@@ -36,3 +36,6 @@ export * from "./knowledgeGateway.js";
 
 // The instance and knowledge registries, and scope precedence.
 export * from "./federation.js";
+
+// The interconnect gateway: the door in the wall.
+export * from "./interconnect.js";

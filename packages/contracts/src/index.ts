@@ -116,3 +116,6 @@ export * from "./knowledge.js";
 
 // Many instances, one architecture, no shared memory.
 export * from "./federation.js";
+
+// Two instances working together without becoming one database.
+export * from "./interconnect.js";
