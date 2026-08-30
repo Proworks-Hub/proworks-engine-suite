@@ -19,6 +19,7 @@
       "@proworks-hub/finance-core": ["./packages/finance-core/src/index.ts"],
       "@proworks-hub/core-kit": ["./packages/core-kit/src/index.ts"],
       "@proworks-hub/ledgeriq": ["./packages/ledgeriq/src/index.ts"],
+      "@proworks-hub/payablesiq": ["./packages/payablesiq/src/index.ts"],
       "@proworks-hub/simulation-lab": ["./packages/simulation-lab/src/index.ts"],
       "@proworks-hub/operations-core": ["./packages/operations-core/src/index.ts"],
       "@proworks-hub/resources-core": ["./packages/resources-core/src/index.ts"],

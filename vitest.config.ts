@@ -19,6 +19,7 @@ export default defineConfig({
       "@proworks-hub/control-plane/manifests": pkg("control-plane", "src/manifests/index.ts"),
       "@proworks-hub/contracts": pkg("contracts", "src/index.ts"),
       "@proworks-hub/ledgeriq": pkg("ledgeriq", "src/index.ts"),
+      "@proworks-hub/payablesiq": pkg("payablesiq", "src/index.ts"),
       "@proworks-hub/simulation-lab": pkg("simulation-lab", "src/index.ts"),
       "@proworks-hub/senseiq": pkg("senseiq", "src/index.ts"),
       "@proworks-hub/finance-core": pkg("finance-core", "src/index.ts"),

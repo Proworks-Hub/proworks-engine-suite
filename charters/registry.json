@@ -1015,7 +1015,7 @@
     "constitutionVersion": "1.0",
     "integrityHash": "sha256:c40d7aaaf4c590a27c3649b21155cc16999a27afa299772a3ce1a66d1be1e1a3",
     "sourceDocument": "Documents/ProWorks-Ecosystem/charters/finance-program/PayablesIQ/01_PayablesIQ_Master_Engineering_Blueprint.md",
-    "implementationLifecycle": "CHARTERED"
+    "implementationLifecycle": "EXPERIMENTAL"
   },
   {
     "charterId": "charter.specialized.paymentsiq",

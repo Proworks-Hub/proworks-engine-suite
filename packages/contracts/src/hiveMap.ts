@@ -187,6 +187,13 @@ export const HIVE_MAP: readonly HiveComponent[] = [
     responsibility: "The general ledger: chart of accounts, journal, periods, debit/credit integrity, parallel books, balances, trial balance.",
     gap: "Kernel through M3 scope: the 28-gate validation ladder, exact-decimal FX conversion with visible residue lines, intercompany generation, period state machine, balance fold, trial balance, roll-forward, export projection, reference in-memory store. NOT yet: platform-events publication (posting is authoritative in the store; no ledger.entry.posted is emitted), the auditiq immutability chain, explanation levels L0-L6 (the capability refuses honestly), materialized balance cache with watermark, reporting-currency amounts, batch posting, and any durable store — hosts must bind one. Finance Core does not yet route to it (PC-5 pending).",
   }),
+  component({
+    id: "payablesiq", name: "PayablesIQ", tier: "specialized", core: "finance", status: "partial",
+    packageName: "@proworks-hub/payablesiq",
+    // Charter ratified 2026-08-30 (charter.specialized.payablesiq, DEC-025).
+    responsibility: "The vendor liability record: open items, terms and due dates, discounts, aging, vendor balances. What we ACTUALLY owe — never the invoice (InvoiceIQ), the payment (PaymentsIQ), or the journal (LedgerIQ).",
+    gap: "Kernel scope: terms resolution with no fallback chain, four due-date rule kinds with February clamping, installment splitting with last-absorbs-residual, the three yield methods (required argument, no default — K-1), aging with registration-validated schemes and a terms-unknown bucket, per-currency vendor balance partition, settlement with derived-and-verified openAmount, deterministic PostingProposals, fingerprint dedup, tenant-scoped in-memory repositories. NOT yet: event publication/subscription (freshness map unwired), the dependency reverse index, PayablesExportV1, FX revaluation (ExchangeRatePort unbound: refuses), L2-L6 explanation, AI waves, disputes (B-3 gated on a platform case-kit that does not exist — disputed-hold deliberately absent). Finance Core does not yet route to it.",
+  }),
 
   // ── Shared Platform engines ────────────────────────────────────────────────
   component({
