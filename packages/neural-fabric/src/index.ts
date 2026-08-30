@@ -35,6 +35,12 @@ export * from "./engines/routingIQ.js";
 export * from "./engines/streamIQ.js";
 export * from "./engines/fabricObservabilityIQ.js";
 export * from "./engines/fabricAdaptationIQ.js";
+export * from "./engines/topologyIQ.js";
+export * from "./engines/flowIQ.js";
+
+// Transports are replaceable, and this is where that is checked rather than
+// asserted.
+export * from "./ports/providers.js";
 
 // Security posture, containment, immune signalling and governed upgrade.
 // Neural Fabric consumes these controls; it does not own the security system.
