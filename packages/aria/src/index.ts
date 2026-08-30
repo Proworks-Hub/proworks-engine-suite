@@ -15,3 +15,5 @@
 
 export * from "./advice.js";
 export * from "./aria.js";
+
+export * from "./interopAdvisor.js";

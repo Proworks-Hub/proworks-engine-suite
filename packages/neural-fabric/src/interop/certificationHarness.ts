@@ -622,7 +622,7 @@ export function certifyAdapter(
       "{not json",
       '{"__proto__":{"admin":true}}',
       '{"a":' + "[".repeat(500) + "]".repeat(500) + "}",
-      JSON.stringify({ nul: " embedded" }),
+      JSON.stringify({ nul: "\u0000embedded" }),
     ];
     for (const [index, input] of hostile.entries()) {
       adapter.send({ key: `adv-${index}`, bodyJson: input, idempotencyKey: `adv-${index}`, metadata: new Map() });

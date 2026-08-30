@@ -5,3 +5,5 @@
 export * from "./finding.js";
 export * from "./defense.js";
 export * from "./sentinel.js";
+
+export * from "./fabricSecurity.js";

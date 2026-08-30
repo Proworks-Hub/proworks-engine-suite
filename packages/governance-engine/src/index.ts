@@ -7,3 +7,5 @@ export * from "./engine.js";
 
 // The human decision gate.
 export * from "./proposal.js";
+
+export * from "./interoperability.js";
