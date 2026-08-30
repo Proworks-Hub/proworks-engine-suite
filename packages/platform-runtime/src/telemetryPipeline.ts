@@ -387,3 +387,116 @@ export function fingerprintOf(context: TelemetryContext, condition: string): str
     condition,
   ].join("|");
 }
+
+// ── Handing a classification to Sentinel ─────────────────────────────────────
+//
+// The connection that was missing for five phases: `classify` produced a
+// signal class and nothing consumed it. A detector nobody reads is the same
+// defect as a field nobody reads, and this file's own header said Sentinel
+// "might" read the classification — which is the shape of a thing that never
+// gets wired.
+//
+// SentinelIQ and this package are both platform tier, and the dependency law
+// says `platform: []` — neither may import the other. So this builds the
+// finding as a plain value and a HOST hands it to `sentinel.observe()`, which
+// already accepts `unknown` and parses. That is the same arrangement as every
+// other engine binding in this architecture: the shape is shared, the wiring
+// is the host's.
+//
+// THE MAPPING IS THE JUDGEMENT
+//
+// Two decisions in it are worth arguing with rather than accepting:
+//
+//   A CONTAINMENT CANDIDATE IS `high`, NOT `catastrophic`. Catastrophic is
+//   reserved for threats to users, protected data, constitutional integrity or
+//   Hive survival. A latency five sigma from baseline is none of those, and
+//   inflating it would put a slow afternoon in the same bucket as a breach —
+//   after which nobody reads the bucket.
+//
+//   CONFIDENCE IS NEVER `confirmed`. A statistical detector observed a number
+//   further from the mean than usual. It did not confirm a cause, and it
+//   cannot: the deviation is equally consistent with a bad release, a noisy
+//   neighbour, and a customer having a busy Tuesday.
+
+/** What a classification becomes when Sentinel is told about it. */
+export interface SentinelObservation {
+  readonly findingId: string;
+  readonly kind: "engine_health";
+  readonly severity: "informational" | "moderate" | "high";
+  readonly confidence: "suspected" | "probable";
+  readonly subject: { kind: "engine"; id: string; tenant?: { organizationId: string; roles: string[] } };
+  readonly summary: string;
+  readonly evidence: readonly { sourceKind: "telemetry"; locator: string; observedAt: string }[];
+  readonly observedAt: string;
+  readonly uncertainty: string;
+  readonly trace?: { correlationId: string; causationId?: string };
+}
+
+const SEVERITY_OF: Readonly<Record<SignalClass, SentinelObservation["severity"] | null>> = Object.freeze({
+  // An observation is not a finding. Raising one would fill Sentinel with
+  // everything that happened, and a store of everything is searched by nobody.
+  observation: null,
+  warning: "moderate",
+  incident: "high",
+  containment_candidate: "high",
+});
+
+/**
+ * Turns a classification into something Sentinel can record.
+ *
+ * Returns `null` for an ordinary observation — deliberately, because the
+ * lowest rung exists to make baselines possible, not to be reported. A
+ * pipeline that raised a finding per observation would bury the ones that
+ * matter under the ones that did not.
+ */
+export function toSentinelObservation(input: {
+  classification: Classification;
+  context: TelemetryContext;
+  metric: string;
+  findingId: string;
+}): SentinelObservation | null {
+  const severity = SEVERITY_OF[input.classification.signalClass];
+  if (severity === null) return null;
+
+  const { context, classification } = input;
+  return {
+    findingId: input.findingId,
+    // Always `engine_health`. A statistical deviation is not evidence of a
+    // security event or a constitutional violation, and classifying it as one
+    // would let a slow database open an intrusion investigation.
+    kind: "engine_health",
+    severity,
+    // `probable` only at the top of the ladder, and never `confirmed`. The
+    // detector observed a number; it did not establish a cause.
+    confidence: classification.signalClass === "containment_candidate" ? "probable" : "suspected",
+    subject: {
+      kind: "engine",
+      id: context.engineId,
+      ...(context.tenantId ? { tenant: { organizationId: context.tenantId, roles: [] } } : {}),
+    },
+    summary: `${input.metric} on ${context.engineId} ${context.engineVersion}: ${classification.reason}`,
+    evidence: [
+      {
+        sourceKind: "telemetry",
+        locator: fingerprintOf(context, input.metric),
+        observedAt: context.timestamp,
+      },
+    ],
+    observedAt: context.timestamp,
+    uncertainty:
+      "A deviation from baseline is not a cause. This is equally consistent with a bad release, a noisy " +
+      "neighbour, and a customer having a busy day, and Sentinel cannot tell them apart from this signal alone.",
+    ...(context.trace ? { trace: context.trace } : {}),
+  };
+}
+
+/**
+ * Whether handing Sentinel an observation authorizes a response.
+ *
+ * Always false, and stated here rather than only on the pipeline because this
+ * is the function that makes the connection real. Sentinel now receives what
+ * this classifies; what it may DO about it is governed exactly as before.
+ */
+export function observationAuthorizesResponse(): false {
+  return false;
+}
