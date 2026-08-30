@@ -21,6 +21,7 @@ export default defineConfig({
       "@proworks-hub/ledgeriq": pkg("ledgeriq", "src/index.ts"),
       "@proworks-hub/payablesiq": pkg("payablesiq", "src/index.ts"),
       "@proworks-hub/receivablesiq": pkg("receivablesiq", "src/index.ts"),
+      "@proworks-hub/closeiq": pkg("closeiq", "src/index.ts"),
       "@proworks-hub/simulation-lab": pkg("simulation-lab", "src/index.ts"),
       "@proworks-hub/senseiq": pkg("senseiq", "src/index.ts"),
       "@proworks-hub/finance-core": pkg("finance-core", "src/index.ts"),

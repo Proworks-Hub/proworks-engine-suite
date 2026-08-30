@@ -833,7 +833,7 @@
     "constitutionVersion": "1.0",
     "integrityHash": "sha256:ca84bea213b9a0116d4729293310f3467c476d12529ed00e2a8ca864e90cd023",
     "sourceDocument": "Documents/ProWorks-Ecosystem/charters/finance-program/CloseIQ/01_CloseIQ_Master_Engineering_Blueprint.md",
-    "implementationLifecycle": "CHARTERED"
+    "implementationLifecycle": "EXPERIMENTAL"
   },
   {
     "charterId": "charter.specialized.collectionsiq",

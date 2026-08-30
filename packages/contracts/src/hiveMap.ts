@@ -188,6 +188,16 @@ export const HIVE_MAP: readonly HiveComponent[] = [
     gap: "Kernel through M3 scope: the 28-gate validation ladder, exact-decimal FX conversion with visible residue lines, intercompany generation, period state machine, balance fold, trial balance, roll-forward, export projection, reference in-memory store. NOT yet: platform-events publication (posting is authoritative in the store; no ledger.entry.posted is emitted), the auditiq immutability chain, explanation levels L0-L6 (the capability refuses honestly), materialized balance cache with watermark, reporting-currency amounts, batch posting, and any durable store — hosts must bind one. Finance Core does not yet route to it (PC-5 pending).",
   }),
   component({
+    id: "closeiq", name: "CloseIQ", tier: "specialized", core: "finance", status: "partial",
+    packageName: "@proworks-hub/closeiq",
+    // Charter ratified 2026-08-30 (charter.specialized.closeiq, DEC-025).
+    // SR-2 resolved per CloseIQ's own offer: it concedes `close_period` and
+    // claims assess_close_readiness + request_period_close; LedgerIQ holds the
+    // period STATE via close_ledger_period. Nobody claims bare close_period.
+    responsibility: "The period-close PROCESS: evidence-gated checklist DAG, reconciliation vs substantiation vs certification (three facts, never conflated), readiness with an undeterminable verdict, waivers that never read as done, human sign-off. LedgerIQ owns the period state; CloseIQ's rung there is REQUEST.",
+    gap: "Kernel scope: template validation refused at load (cycles, unreachable tasks, orphaned evidence kinds), the completed-task discriminated union (no evidence, no completion — by type), M-1 satisfaction with LOCK-2-as-arithmetic and control-evidence acyclicity, M-2 readiness (7 gates, undeterminable beats not-ready, percentComplete absent when unknown), M-3 reconciliation with unsubstantiated-unknown and rounding-indeterminate, M-4 candidates certified only under version-bound grants, M-6 cutoff with the grace window read and recorded, M-7 authorization ladder (human-only, no replay, no self-authorization), adjustment state machine with the held-state exit. NOT yet: persistence ports (state is in-memory per instance), event pub/sub, exception workflow (list_close_exceptions refuses honestly), critical-path computation, L0-L6, M-5 risk-tier recommendation. Finance Core does not yet route to it.",
+  }),
+  component({
     id: "receivablesiq", name: "ReceivablesIQ", tier: "specialized", core: "finance", status: "partial",
     packageName: "@proworks-hub/receivablesiq",
     // Charter ratified 2026-08-30 (charter.specialized.receivablesiq, DEC-025).
