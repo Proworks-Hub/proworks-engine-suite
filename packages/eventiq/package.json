@@ -1,8 +1,8 @@
 {
   "name": "@proworks-hub/eventiq",
-  "version": "0.19.0",
+  "version": "0.20.0",
   "type": "module",
-  "description": "EventIQ — the durable, governed asynchronous event backbone. Events tell the Hive what happened; they do not decide what should be authorized next.",
+  "description": "EventIQ \u2014 the durable, governed asynchronous event backbone. Events tell the Hive what happened; they do not decide what should be authorized next.",
   "author": "Steven Kreutzer",
   "license": "UNLICENSED",
   "repository": {
@@ -22,7 +22,7 @@
     }
   },
   "dependencies": {
-    "@proworks-hub/contracts": "^0.19.0",
+    "@proworks-hub/contracts": "^0.20.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {

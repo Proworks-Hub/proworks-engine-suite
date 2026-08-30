@@ -1,8 +1,8 @@
 {
   "name": "@proworks-hub/senseiq",
-  "version": "0.19.0",
+  "version": "0.20.0",
   "type": "module",
-  "description": "SenseIQ — physical-world intelligence. Devices, spaces, observations and authorized command intents, with no dependency on any protocol or host.",
+  "description": "SenseIQ \u2014 physical-world intelligence. Devices, spaces, observations and authorized command intents, with no dependency on any protocol or host.",
   "author": "Steven Kreutzer",
   "license": "UNLICENSED",
   "repository": {
@@ -22,7 +22,7 @@
     }
   },
   "dependencies": {
-    "@proworks-hub/contracts": "^0.19.0",
+    "@proworks-hub/contracts": "^0.20.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {

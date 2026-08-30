@@ -1,6 +1,6 @@
 {
   "name": "@proworks-hub/model-runtime",
-  "version": "0.19.0",
+  "version": "0.20.0",
   "type": "module",
   "description": "Provider adapters, model registry, routing, retry, fallback, structured-output validation and cost accounting.",
   "author": "Steven Kreutzer",
@@ -22,8 +22,8 @@
     }
   },
   "dependencies": {
-    "@proworks-hub/intelligence-core": "^0.19.0",
-    "@proworks-hub/contracts": "^0.19.0",
+    "@proworks-hub/intelligence-core": "^0.20.0",
+    "@proworks-hub/contracts": "^0.20.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {

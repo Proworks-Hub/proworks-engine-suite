@@ -1,8 +1,8 @@
 {
   "name": "@proworks-hub/inventoryiq",
-  "version": "0.19.0",
+  "version": "0.20.0",
   "type": "module",
-  "description": "InventoryIQ — what is on hand, what is spoken for, and what is about to run out.",
+  "description": "InventoryIQ \u2014 what is on hand, what is spoken for, and what is about to run out.",
   "author": "Steven Kreutzer",
   "license": "UNLICENSED",
   "repository": {
@@ -22,7 +22,7 @@
     }
   },
   "dependencies": {
-    "@proworks-hub/contracts": "^0.19.0",
+    "@proworks-hub/contracts": "^0.20.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {
