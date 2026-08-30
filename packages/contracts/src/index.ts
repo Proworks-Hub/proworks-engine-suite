@@ -110,3 +110,6 @@ export * from "./evolution.js";
 
 // Machines prepare; people decide. The decision package.
 export * from "./proposal.js";
+
+// One door to shared knowledge.
+export * from "./knowledge.js";

@@ -30,3 +30,6 @@ export * from "./continuityMode.js";
 
 // Classify, deduplicate, compare cohorts. Never contain.
 export * from "./telemetryPipeline.js";
+
+// The knowledge gateway: one read path, one contribution path.
+export * from "./knowledgeGateway.js";
