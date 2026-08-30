@@ -101,3 +101,9 @@ export * from "./continuity.js";
 
 // What telemetry may say, and where it may go.
 export * from "./telemetry.js";
+
+// What a release does to data, and whether it can be undone.
+export * from "./migration.js";
+
+// How an instance improvement becomes a collective release.
+export * from "./evolution.js";

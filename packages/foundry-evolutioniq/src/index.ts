@@ -10,3 +10,6 @@ export * from "./sandbox/sandbox.js";
 export * from "./validation/orchestrator.js";
 export * from "./evolution/control.js";
 export * from "./events.js";
+
+// The collective engine repository. Publishing is not deploying.
+export * from "./evolution/repository.js";
