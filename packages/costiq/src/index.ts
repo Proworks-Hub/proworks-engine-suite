@@ -78,6 +78,11 @@ export * from "./ai/costAiSpecialist.js";
 // entitle a consumer to conclude.
 export * from "./ports/costPorts.js";
 export * from "./ports/costIntegration.js";
+
+// Tenant isolation, redaction and resource limits, and the certification that
+// turns "deterministic" from a claim into something CI checks.
+export * from "./security/isolation.js";
+export * from "./security/replayCertification.js";
 export * from "./explanation/explanationLevels.js";
 export * from "./graph/dependencyIndex.js";
 export * from "./services/costBasisService.js";
