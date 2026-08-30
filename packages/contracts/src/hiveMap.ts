@@ -188,6 +188,13 @@ export const HIVE_MAP: readonly HiveComponent[] = [
     gap: "Kernel through M3 scope: the 28-gate validation ladder, exact-decimal FX conversion with visible residue lines, intercompany generation, period state machine, balance fold, trial balance, roll-forward, export projection, reference in-memory store. NOT yet: platform-events publication (posting is authoritative in the store; no ledger.entry.posted is emitted), the auditiq immutability chain, explanation levels L0-L6 (the capability refuses honestly), materialized balance cache with watermark, reporting-currency amounts, batch posting, and any durable store — hosts must bind one. Finance Core does not yet route to it (PC-5 pending).",
   }),
   component({
+    id: "leasefinanceiq", name: "LeaseFinanceIQ", tier: "specialized", core: "finance", status: "partial",
+    packageName: "@proworks-hub/leasefinanceiq",
+    // Charter ratified 2026-08-30 (charter.specialized.leasefinanceiq, DEC-025).
+    responsibility: "Lease classification, discount-rate selection, the lease liability and ROU asset with their unwinding. A right-of-use asset is AMORTIZED end to end here, driven by the lease term — owned-asset schedules are AssetFinanceIQ's, and neither reaches into the other.",
+    gap: "Pure kernel scope: ASC 842 lessee classification with the determinacy asymmetry (any met = finance; all not-met = operating; indeterminate REFUSES naming criteria — never defaulted toward operating, the direction a preparer benefits from), policy-owned thresholds (75/90 is policy, not law), discount-rate ladder with the by-class risk-free election (LFIQ-K-1: 13.35% of the liability, invisible in operating expense) and required compounding convention (LFIQ-K-2: 0.961% of the entire liability), exact PV at a 12-decimal captured rate reproducing the G-23 goldens to the cent, amortization schedules with R6 final-absorbs / R7 cumulative-target (IDC-bearing totals) / R8 unrounded plug and exact terminal invariants. NOT yet: IFRS 16 model, lessor classification, remeasurement/modification, sublease, ROU impairment (B-7), payment composition, persistence/events. Finance Core does not yet route to it.",
+  }),
+  component({
     id: "assetfinanceiq", name: "AssetFinanceIQ", tier: "specialized", core: "finance", status: "partial",
     packageName: "@proworks-hub/assetfinanceiq",
     // Charter ratified 2026-08-30 (charter.specialized.assetfinanceiq, DEC-025).

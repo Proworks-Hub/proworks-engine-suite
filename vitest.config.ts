@@ -24,6 +24,7 @@ export default defineConfig({
       "@proworks-hub/closeiq": pkg("closeiq", "src/index.ts"),
       "@proworks-hub/consolidationiq": pkg("consolidationiq", "src/index.ts"),
       "@proworks-hub/assetfinanceiq": pkg("assetfinanceiq", "src/index.ts"),
+      "@proworks-hub/leasefinanceiq": pkg("leasefinanceiq", "src/index.ts"),
       "@proworks-hub/simulation-lab": pkg("simulation-lab", "src/index.ts"),
       "@proworks-hub/senseiq": pkg("senseiq", "src/index.ts"),
       "@proworks-hub/finance-core": pkg("finance-core", "src/index.ts"),

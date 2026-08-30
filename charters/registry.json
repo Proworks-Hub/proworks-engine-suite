@@ -976,7 +976,7 @@
     "constitutionVersion": "1.0",
     "integrityHash": "sha256:a1750032f2aee57b8dc6f5ddf740de1ab75f1ae2e16f5107f6597378871ea8e4",
     "sourceDocument": "Documents/ProWorks-Ecosystem/charters/finance-program/LeaseFinanceIQ/01_LeaseFinanceIQ_Master_Engineering_Blueprint.md",
-    "implementationLifecycle": "CHARTERED"
+    "implementationLifecycle": "EXPERIMENTAL"
   },
   {
     "charterId": "charter.specialized.ledgeriq",

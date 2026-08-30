@@ -1,0 +1,41 @@
+{
+  "name": "@proworks-hub/leasefinanceiq",
+  "version": "0.23.0",
+  "type": "module",
+  "description": "LeaseFinanceIQ \u2014 lease classification with a determinacy rule that cannot default to operating, discount-rate selection with required elections, and amortization schedules whose terminal invariants hold exactly. ROU amortization end to end; never owned-asset depreciation.",
+  "author": "Steven Kreutzer",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Proworks-Hub/proworks-engine-suite.git",
+    "directory": "packages/leasefinanceiq"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@proworks-hub/contracts": "^0.23.0",
+    "@proworks-hub/core-kit": "^0.23.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "@types/node": "^22.10.2"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "prepare": "tsc -b"
+  }
+}
