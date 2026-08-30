@@ -67,6 +67,9 @@ export * from "./core/varianceEngine.js";
 export * from "./core/scenarioEngine.js";
 export * from "./core/alternativesAndBreakEven.js";
 export * from "./core/costModelHealth.js";
+export * from "./core/targetCostMethod.js";
+export * from "./core/makeBuyComparator.js";
+export * from "./core/costDriverAnalyzer.js";
 
 // Advisory only. The port is optional and nothing it returns can reach the
 // arithmetic — see the header of costAiSpecialist.ts for why that is structural
