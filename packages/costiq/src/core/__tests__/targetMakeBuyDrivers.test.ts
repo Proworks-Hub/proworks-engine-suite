@@ -57,7 +57,7 @@ describe("target costing runs the other way", () => {
   it("reports the gap when today's cost is too high", () => {
     const r = computeTargetCost(target());
     expect(r.feasibility).toBe("GAP_TO_CLOSE");
-    expect(n(r.gap)).toBe("20");
+    expect(n(r.gap!)).toBe("20");
     expect(r.note).toContain("does not work until that closes");
   });
 
@@ -96,11 +96,11 @@ describe("target costing runs the other way", () => {
     // GAP_TO_CLOSE would send somebody to find nothing.
     const r = computeTargetCost(target({ currentCost: d("130.00") }));
     expect(r.feasibility).toBe("WITHIN_TARGET");
-    expect(n(r.gap)).toBe("0");
+    expect(n(r.gap!)).toBe("0");
   });
 
   it("reports a zero gap fraction against a zero current cost rather than dividing", () => {
-    expect(n(computeTargetCost(target({ currentCost: d("0") })).gapFraction)).toBe("0");
+    expect(n(computeTargetCost(target({ currentCost: d("0") })).gapFraction!)).toBe("0");
   });
 });
 
@@ -259,7 +259,7 @@ describe("make or buy, on the cost that actually changes", () => {
       6,
       "HALF_EVEN",
     );
-    expect(n(r.breakEvenUnits)).toBe("200");
+    expect(n(r.breakEvenUnits!)).toBe("200");
     expect(r.explanation).toContain("repaid after 200");
   });
 
@@ -291,7 +291,7 @@ describe("make or buy, on the cost that actually changes", () => {
       "HALF_EVEN",
     );
     // (11 + 500/100) - 9.50 = 6.50 saved per unit. 300 / 6.50 = 46.153846.
-    expect(n(r.breakEvenUnits)).toBe("46.153846");
+    expect(n(r.breakEvenUnits!)).toBe("46.153846");
   });
 
   it("says a switching cost is never repaid when buying saves nothing", () => {
