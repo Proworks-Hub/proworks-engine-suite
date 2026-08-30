@@ -66,3 +66,9 @@ export * from "./providers/durableLogProvider.js";
 
 // The one door between instances. Everything is re-checked on both sides.
 export * from "./interconnect/gateway.js";
+
+// What must agree before acting, what may merely converge, and the twin that
+// runs the fault against the real kernel before the fault runs you.
+export * from "./distributed/activationConsensus.js";
+export * from "./engines/contractExport.js";
+export * from "./twin/executableTwin.js";
