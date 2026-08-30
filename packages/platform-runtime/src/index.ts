@@ -33,3 +33,6 @@ export * from "./telemetryPipeline.js";
 
 // The knowledge gateway: one read path, one contribution path.
 export * from "./knowledgeGateway.js";
+
+// The instance and knowledge registries, and scope precedence.
+export * from "./federation.js";

@@ -13,3 +13,6 @@ export * from "./events.js";
 
 // The collective engine repository. Publishing is not deploying.
 export * from "./evolution/repository.js";
+
+// Release channels, health gates, staged rollout, rollback.
+export * from "./evolution/rollout.js";

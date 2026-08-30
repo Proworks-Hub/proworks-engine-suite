@@ -113,3 +113,6 @@ export * from "./proposal.js";
 
 // One door to shared knowledge.
 export * from "./knowledge.js";
+
+// Many instances, one architecture, no shared memory.
+export * from "./federation.js";
