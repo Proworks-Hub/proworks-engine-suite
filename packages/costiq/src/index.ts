@@ -65,6 +65,13 @@ export * from "./core/marginPricing.js";
 export * from "./core/shouldCostAndLanded.js";
 export * from "./core/varianceEngine.js";
 export * from "./core/scenarioEngine.js";
+export * from "./core/alternativesAndBreakEven.js";
+export * from "./core/costModelHealth.js";
+
+// Advisory only. The port is optional and nothing it returns can reach the
+// arithmetic — see the header of costAiSpecialist.ts for why that is structural
+// rather than a rule somebody has to remember.
+export * from "./ai/costAiSpecialist.js";
 export * from "./explanation/explanationLevels.js";
 export * from "./graph/dependencyIndex.js";
 export * from "./services/costBasisService.js";
