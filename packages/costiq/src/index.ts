@@ -62,6 +62,7 @@ export * from "./core/recipeBomCostMethod.js";
 export * from "./core/quantityEconomics.js";
 export * from "./core/varianceEngine.js";
 export * from "./core/scenarioEngine.js";
+export * from "./explanation/explanationLevels.js";
 export * from "./services/costBasisService.js";
 
 // ── v1 (unchanged) ──────────────────────────────────────────────────────────
