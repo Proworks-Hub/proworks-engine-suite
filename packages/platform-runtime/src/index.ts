@@ -42,3 +42,6 @@ export * from "./interconnect.js";
 
 // Credentials, dynamic trust, containment primitives.
 export * from "./securityCore.js";
+
+// Sentinel Shield: an adapter at the edge, not a second security engine.
+export * from "./sentinelShield.js";

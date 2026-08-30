@@ -122,3 +122,6 @@ export * from "./interconnect.js";
 
 // Security Core: mechanisms, not judgement.
 export * from "./security.js";
+
+// The edge, and whose jurisdiction it is.
+export * from "./shield.js";
