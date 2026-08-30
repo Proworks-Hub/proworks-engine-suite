@@ -26,3 +26,8 @@ export * from "./nexus/topologyGraph.js";
 export * from "./pulse/pathHealth.js";
 export * from "./pulse/flowControl.js";
 export * from "./pulse/degradedMode.js";
+
+// The specialist layer. Candidates under §8, implemented as modules so the
+// capability exists and the chartering decision stays open.
+export * from "./engines/deliveryIQ.js";
+export * from "./engines/contractIQ.js";
