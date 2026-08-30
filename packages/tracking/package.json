@@ -1,8 +1,8 @@
 {
   "name": "@proworks-hub/tracking",
-  "version": "0.21.0",
+  "version": "0.22.0",
   "type": "module",
-  "description": "Tracking \u2014 where an order actually is, merged across production and the carrier, narrowed per audience.",
+  "description": "Tracking — where an order actually is, merged across production and the carrier, narrowed per audience.",
   "author": "Steven Kreutzer",
   "license": "UNLICENSED",
   "repository": {
@@ -22,7 +22,7 @@
     }
   },
   "dependencies": {
-    "@proworks-hub/contracts": "^0.21.0",
+    "@proworks-hub/contracts": "^0.22.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {

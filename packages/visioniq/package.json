@@ -1,8 +1,8 @@
 {
   "name": "@proworks-hub/visioniq",
-  "version": "0.21.0",
+  "version": "0.22.0",
   "type": "module",
-  "description": "VisionIQ \u2014 how a digital asset should be prepared for a process, machine and material.",
+  "description": "VisionIQ — how a digital asset should be prepared for a process, machine and material.",
   "author": "Steven Kreutzer",
   "license": "UNLICENSED",
   "repository": {
@@ -34,7 +34,7 @@
     }
   },
   "dependencies": {
-    "@proworks-hub/contracts": "^0.21.0",
+    "@proworks-hub/contracts": "^0.22.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {

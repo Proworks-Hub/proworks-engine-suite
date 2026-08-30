@@ -171,6 +171,37 @@ export const handoffEnvelopeSchema = z
     sourceInstanceId: identifierSchema,
     destinationInstanceId: identifierSchema,
     sourceEngineId: identifierSchema.optional(),
+
+    /**
+     * Which tenant of the destination this is for.
+     *
+     * Required, because a handoff that arrives without one has to be filed
+     * somewhere and every available default is somebody's real data.
+     */
+    tenantId: z.string().min(1),
+
+    /**
+     * Whether this crossing is part of a test run.
+     *
+     * REQUIRED, AND WITH NO DEFAULT, for the same reason the Hive intake route
+     * requires it: a work order whose test status is a guess is one nobody can
+     * safely clean up and nobody can safely keep. A default would be a decision
+     * made by whoever wrote this line rather than whoever sent the handoff.
+     *
+     * It sits at the top level rather than inside `payload` deliberately. The
+     * envelope is `.strict()` and this field is required, so an intermediary
+     * cannot strip it without the schema refusing the whole envelope — test
+     * identity survives the crossing by construction rather than by everyone
+     * remembering to forward it.
+     */
+    isTest: z.boolean(),
+    /**
+     * Which run produced it. `isTest` answers "should production ignore this";
+     * this answers "which run made it", which is what cleanup needs in order to
+     * release exactly what one run created and nothing else. A boolean cannot
+     * scope a delete.
+     */
+    testExecutionId: z.string().min(1).optional(),
     /** What the destination is being asked to do. Matched against the link. */
     destinationCapability: interconnectCapabilitySchema,
 
@@ -221,6 +252,16 @@ export const handoffEnvelopeSchema = z
     acknowledgementRequired: z.boolean(),
   })
   .strict()
+  .refine((e) => !e.isTest || e.testExecutionId !== undefined, {
+    message:
+      "isTest is true but no testExecutionId was supplied. A test handoff that cannot be scoped to its run is one nobody can clean up afterwards, which is how test data becomes permanent.",
+    path: ["testExecutionId"],
+  })
+  .refine((e) => e.isTest || e.testExecutionId === undefined, {
+    message:
+      "isTest is false but a testExecutionId was supplied. A production handoff carrying a test execution id is one a cleanup routine will eventually delete as though it were test data.",
+    path: ["testExecutionId"],
+  })
   .refine((e) => (e.payload !== undefined) !== (e.payloadRef !== undefined), {
     message:
       "A handoff carries exactly one of payload or payloadRef. Both is two versions of the truth crossing a boundary; neither is a baton with nothing in it.",

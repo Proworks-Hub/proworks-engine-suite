@@ -1,8 +1,8 @@
 {
   "name": "@proworks-hub/notifications",
-  "version": "0.21.0",
+  "version": "0.22.0",
   "type": "module",
-  "description": "Notifications \u2014 deciding who should be told what, and making sure they are told once.",
+  "description": "Notifications — deciding who should be told what, and making sure they are told once.",
   "author": "Steven Kreutzer",
   "license": "UNLICENSED",
   "repository": {
@@ -22,7 +22,7 @@
     }
   },
   "dependencies": {
-    "@proworks-hub/contracts": "^0.21.0",
+    "@proworks-hub/contracts": "^0.22.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {

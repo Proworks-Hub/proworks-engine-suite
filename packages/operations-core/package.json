@@ -1,8 +1,8 @@
 {
   "name": "@proworks-hub/operations-core",
-  "version": "0.21.0",
+  "version": "0.22.0",
   "type": "module",
-  "description": "Operations Core \u2014 coordinates the work specialists. Owns ordering and failure state, never the domain logic.",
+  "description": "Operations Core — coordinates the work specialists. Owns ordering and failure state, never the domain logic.",
   "author": "Steven Kreutzer",
   "license": "UNLICENSED",
   "repository": {
@@ -22,8 +22,8 @@
     }
   },
   "dependencies": {
-    "@proworks-hub/contracts": "^0.21.0",
-    "@proworks-hub/core-kit": "^0.21.0",
+    "@proworks-hub/contracts": "^0.22.0",
+    "@proworks-hub/core-kit": "^0.22.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {

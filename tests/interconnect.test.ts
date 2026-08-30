@@ -74,6 +74,12 @@ const envelope = (over: Record<string, unknown> = {}) => ({
   destinationInstanceId: PROWORKS,
   sourceEngineId: "forgeiq",
   destinationCapability: "SEND_WORK",
+  // Required since test identity became a first-class envelope field. The
+  // fixture says `isTest: false` because these tests are ABOUT production
+  // crossings; the test-identity cases below override it explicitly, which is
+  // the point — no call site gets to leave it unstated.
+  tenantId: "proworks",
+  isTest: false,
   contractType: "manufacturing.package",
   contractVersion: "1.0.0",
   purpose: "fulfil_customer_order",
@@ -137,6 +143,83 @@ function gateway(over: Record<string, unknown> = {}) {
     }),
   };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 0. TEST IDENTITY
+//
+// A live end-to-end test creates real rows in real tables on the receiving
+// instance. What makes that safe is not the label — it is that the label
+// cannot be omitted, cannot be forged into the wrong state, and can be used to
+// find every row the run created.
+//
+// The gateway refuses these at the `malformed` stage, before signature, link or
+// anything else. That is deliberate: an envelope whose test status is unknown
+// is not an envelope with a question mark on it, it is not an envelope.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("a handoff must say whether it is a test", () => {
+  it("refuses one that omits isTest entirely", () => {
+    const { gate } = gateway();
+    const { isTest, ...withoutIt } = envelope();
+    void isTest;
+
+    const result = gate.accept(withoutIt);
+    expect(result.accepted).toBe(false);
+    if (result.accepted) return;
+    expect(result.stage).toBe("malformed");
+    expect(result.reason).toContain("isTest");
+  });
+
+  it("refuses a test handoff that cannot be scoped to its run", () => {
+    const { gate } = gateway();
+    const result = gate.accept(envelope({ isTest: true }));
+
+    expect(result.accepted).toBe(false);
+    if (result.accepted) return;
+    // Named, because the operator reading this is deciding whether the mistake
+    // was theirs or the sender's.
+    expect(result.reason).toContain("testExecutionId");
+  });
+
+  it("refuses a production handoff wearing a test execution id", () => {
+    // The more dangerous direction: a real order a cleanup routine would later
+    // delete as though it were test data.
+    const { gate } = gateway();
+    const result = gate.accept(envelope({ isTest: false, testExecutionId: "run-1" }));
+
+    expect(result.accepted).toBe(false);
+    if (result.accepted) return;
+    expect(result.reason).toContain("testExecutionId");
+  });
+
+  it("accepts a properly scoped test handoff and preserves its identity", () => {
+    const { gate } = gateway();
+    const result = gate.accept(envelope({ isTest: true, testExecutionId: "run-1" }));
+
+    expect(result.accepted).toBe(true);
+    if (!result.accepted) return;
+    // The receiver needs both to file the row correctly. If the gateway
+    // dropped either on the way through, the host would be back to guessing.
+    expect(result.envelope.isTest).toBe(true);
+    expect(result.envelope.testExecutionId).toBe("run-1");
+  });
+
+  it("does not let a test handoff through a link that would refuse a real one", () => {
+    // `isTest` decides what production shows, not what may cross. If a test
+    // crossing were authorized more loosely, "it is only a test" would become
+    // the way to send anything.
+    const { gate } = gateway();
+    const asTest = gate.accept(
+      envelope({ isTest: true, testExecutionId: "run-1", purpose: "not_on_the_link" }),
+    );
+    const asReal = gate.accept(envelope({ purpose: "not_on_the_link" }));
+
+    expect(asTest.accepted).toBe(false);
+    expect(asReal.accepted).toBe(false);
+    if (asTest.accepted || asReal.accepted) return;
+    expect(asTest.stage).toBe(asReal.stage);
+  });
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. THE HAPPY PATH

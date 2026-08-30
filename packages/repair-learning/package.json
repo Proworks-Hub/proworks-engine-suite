@@ -1,6 +1,6 @@
 {
   "name": "@proworks-hub/repair-learning",
-  "version": "0.21.0",
+  "version": "0.22.0",
   "type": "module",
   "description": "Foundry repair-learning subsystem. Turns failures into evidence, diagnoses, validated repairs and generalized lessons. Owns no constitutional authority of its own.",
   "author": "Steven Kreutzer",
@@ -22,10 +22,10 @@
     }
   },
   "dependencies": {
-    "@proworks-hub/contracts": "^0.21.0",
-    "@proworks-hub/core-kit": "^0.21.0",
+    "@proworks-hub/contracts": "^0.22.0",
+    "@proworks-hub/core-kit": "^0.22.0",
     "zod": "^3.23.0",
-    "@proworks-hub/auditiq": "^0.21.0"
+    "@proworks-hub/auditiq": "^0.22.0"
   },
   "devDependencies": {
     "typescript": "^5.6.3",

@@ -1,6 +1,6 @@
 {
   "name": "@proworks-hub/platform-events",
-  "version": "0.21.0",
+  "version": "0.22.0",
   "type": "module",
   "description": "In-memory EventBus and processed-event ledger. The development and test binding for the platform event port.",
   "author": "Steven Kreutzer",
@@ -22,13 +22,13 @@
     }
   },
   "dependencies": {
-    "@proworks-hub/contracts": "^0.21.0",
+    "@proworks-hub/contracts": "^0.22.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {
     "typescript": "^5.6.3",
     "@types/node": "^22.10.2",
-    "@proworks-hub/receiptiq": "^0.21.0"
+    "@proworks-hub/receiptiq": "^0.22.0"
   },
   "files": [
     "dist",

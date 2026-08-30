@@ -1,8 +1,8 @@
 {
   "name": "@proworks-hub/foundation-core",
-  "version": "0.21.0",
+  "version": "0.22.0",
   "type": "module",
-  "description": "Foundation Core \u2014 the universal structural language. Describes structures; manufactures no authority.",
+  "description": "Foundation Core — the universal structural language. Describes structures; manufactures no authority.",
   "author": "Steven Kreutzer",
   "license": "UNLICENSED",
   "repository": {
@@ -22,8 +22,8 @@
     }
   },
   "dependencies": {
-    "@proworks-hub/contracts": "^0.21.0",
-    "@proworks-hub/core-kit": "^0.21.0",
+    "@proworks-hub/contracts": "^0.22.0",
+    "@proworks-hub/core-kit": "^0.22.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {
