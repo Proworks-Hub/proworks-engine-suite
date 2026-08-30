@@ -72,6 +72,12 @@ export * from "./core/costModelHealth.js";
 // arithmetic — see the header of costAiSpecialist.ts for why that is structural
 // rather than a rule somebody has to remember.
 export * from "./ai/costAiSpecialist.js";
+
+// What CostIQ needs from a host, what it announces outward, and — the part
+// most likely to be crossed by accident — what an announcement does NOT
+// entitle a consumer to conclude.
+export * from "./ports/costPorts.js";
+export * from "./ports/costIntegration.js";
 export * from "./explanation/explanationLevels.js";
 export * from "./graph/dependencyIndex.js";
 export * from "./services/costBasisService.js";
