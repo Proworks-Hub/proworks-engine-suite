@@ -15,6 +15,16 @@
 // host with its own job data can use them without ForgeIQ in the picture.
 
 // The boundary.
+export * from "./charter.js";
+
+// ── vNext domain foundation (Wave 2) ────────────────────────────────────────
+// Exact arithmetic, currency-aware money and unit-aware quantity. v1 continues
+// to export unchanged below; nothing here alters existing behaviour.
+export * from "./domain/decimal.js";
+export * from "./domain/money.js";
+export * from "./domain/quantity.js";
+
+// ── v1 (unchanged) ──────────────────────────────────────────────────────────
 export * from "./costiqEngine.js";
 export * from "./adapters/manufacturingPlanAdapter.js";
 
