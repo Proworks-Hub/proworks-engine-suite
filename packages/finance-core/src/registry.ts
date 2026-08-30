@@ -48,6 +48,19 @@ export const financeCapabilitySchema = z.enum([
   "detect_purchase",
   "allocate_budget",
   "forecast_spend",
+  // LedgerIQ (charter.specialized.ledgeriq, DEC-025) — PC-5. Named for the
+  // question, never the engine. `close_ledger_period` is deliberately NOT
+  // `close_period`: CloseIQ owns the close PROCESS; LedgerIQ owns the period
+  // STATE (SR-2, corroborated by the guard-9 screen).
+  "post_accounting_entry",
+  "validate_posting_proposal",
+  "reverse_accounting_entry",
+  "read_account_balance",
+  "produce_trial_balance",
+  "read_chart_of_accounts",
+  "close_ledger_period",
+  "reopen_ledger_period",
+  "explain_posting_decision",
 ]);
 export type FinanceCapability = z.infer<typeof financeCapabilitySchema>;
 

@@ -989,7 +989,7 @@
     "constitutionVersion": "1.0",
     "integrityHash": "sha256:777061a358cd6cbab8f4128770b63c0fad76e22bee62354b69fc5894145d027e",
     "sourceDocument": "Documents/ProWorks-Ecosystem/charters/finance-program/LedgerIQ/01_LedgerIQ_Master_Engineering_Blueprint.md",
-    "implementationLifecycle": "CHARTERED"
+    "implementationLifecycle": "EXPERIMENTAL"
   },
   {
     "charterId": "charter.specialized.liquidityiq",

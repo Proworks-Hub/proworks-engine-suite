@@ -18,6 +18,8 @@ export default defineConfig({
       "@proworks-hub/forgeiq/manufacturing": pkg("forgeiq", "src/manufacturing/buildManufacturingPlan.ts"),
       "@proworks-hub/control-plane/manifests": pkg("control-plane", "src/manifests/index.ts"),
       "@proworks-hub/contracts": pkg("contracts", "src/index.ts"),
+      "@proworks-hub/ledgeriq": pkg("ledgeriq", "src/index.ts"),
+      "@proworks-hub/simulation-lab": pkg("simulation-lab", "src/index.ts"),
       "@proworks-hub/senseiq": pkg("senseiq", "src/index.ts"),
       "@proworks-hub/finance-core": pkg("finance-core", "src/index.ts"),
       "@proworks-hub/core-kit": pkg("core-kit", "src/index.ts"),

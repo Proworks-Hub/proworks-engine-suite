@@ -179,11 +179,13 @@ export const HIVE_MAP: readonly HiveComponent[] = [
     responsibility: "The authorized plan: budget structures, versions, envelopes, consumption and budget-check semantics.",
   }),
   component({
-    id: "ledgeriq", name: "LedgerIQ", tier: "specialized", core: "finance", status: "conceptual",
+    id: "ledgeriq", name: "LedgerIQ", tier: "specialized", core: "finance", status: "partial",
+    packageName: "@proworks-hub/ledgeriq",
     // Charter ratified 2026-08-30 (charter.specialized.ledgeriq, DEC-025).
     // LOCK-1: the posting monopoly — the only component permitted to create,
     // amend or reverse a journal entry.
     responsibility: "The general ledger: chart of accounts, journal, periods, debit/credit integrity, parallel books, balances, trial balance.",
+    gap: "Kernel through M3 scope: the 28-gate validation ladder, exact-decimal FX conversion with visible residue lines, intercompany generation, period state machine, balance fold, trial balance, roll-forward, export projection, reference in-memory store. NOT yet: platform-events publication (posting is authoritative in the store; no ledger.entry.posted is emitted), the auditiq immutability chain, explanation levels L0-L6 (the capability refuses honestly), materialized balance cache with watermark, reporting-currency amounts, batch posting, and any durable store — hosts must bind one. Finance Core does not yet route to it (PC-5 pending).",
   }),
 
   // ── Shared Platform engines ────────────────────────────────────────────────
