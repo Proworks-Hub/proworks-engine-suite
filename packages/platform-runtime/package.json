@@ -1,6 +1,6 @@
 {
   "name": "@proworks-hub/platform-runtime",
-  "version": "0.22.0",
+  "version": "0.23.0",
   "type": "module",
   "description": "In-memory job queue, structured logger and metrics collector. The development and test bindings for the runtime ports.",
   "author": "Steven Kreutzer",
@@ -22,7 +22,7 @@
     }
   },
   "dependencies": {
-    "@proworks-hub/contracts": "^0.22.0",
+    "@proworks-hub/contracts": "^0.23.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {

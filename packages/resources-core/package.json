@@ -1,6 +1,6 @@
 {
   "name": "@proworks-hub/resources-core",
-  "version": "0.22.0",
+  "version": "0.23.0",
   "type": "module",
   "description": "Resources Core — coordinates what an organization has. Distinguishes a reading from a hold, because stock goes stale and cost does not.",
   "author": "Steven Kreutzer",
@@ -22,8 +22,8 @@
     }
   },
   "dependencies": {
-    "@proworks-hub/contracts": "^0.22.0",
-    "@proworks-hub/core-kit": "^0.22.0",
+    "@proworks-hub/contracts": "^0.23.0",
+    "@proworks-hub/core-kit": "^0.23.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {

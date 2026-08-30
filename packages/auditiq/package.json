@@ -1,6 +1,6 @@
 {
   "name": "@proworks-hub/auditiq",
-  "version": "0.22.0",
+  "version": "0.23.0",
   "type": "module",
   "description": "AuditIQ — tamper-evident evidence of consequential Hive activity. Append-only; owns evidence, never adjudication.",
   "author": "Steven Kreutzer",
@@ -22,8 +22,8 @@
     }
   },
   "dependencies": {
-    "@proworks-hub/contracts": "^0.22.0",
-    "@proworks-hub/core-kit": "^0.22.0",
+    "@proworks-hub/contracts": "^0.23.0",
+    "@proworks-hub/core-kit": "^0.23.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {

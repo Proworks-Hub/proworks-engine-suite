@@ -402,3 +402,128 @@ export function trustIsTransitive(): false {
 export function linkGrantsDatabaseAccess(): false {
   return false;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// THE RETURN DIRECTION: progress on work somebody else is doing.
+//
+// A handoff sends work out. This is what comes back, and it is a different
+// contract rather than the same one inverted, because the two directions carry
+// opposite risks.
+//
+// SENDING WORK, the danger is the sender over-sharing: customer identity,
+// payment, order history — things the manufacturer does not need and cannot
+// unsee. `ManufacturingFacts` on the KSix side is shaped so there is nowhere
+// to put them.
+//
+// SENDING PROGRESS, the danger reverses. The manufacturer knows things the
+// customer's platform has no business storing: which operator ran the job,
+// which machine, what it cost them, what else is in the queue, how far behind
+// they are. A status update is a natural place for all of that to leak,
+// because it is genuinely useful to whoever is debugging a late order.
+//
+// So this schema has no operator, no machine, no cost, no queue position and
+// no free-text field. It answers "where is my order" and refuses to answer
+// anything else. `note` is deliberately absent: a free-text field is where
+// "Bob's out sick and the fiber laser is down" ends up, on a page a customer
+// can read.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Where a piece of work has got to.
+ *
+ * Coarse on purpose. A customer-facing tracker needs to distinguish "not
+ * started" from "being made" from "done"; it does not need a manufacturer's
+ * internal step vocabulary, and mirroring one would couple KSix's tracking
+ * page to ProWorks' shop-floor process.
+ */
+export const workProgressStatusSchema = z.enum([
+  /** Received and queued. Nothing has happened to it yet. */
+  "ACCEPTED",
+  /** Placed on a schedule, with a date the sender may or may not share. */
+  "SCHEDULED",
+  /** Being made right now. */
+  "IN_PROGRESS",
+  /** Started and stopped, for a reason the sender is not obliged to give. */
+  "ON_HOLD",
+  /** Finished. */
+  "COMPLETED",
+  /** Will not be made. Terminal, and distinct from ON_HOLD. */
+  "CANCELLED",
+]);
+export type WorkProgressStatus = z.infer<typeof workProgressStatusSchema>;
+
+/**
+ * A progress report about work previously handed over.
+ *
+ * Carried as the `payload` of a handoff envelope with
+ * `contractType: "manufacturing.progress"`, so it inherits the signature,
+ * integrity hash, link authorization and replay protection that any crossing
+ * gets. Progress is not a lesser class of traffic — an unauthenticated status
+ * update is a way to tell a customer their order shipped when it did not.
+ */
+export const workProgressSchema = z
+  .object({
+    /**
+     * The handoff this is about — the `globalCorrelationId` of the original.
+     *
+     * The ONLY identifier here. Deliberately not the manufacturer's own work
+     * order id, which is theirs and means nothing on the other side.
+     */
+    correlationId: z.string().min(1),
+    status: workProgressStatusSchema,
+    /**
+     * Progress through the manufacturer's steps, if they choose to share it.
+     *
+     * A ratio and not a step name: "3 of 7" is useful to a customer, while
+     * "awaiting powder coat" describes a process that is not KSix's business
+     * and would change meaning if ProWorks reorganised their shop.
+     */
+    completedSteps: z.number().int().nonnegative().optional(),
+    totalSteps: z.number().int().positive().optional(),
+    /** When the sender says this became true. Their clock, not the receiver's. */
+    observedAt: z.string().min(1),
+    /** An estimate, if offered. Absent means "not saying", never "unknown". */
+    estimatedCompletionAt: z.string().min(1).optional(),
+  })
+  .strict()
+  .refine(
+    (p) => p.completedSteps === undefined || p.totalSteps === undefined || p.completedSteps <= p.totalSteps,
+    {
+      message:
+        "completedSteps cannot exceed totalSteps. A progress report claiming more steps done than exist is one a tracking page would render as over 100% complete.",
+      path: ["completedSteps"],
+    },
+  )
+  .refine((p) => p.status !== "COMPLETED" || p.completedSteps === undefined || p.completedSteps === p.totalSteps, {
+    message:
+      "A COMPLETED report must have every step done, or none stated. Completed-but-partway is two different answers to the same question.",
+    path: ["status"],
+  });
+export type WorkProgress = z.infer<typeof workProgressSchema>;
+
+/** The contract type a progress report travels under. */
+export const WORK_PROGRESS_CONTRACT = "manufacturing.progress" as const;
+
+/**
+ * Whether a progress report may follow another.
+ *
+ * CANCELLED and COMPLETED are terminal. A late-arriving IN_PROGRESS after a
+ * COMPLETED would move a finished order backwards on a customer's tracking
+ * page — and out-of-order delivery is normal on a retrying transport, so this
+ * is a question that WILL come up rather than one that might.
+ */
+export function progressMayFollow(
+  previous: WorkProgressStatus | null,
+  next: WorkProgressStatus,
+): { readonly permitted: boolean; readonly reason: string } {
+  if (previous === null) {
+    return { permitted: true, reason: "First report for this work." };
+  }
+  if (previous === "COMPLETED" || previous === "CANCELLED") {
+    return {
+      permitted: false,
+      reason: `Work is already ${previous}, which is terminal. Refusing to move it to ${next} — a finished order going backwards on a tracking page is worse than a stale one.`,
+    };
+  }
+  return { permitted: true, reason: `${previous} may be followed by ${next}.` };
+}

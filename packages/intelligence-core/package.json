@@ -1,6 +1,6 @@
 {
   "name": "@proworks-hub/intelligence-core",
-  "version": "0.22.0",
+  "version": "0.23.0",
   "type": "module",
   "description": "Provider-independent AI contracts. Engines state a task and a shape; nothing here names a vendor.",
   "author": "Steven Kreutzer",

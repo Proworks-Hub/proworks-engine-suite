@@ -1,6 +1,6 @@
 {
   "name": "@proworks-hub/governance-engine",
-  "version": "0.22.0",
+  "version": "0.23.0",
   "type": "module",
   "description": "Governance Engine — determines whether consequential activity is permitted. Owns authorization decisions only.",
   "author": "Steven Kreutzer",
@@ -22,8 +22,8 @@
     }
   },
   "dependencies": {
-    "@proworks-hub/contracts": "^0.22.0",
-    "@proworks-hub/core-kit": "^0.22.0",
+    "@proworks-hub/contracts": "^0.23.0",
+    "@proworks-hub/core-kit": "^0.23.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {
