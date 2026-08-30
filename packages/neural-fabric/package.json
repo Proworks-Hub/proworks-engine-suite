@@ -1,0 +1,39 @@
+{
+  "name": "@proworks-hub/neural-fabric",
+  "version": "0.23.0",
+  "type": "module",
+  "description": "Neural Fabric — the governed digital nervous system: topology, routing, delivery and flow. PROPOSED classification; not a ratified Core.",
+  "author": "Steven Kreutzer",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Proworks-Hub/proworks-engine-suite.git",
+    "directory": "packages/neural-fabric"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "@types/node": "^22.10.2"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "prepare": "tsc -b"
+  }
+}

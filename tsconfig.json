@@ -33,6 +33,7 @@
       "@proworks-hub/model-runtime": ["./packages/model-runtime/src/index.ts"],
       "@proworks-hub/model-evals": ["./packages/model-evals/src/index.ts"],
       "@proworks-hub/costiq": ["./packages/costiq/src/index.ts"],
+      "@proworks-hub/neural-fabric": ["./packages/neural-fabric/src/index.ts"],
       "@proworks-hub/prime": ["./packages/prime/src/index.ts"],
       "@proworks-hub/workorderiq": ["./packages/workorderiq/src/index.ts"],
       "@proworks-hub/receiptiq": ["./packages/receiptiq/src/index.ts"],

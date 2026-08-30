@@ -38,6 +38,7 @@ export default defineConfig({
       "@proworks-hub/control-plane": pkg("control-plane", "src/core/index.ts"),
       "@proworks-hub/forgeiq": pkg("forgeiq", "src/core/index.ts"),
       "@proworks-hub/costiq": pkg("costiq", "src/index.ts"),
+      "@proworks-hub/neural-fabric": pkg("neural-fabric", "src/index.ts"),
       "@proworks-hub/prime": pkg("prime", "src/index.ts"),
       "@proworks-hub/workorderiq": pkg("workorderiq", "src/index.ts"),
       "@proworks-hub/receiptiq": pkg("receiptiq", "src/index.ts"),
