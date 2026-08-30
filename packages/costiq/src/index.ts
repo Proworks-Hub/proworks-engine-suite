@@ -60,6 +60,8 @@ export * from "./core/methodRegistry.js";
 export * from "./core/directJobCostMethod.js";
 export * from "./core/recipeBomCostMethod.js";
 export * from "./core/quantityEconomics.js";
+export * from "./core/standardCostMethod.js";
+export * from "./core/marginPricing.js";
 export * from "./core/varianceEngine.js";
 export * from "./core/scenarioEngine.js";
 export * from "./explanation/explanationLevels.js";
