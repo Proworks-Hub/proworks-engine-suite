@@ -16,3 +16,7 @@ export * from "./charter.js";
 // The two contracts everything else rests on.
 export * from "./domain/lanes.js";
 export * from "./domain/envelope.js";
+
+// Nexus: the living topology, and the questions only structure can answer.
+export * from "./domain/topology.js";
+export * from "./nexus/topologyGraph.js";
