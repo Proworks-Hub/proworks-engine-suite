@@ -20,3 +20,9 @@ export * from "./domain/envelope.js";
 // Nexus: the living topology, and the questions only structure can answer.
 export * from "./domain/topology.js";
 export * from "./nexus/topologyGraph.js";
+
+// Pulse: what is happening on the permitted paths, and what still works when
+// part of the world is unreachable.
+export * from "./pulse/pathHealth.js";
+export * from "./pulse/flowControl.js";
+export * from "./pulse/degradedMode.js";
