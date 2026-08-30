@@ -23,6 +23,39 @@ export * from "./charter.js";
 export * from "./domain/decimal.js";
 export * from "./domain/money.js";
 export * from "./domain/quantity.js";
+export * from "./domain/provenance.js";
+// ── vNext cost model ────────────────────────────────────────────────────────
+//
+// `CostBasis` collides: v1 exports an interface of that name from
+// priceObservationAdapter, and consumers may already import it. Breaking a
+// public type to make room for a better one is exactly the silent break the
+// directive forbids, so the vNext record is exported as `CostBasisRecord` at
+// the package boundary while keeping its natural name inside the domain.
+//
+// The alias is the compatibility layer in its smallest possible form. When v1
+// retires behind `compatibility/`, the alias goes and the names align.
+export {
+  costScopeSchema,
+  costObjectRefSchema,
+  costComponentKindSchema,
+  costRateSchema,
+  costBasisSchema,
+  costComponentSchema,
+  costPolicySchema,
+  costRecommendationSchema,
+  decimalStringSchema,
+  currencyCodeSchema,
+  type CostScope,
+  type CostObjectRef,
+  type CostComponentKind,
+  type CostRate,
+  type CostBasis as CostBasisRecord,
+  type CostComponent,
+  type CostPolicy,
+  type CostRecommendation,
+} from "./domain/costModel.js";
+export * from "./domain/costEstimate.js";
+export * from "./core/costGraph.js";
 
 // ── v1 (unchanged) ──────────────────────────────────────────────────────────
 export * from "./costiqEngine.js";

@@ -179,6 +179,34 @@ describe("authoritative arithmetic never uses floating point", () => {
     // behind compatibility rather than corrected in place.
     const HAZARDS = ["parseFloat(", "parseInt(", "Math.round(", "Math.floor(", "Math.ceil(", ".toFixed("];
 
+    // The rule is about AUTHORITATIVE AMOUNT arithmetic, not all arithmetic.
+    // Counting whole days, indexing an array and measuring a string are
+    // legitimately integer operations, and forbidding them would be enforcing
+    // something broader than the principle.
+    //
+    // So the exceptions are enumerated with the reason each is not amount
+    // math. An entry here is a claim somebody can check; a loosened regex is
+    // not.
+    const JUSTIFIED: ReadonlyArray<{ file: string; hazard: string; because: string }> = [
+      {
+        file: "domain/decimal.ts",
+        hazard: ".toFixed(",
+        because: "Expands exponent notation while CONVERTING A FLOAT IN at the edge. It is the boundary, not a calculation.",
+      },
+      {
+        file: "domain/decimal.ts",
+        hazard: "Number(",
+        because: "`toNumber` is the documented lossy escape hatch, named so review can find it.",
+      },
+      {
+        file: "domain/provenance.ts",
+        hazard: "Math.floor(",
+        because: "Counts whole days from a millisecond difference. A day count is not an amount.",
+      },
+    ];
+    const isJustified = (file: string, hazard: string) =>
+      JUSTIFIED.some((j) => j.file === file && j.hazard === hazard);
+
     const vnext = ALL_SOURCE.filter((f) => f.path.startsWith("domain/"));
     expect(vnext.length).toBeGreaterThan(0);
 
@@ -188,12 +216,12 @@ describe("authoritative arithmetic never uses floating point", () => {
       for (const hazard of HAZARDS) {
         // `decimal.ts` owns the two documented edges where a JS number is
         // converted in or out, and nothing else may.
-        if (code.includes(hazard) && file.path !== "domain/decimal.ts") {
+        if (code.includes(hazard) && !isJustified(file.path, hazard)) {
           offenders.push(`${file.path} uses ${hazard}`);
         }
       }
       // `Number(` outside decimal.ts would mean an amount left exact math.
-      if (file.path !== "domain/decimal.ts" && /Number\s*\(/.test(code)) {
+      if (/Number\s*\(/.test(code) && !isJustified(file.path, "Number(")) {
         offenders.push(`${file.path} calls Number()`);
       }
     }
