@@ -56,6 +56,8 @@ export {
 } from "./domain/costModel.js";
 export * from "./domain/costEstimate.js";
 export * from "./core/costGraph.js";
+export * from "./core/methodRegistry.js";
+export * from "./core/directJobCostMethod.js";
 
 // ── v1 (unchanged) ──────────────────────────────────────────────────────────
 export * from "./costiqEngine.js";
