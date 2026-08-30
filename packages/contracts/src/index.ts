@@ -119,3 +119,6 @@ export * from "./federation.js";
 
 // Two instances working together without becoming one database.
 export * from "./interconnect.js";
+
+// Security Core: mechanisms, not judgement.
+export * from "./security.js";

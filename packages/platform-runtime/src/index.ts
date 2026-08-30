@@ -39,3 +39,6 @@ export * from "./federation.js";
 
 // The interconnect gateway: the door in the wall.
 export * from "./interconnect.js";
+
+// Credentials, dynamic trust, containment primitives.
+export * from "./securityCore.js";
