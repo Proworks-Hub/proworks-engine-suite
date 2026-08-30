@@ -315,17 +315,36 @@ describe("dispatch requires certification, and fan-out stays bounded", () => {
   });
 
   it("aggregates to the most restrictive classification present, not the first", () => {
+    // The messages must genuinely DIFFER in classification, or "first" and
+    // "strictest" are the same value and the test proves nothing. A mapping
+    // stage promotes the second message to RESTRICTED; the batch must inherit
+    // that rather than the INTERNAL the first one carries.
+    let seen = 0;
+    const promoteSecond = ports({
+      mapping: {
+        apply: ({ message: m }) => {
+          seen += 1;
+          return seen === 2 ? { applied: true, message: { ...m, classification: "RESTRICTED" } } : { applied: true, message: m };
+        },
+      },
+    });
     const outcome = executePipeline(
       plan([
         { stageId: "s1", kind: "SPLIT", reason: "fan out", maxFanOut: 10 },
-        { stageId: "s2", kind: "AGGREGATE", reason: "batch", maxBatch: 10 },
+        { stageId: "s2", kind: "APPLY_MAPPING", reason: "classify", mappingContractRef: "map-1" },
+        { stageId: "s3", kind: "AGGREGATE", reason: "batch", maxBatch: 10 },
       ]),
       message({ envelopeJson: JSON.stringify([{ id: 1 }, { id: 2 }]) }),
-      ports(),
+      promoteSecond,
       T0,
     );
     expect(outcome.completed).toBe(true);
-    if (outcome.completed) expect(outcome.messages).toHaveLength(1);
+    if (outcome.completed) {
+      expect(outcome.messages).toHaveLength(1);
+      // Taking the first message's label would declassify the second by
+      // arithmetic, which is the whole reason this reduce exists.
+      expect(outcome.messages[0]!.classification).toBe("RESTRICTED");
+    }
   });
 
   it("stops at the first failure instead of dispatching a half-refused message", () => {

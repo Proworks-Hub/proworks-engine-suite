@@ -210,9 +210,69 @@ describe("the planner selects, explains, and refuses", () => {
   });
 
   it("never offers the gateway pattern to local traffic", () => {
-    const outcome = planPattern(intent(), VERSIONS);
+    // The intent is shaped so the gateway pattern would otherwise be ELIGIBLE
+    // — durable, at-least-once, no ordering, idempotent consumer, no deadline
+    // — so the only thing excluding it is the local/cross-instance check. A
+    // weaker fixture passes this test even with that check deleted, because
+    // the gateway is refused for an unrelated reason.
+    const gatewayShaped = intent({
+      operation: "NOTIFY",
+      delivery: "AT_LEAST_ONCE",
+      ordering: "NONE",
+      consumerIsIdempotent: true,
+      requiresDurability: true,
+    });
+    const outcome = planPattern(gatewayShaped, VERSIONS);
+    expect(outcome.planned).toBe(true);
     if (outcome.planned) {
       expect(outcome.plan.alternatives).not.toContain("INTERCONNECT_GATEWAY_HANDOFF");
+      const gateway = outcome.plan.rejected.find((r) => r.patternId === "INTERCONNECT_GATEWAY_HANDOFF");
+      expect(gateway?.reason).toContain("stays inside one instance");
+    }
+  });
+
+  it("refuses a pattern whose delivery guarantee is weaker than required", () => {
+    // EFFECTIVELY_ONCE is satisfied only by the queue and store-and-forward.
+    // Everything at-least-once or best-effort must be refused BY THE DELIVERY
+    // CHECK, which this asserts by name rather than by the plan's outcome.
+    const outcome = planPattern(
+      intent({
+        operation: "COMMAND",
+        authorizationEvidenceRef: "dec-d",
+        delivery: "EFFECTIVELY_ONCE",
+        consumerIsIdempotent: true,
+        requiresDurability: true,
+      }),
+      VERSIONS,
+    );
+    expect(outcome.planned).toBe(true);
+    if (outcome.planned) {
+      const pubsub = outcome.plan.rejected.find((r) => r.patternId === "PUBLISH_SUBSCRIBE")!;
+      expect(pubsub.reason).toContain("EFFECTIVELY_ONCE delivery");
+      expect(pubsub.reason).toContain("AT_LEAST_ONCE");
+      expect(PATTERN_CATALOG[outcome.plan.chosen].delivery).toBe("EFFECTIVELY_ONCE");
+    }
+  });
+
+  it("refuses a pattern whose ordering is weaker than required", () => {
+    // STRICT_SEQUENCE is offered only by the batch pipeline. A pattern with
+    // PER_KEY ordering must be refused by the ORDERING check specifically.
+    const outcome = planPattern(
+      intent({
+        operation: "COORDINATE",
+        delivery: "AT_LEAST_ONCE",
+        ordering: "STRICT_SEQUENCE",
+        consumerIsIdempotent: true,
+        requiresDurability: true,
+      }),
+      VERSIONS,
+    );
+    expect(outcome.planned).toBe(true);
+    if (outcome.planned) {
+      expect(outcome.plan.chosen).toBe("BATCH_PIPELINE");
+      const queue = outcome.plan.rejected.find((r) => r.patternId === "ASYNC_COMMAND_QUEUE")!;
+      expect(queue.reason).toContain("STRICT_SEQUENCE ordering");
+      expect(queue.reason).toContain("PER_KEY");
     }
   });
 

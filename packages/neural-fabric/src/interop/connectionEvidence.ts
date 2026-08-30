@@ -199,6 +199,17 @@ export function minimizeFailure(
   evidenceId: string,
 ): ConnectionFailureEvidence {
   const tags: string[] = [];
+  // The vocabulary check is an EQUIVALENT MUTANT today: every string passed to
+  // `tag` below is already a literal from SAFE_TAG_VOCABULARY, so removing the
+  // check changes no observable behaviour and no test can distinguish it.
+  //
+  // It stays because it is a live tripwire rather than a redundant guard. The
+  // next person to add a failure stage will add a `tag("...")` call, and if
+  // they invent a string instead of adding it to the vocabulary, this silently
+  // drops it rather than letting an untracked tag into a corpus that is
+  // retained permanently and shared across instances. The test below asserts
+  // the invariant the check protects — that every stage's tags are in the
+  // vocabulary — which is the honest way to cover an equivalent mutant.
   const tag = (candidate: string): void => {
     if (SAFE_TAG_VOCABULARY.includes(candidate) && !tags.includes(candidate) && tags.length < 12) tags.push(candidate);
   };

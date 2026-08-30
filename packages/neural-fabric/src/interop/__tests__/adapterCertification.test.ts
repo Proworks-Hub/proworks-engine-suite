@@ -280,6 +280,27 @@ describe("the harness tests claims rather than reading them", () => {
     expect(evidence.checks.find((c) => c.checkId === "24-operator-diagnostics")!.outcome).toBe("FAILED");
   });
 
+  it("does not certify when a REQUIRED check could not be exercised", () => {
+    // mutualTlsCapable makes checks 13/14 (rotation, auth failure) required,
+    // and this environment has no PKI to exercise them. The honest outcome is
+    // "not certified", not "certified with caveats" — that distinction is the
+    // entire reason NOT_EXERCISED exists as an outcome.
+    const m = manifest({ mutualTlsCapable: true });
+    const evidence = certifyAdapter(m, makeAdapter(m), { ...ENVIRONMENT, pkiAvailable: false }, T0);
+    const rotation = evidence.checks.find((c) => c.checkId === "13-credential-rotation")!;
+    expect(rotation.required).toBe(true);
+    expect(rotation.outcome).toBe("NOT_EXERCISED");
+    expect(evidence.failed).toBe(0);
+    expect(evidence.certified).toBe(false);
+    expect(evidence.summary).toContain("NOT certified");
+  });
+
+  it("certifies the same adapter once a PKI is available to exercise those checks", () => {
+    const m = manifest({ mutualTlsCapable: true });
+    const evidence = certifyAdapter(m, makeAdapter(m), { ...ENVIRONMENT, pkiAvailable: true }, T0);
+    expect(evidence.certified).toBe(true);
+  });
+
   it("marks a claim the adapter never made as not applicable, not as a pass", () => {
     const m = manifest({ replayable: false, durable: true });
     const evidence = certifyAdapter(m, makeAdapter(m), ENVIRONMENT, T0);

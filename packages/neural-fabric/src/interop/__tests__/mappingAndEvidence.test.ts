@@ -346,6 +346,24 @@ describe("failure evidence carries the shape and never the content", () => {
     expect(fingerprint(["a", "b"])).not.toBe(fingerprint(["b", "a"]));
   });
 
+  it("emits only vocabulary tags for EVERY failure stage, not just the sampled one", () => {
+    // Covers what the vocabulary filter protects: a stage added later whose
+    // tag was never added to the vocabulary. Iterating every stage is the
+    // assertion that matters, since the filter itself is unobservable.
+    const stages = [
+      "INTENT_VALIDATION", "PATTERN_PLANNING", "CONTRACT_RESOLUTION", "SCHEMA_COMPATIBILITY",
+      "MAPPING", "ADAPTER_SELECTION", "ADAPTER_DISPATCH", "PROVIDER_OUTAGE",
+      "SECURITY_VERIFICATION", "GATEWAY_INGRESS", "GATEWAY_EGRESS", "DELIVERY_TIMEOUT", "EDGE_RECONNECT",
+    ] as const;
+    for (const stage of stages) {
+      const evidence = minimizeFailure(raw({ failureStage: stage }), `ev-${stage}`);
+      for (const t of evidence.generalizedTags) {
+        expect(SAFE_TAG_VOCABULARY).toContain(t);
+      }
+      expect(connectionFailureEvidenceSchema.safeParse(evidence).success).toBe(true);
+    }
+  });
+
   it("emits only tags from the closed safe vocabulary", () => {
     const evidence = minimizeFailure(raw(), "ev-1");
     for (const t of evidence.generalizedTags) expect(SAFE_TAG_VOCABULARY).toContain(t);
