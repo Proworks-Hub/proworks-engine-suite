@@ -87,6 +87,11 @@ export * from "./security/replayCertification.js";
 // Performance budgets and the growth-exponent check that catches the
 // accidental O(n²) an absolute stopwatch never would.
 export * from "./perf/budgets.js";
+
+// Moving from v1 without silently changing anybody's numbers, and the gates
+// that say whether the engine currently meets its own stated bar.
+export * from "./compat/versioning.js";
+export * from "./certification.js";
 export * from "./explanation/explanationLevels.js";
 export * from "./graph/dependencyIndex.js";
 export * from "./services/costBasisService.js";
