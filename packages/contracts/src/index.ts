@@ -136,3 +136,7 @@ export * from "./postingProposal.js";
 // Exact rational arithmetic — shared by the consolidation and allocation
 // solves (a specialist may not import a specialist; shared math is platform).
 export * from "./exactRational.js";
+
+// The scenario replay seam: how a what-if engine re-runs another engine's
+// calculation without importing it (DEC-025, E-SC-2).
+export * from "./scenarioReplay.js";

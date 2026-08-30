@@ -820,7 +820,7 @@
     "constitutionVersion": "1.0",
     "integrityHash": "sha256:e1d4c570c087cca5cf0b8dc0a7d23ab0511dc0f5f33551b63db91d8684b7f5b7",
     "sourceDocument": "Documents/ProWorks-Ecosystem/charters/finance-program/BudgetIQ/01_BudgetIQ_Master_Engineering_Blueprint.md",
-    "implementationLifecycle": "CHARTERED"
+    "implementationLifecycle": "EXPERIMENTAL"
   },
   {
     "charterId": "charter.specialized.closeiq",
@@ -1093,7 +1093,7 @@
     "constitutionVersion": "1.0",
     "integrityHash": "sha256:21230e163a83637fe3dfdb63a9a9735b6deaed7800270c04b423305f869e3189",
     "sourceDocument": "Documents/ProWorks-Ecosystem/charters/finance-program/ScenarioIQ/01_ScenarioIQ_Master_Engineering_Blueprint.md",
-    "implementationLifecycle": "CHARTERED"
+    "implementationLifecycle": "EXPERIMENTAL"
   },
   {
     "charterId": "charter.specialized.taxiq",
@@ -1119,6 +1119,6 @@
     "constitutionVersion": "1.0",
     "integrityHash": "sha256:be0ced30151da6157525424e56eaaafcdb9fbb7f792dfb8fa3ef90420969ea88",
     "sourceDocument": "Documents/ProWorks-Ecosystem/charters/finance-program/VarianceIQ/01_VarianceIQ_Master_Engineering_Blueprint.md",
-    "implementationLifecycle": "CHARTERED"
+    "implementationLifecycle": "EXPERIMENTAL"
   }
 ]

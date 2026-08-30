@@ -1,0 +1,41 @@
+{
+  "name": "@proworks-hub/budgetiq",
+  "version": "0.23.0",
+  "type": "module",
+  "description": "BudgetIQ — budget envelopes with encumbrance accounting: released-not-authorized consumable base, a nullable availability figure that cannot silently read an unknown channel as zero, commitment lifecycle with over-liquidation recorded rather than absorbed, exact-sum allocation and phasing, and carry-forward as an approvable derivation — never an edit.",
+  "author": "Steven Kreutzer",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Proworks-Hub/proworks-engine-suite.git",
+    "directory": "packages/budgetiq"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@proworks-hub/contracts": "^0.23.0",
+    "@proworks-hub/core-kit": "^0.23.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "@types/node": "^22.10.2"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "prepare": "tsc -b"
+  }
+}
