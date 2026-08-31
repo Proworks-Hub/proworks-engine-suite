@@ -33,6 +33,27 @@ const timed = (work: () => void): number => {
   return Date.now() - started;
 };
 
+/**
+ * The fastest of several runs.
+ *
+ * Wall-clock under a parallel test suite measures this machine's contention as
+ * much as this code. Contention only ever makes a run SLOWER -- nothing
+ * schedules work faster than uncontended -- so the minimum is the sample least
+ * contaminated by everything else running, and it is what a benchmark should
+ * compare.
+ *
+ * This does not weaken the gate. A genuinely quadratic rollup is quadratic in
+ * its best run too, so the exponent still lands near 2 and still fails. What
+ * it removes is the failure mode where the suite goes red because another test
+ * file happened to be busy, which is a gate nobody can act on and everybody
+ * learns to re-run.
+ */
+const bestOf = (runs: number, work: () => void): number => {
+  let best = Number.POSITIVE_INFINITY;
+  for (let i = 0; i < runs; i += 1) best = Math.min(best, timed(work));
+  return best;
+};
+
 describe("growth exponent is the sensitive check, because noise divides out", () => {
   it("reads linear growth as an exponent near 1", () => {
     expect(growthExponent({ size: 1_000, ms: 10 }, { size: 2_000, ms: 20 })).toBeCloseTo(1, 5);
@@ -252,8 +273,10 @@ describe("measured against the real code", () => {
     const large = { size: 100_000, ms: 0 };
     const smallGraph = build(wideGraph(small.size));
     const largeGraph = build(wideGraph(large.size));
-    small.ms = timed(() => rollup(smallGraph));
-    large.ms = timed(() => rollup(largeGraph));
+    // Best of three on each size. Both are measured the same way, so the ratio
+    // the exponent is computed from stays honest.
+    small.ms = bestOf(3, () => rollup(smallGraph));
+    large.ms = bestOf(3, () => rollup(largeGraph));
 
     const verdict = assessScaling(budgetFor("costGraph.rollup"), small, large);
     expect(verdict.acceptable, verdict.note).toBe(true);
