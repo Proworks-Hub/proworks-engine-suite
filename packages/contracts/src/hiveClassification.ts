@@ -170,6 +170,133 @@ export function tierFor(classification: HiveClassification): HiveTier | null {
 }
 
 /**
+ * Which structural band of the Hive a component occupies.
+ *
+ * DERIVED from `HiveClassification`, never chosen. A hand-picked band is a
+ * second opinion about what a component is, and the two opinions drift — which
+ * is already observable in `hiveMap.ts`, where four constitutionally-classified
+ * components carry `tier: "platform"`.
+ *
+ * This is not `HiveTier`. `tierFor` answers a DEPENDENCY question and correctly
+ * returns `null` for the constitutional plane, because asking which tier
+ * Governance depends from has no answer. This answers a STRUCTURAL one — where
+ * a component sits relative to the work hierarchy — which every component has,
+ * including the ones with no tier.
+ *
+ * NOT NAMED `overwatch`, deliberately, and the reason is load-bearing:
+ * Overwatch is Governance + Sentinel + Evolution — see `OVERWATCH_MEMBERS`,
+ * which is three. ARIA is not a member. A band named `overwatch` holding
+ * `CONSTITUTIONAL_INTELLIGENCE` would assert by placement that ARIA holds
+ * constraining authority, when ARIA advises and never authorizes. Naming the
+ * band for the set it actually contains avoids making that claim.
+ */
+export const hiveLayerSchema = z.enum([
+  /** Coordinates authorized work. Inside the hierarchy, subordinate to it. */
+  "prime",
+  /** Acts upon the whole system rather than sitting within it. */
+  "constitutional",
+  /** One of the domain Cores. */
+  "core",
+  /** A portable engine under a Core. */
+  "specialized",
+  /** An industry pack composing capabilities. */
+  "industry",
+  /** Reusable infrastructure beneath the engines. */
+  "platform",
+  /**
+   * A component the Hive runs but has not classified.
+   *
+   * Exists so an unratified component can be rendered truthfully instead of
+   * being assigned a classification it does not hold. Neural Fabric is the
+   * present case: its `PROPOSED_COORDINATION_PLANE` is deliberately absent
+   * from `hiveClassificationSchema`, and a leak test guards that absence.
+   */
+  "plane",
+]);
+export type HiveLayer = z.infer<typeof hiveLayerSchema>;
+
+/**
+ * The band a classification belongs to. Total, so there is nothing to decide.
+ *
+ * `null` means the component has no ratified classification — which is a real
+ * state, not an error, and maps to `plane`.
+ */
+export function layerFor(classification: HiveClassification | null): HiveLayer {
+  if (classification === null) return "plane";
+  switch (classification) {
+    case "CONSTITUTIONAL_ORCHESTRATION":
+      return "prime";
+    case "CONSTITUTIONAL_GOVERNANCE":
+    case "CONSTITUTIONAL_SENTINEL":
+    case "CONSTITUTIONAL_EVOLUTION":
+    case "CONSTITUTIONAL_INTELLIGENCE":
+      return "constitutional";
+    case "CORE":
+      return "core";
+    case "SHARED_PLATFORM":
+      return "platform";
+    case "SPECIALIZED":
+      return "specialized";
+    case "INDUSTRY":
+      return "industry";
+    default: {
+      // Every classification is listed above rather than routed through
+      // `isConstitutional`, so that adding a tenth breaks the BUILD here
+      // instead of quietly acquiring a plausible band. A silent default is
+      // the failure this whole derivation exists to prevent.
+      const unhandled: never = classification;
+      throw new Error(`unclassified layer for ${String(unhandled)}`);
+    }
+  }
+}
+
+/**
+ * The eight domain Cores, as a value a schema can range over.
+ *
+ * `domain` is the catch-all for a Specialized engine whose Core is not one of
+ * the seven named ones — not a synonym for "unassigned". A Specialized engine
+ * with no Core at all is rejected rather than defaulted here, because the
+ * default is what would let the first genuinely orphaned engine through.
+ */
+export const coreDomainSchema = z.enum([
+  "foundation",
+  "knowledge",
+  "operations",
+  "finance",
+  "resources",
+  "intelligence",
+  "communication",
+  "domain",
+]);
+export type CoreDomain = z.infer<typeof coreDomainSchema>;
+
+/**
+ * Whether a layer requires its component to name a Core.
+ *
+ * True for the capability plane — `core`, `specialized`, `industry` — and false
+ * for everything else. The rule is the data's, not a designer's: every one of
+ * the 69 rows in `hiveMap.ts` at `58d5e84` partitions this way with no
+ * exceptions.
+ *
+ *   core         9 of 9   name a Core
+ *   specialized 44 of 44  name a Core   (finance 32, intelligence 5,
+ *                                        operations 4, resources 2,
+ *                                        communication 1)
+ *   industry     1 of 1   names a Core  (ForgeIQ → domain)
+ *   platform     0 of 14  name a Core
+ *   prime        0 of 1   names a Core
+ *
+ * `industry` was very nearly excluded here on the reasoning that an industry
+ * pack composes across Cores and so belongs to none. The single industry row
+ * that exists says otherwise, and a rule contradicted by the only instance of
+ * the thing it governs is a rule about nothing. Requiring it refuses the first
+ * omission rather than silently defaulting it.
+ */
+export function requiresCoreDomain(layer: HiveLayer): boolean {
+  return layer === "core" || layer === "specialized" || layer === "industry";
+}
+
+/**
  * How a constitutional system relates to everything else.
  *
  * Recorded as data rather than prose because these relationships are what the

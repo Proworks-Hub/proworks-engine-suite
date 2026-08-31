@@ -28,6 +28,47 @@ describe("reading a manifest", () => {
     expect(result.manifest.supportedAdminPanels).toEqual(["overview", "events"]);
   });
 
+  it("upgrades a manifest that predates classification instead of refusing it", () => {
+    // The centre hint is the one piece of real information a v1 manifest holds,
+    // and it only ever meant Prime.
+    const centre = parseEngineManifest({ ...minimal, hivePlacement: "core" });
+    expect(centre.ok).toBe(true);
+    if (!centre.ok) return;
+    expect(centre.manifest.layer).toBe("prime");
+
+    // Everything else is genuinely unclassified, and says so rather than
+    // acquiring a plausible band. `specialized` would render better and would
+    // be invented.
+    const ring = parseEngineManifest({ ...minimal, hivePlacement: "ring" });
+    expect(ring.ok).toBe(true);
+    if (!ring.ok) return;
+    expect(ring.manifest.layer).toBe("plane");
+    expect(ring.manifest.coreDomain).toBeNull();
+  });
+
+  it("refuses a capability-plane manifest that names no Core", () => {
+    // Unplaceable: the console would have to pick a Core for it, and picking is
+    // the failure. All 54 capability rows in the hive map name one.
+    for (const layer of ["core", "specialized", "industry"] as const) {
+      const result = parseEngineManifest({ ...minimal, layer, coreDomain: null });
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.error).toContain("coreDomain");
+    }
+  });
+
+  it("refuses a component outside the hierarchy that claims a Core", () => {
+    // A constitutional component naming a Core asserts a hierarchy position it
+    // does not hold — Governance does not sit under a Core, it acts across all
+    // of them.
+    for (const layer of ["prime", "constitutional", "platform", "plane"] as const) {
+      const result = parseEngineManifest({ ...minimal, layer, coreDomain: "finance" });
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.error).toContain("coreDomain");
+    }
+  });
+
   it("refuses a typo at the current version", () => {
     // `colourToken` sitting there spelt wrong and silently ignored is how an
     // engine renders grey while its manifest looks correct.

@@ -2,6 +2,11 @@
 // Proprietary and confidential. Unauthorized copying, modification, or
 // distribution of this file, via any medium, is strictly prohibited.
 
+import {
+  coreDomainSchema,
+  hiveLayerSchema,
+  requiresCoreDomain,
+} from "@proworks-hub/contracts";
 import { z } from "zod";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -20,7 +25,7 @@ import { z } from "zod";
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Bumped when a field's MEANING changes, not when one is added. */
-export const MANIFEST_VERSION = 1;
+export const MANIFEST_VERSION = 2;
 
 /**
  * Engines own a domain. Services support them.
@@ -135,7 +140,7 @@ export const eventMappingSchema = z
   .strict();
 export type EventMapping = z.infer<typeof eventMappingSchema>;
 
-export const engineManifestSchema = z
+const engineManifestObject = z
   .object({
     manifestVersion: z.number().int().positive().default(MANIFEST_VERSION),
 
@@ -159,11 +164,33 @@ export const engineManifestSchema = z
     /** Which scene draws it. An unknown value falls back to a generic scene. */
     visualizationType: z.string().min(1),
     /**
-     * Where this sits in the hive.
+     * Which structural band of the Hive this occupies.
      *
-     * One field rather than coordinates, so a ninth engine needs a manifest and
-     * not a layout edit — the ring positions are computed from however many
-     * there are. Exactly one manifest should claim `core`.
+     * DERIVED from the component's `HiveClassification` via `layerFor`, never
+     * hand-picked. A hand-picked band is a second opinion about what a
+     * component is, and the two opinions drift — visibly so in `hiveMap.ts`,
+     * where four constitutionally-classified components carry
+     * `tier: "platform"`. Where the two disagree, the classification wins and
+     * the map is what gets corrected.
+     */
+    layer: hiveLayerSchema,
+
+    /**
+     * Which domain Core this belongs to.
+     *
+     * Required for `core` and `specialized`, forbidden elsewhere — see the
+     * refinement below. Not defaulted, because a default is what would let the
+     * first genuinely orphaned engine through as though it were assigned.
+     */
+    coreDomain: coreDomainSchema.nullable().default(null),
+
+    /**
+     * @deprecated since MANIFEST_VERSION 2 — superseded by `layer`.
+     *
+     * It meant "the centre of the visual hive", which collided with the eight
+     * domain Cores: two different senses of the word `core`, one field. Still
+     * parsed and still derived for v1 manifests so existing consumers keep
+     * working; do not read it in new code.
      */
     hivePlacement: z.enum(["core", "ring"]).default("ring"),
     /** Scene-specific knobs. Opaque here on purpose; the scene owns its own shape. */
@@ -176,6 +203,32 @@ export const engineManifestSchema = z
     eventMappings: z.array(eventMappingSchema).default([]),
   })
   .strict();
+
+/**
+ * A manifest, with the Core rule enforced rather than merely documented.
+ *
+ * Expressed as a refinement instead of a comment because the rule is the kind
+ * that holds until the one time nobody checks. Both directions are refused: a
+ * `specialized` engine with no Core is unplaceable, and a constitutional
+ * component claiming one is asserting a hierarchy position it does not have.
+ */
+export const engineManifestSchema = engineManifestObject.superRefine((m, ctx) => {
+  const needed = requiresCoreDomain(m.layer);
+  if (needed && m.coreDomain === null) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["coreDomain"],
+      message: `layer "${m.layer}" must name the Core it belongs to`,
+    });
+  }
+  if (!needed && m.coreDomain !== null) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["coreDomain"],
+      message: `layer "${m.layer}" sits outside the Core hierarchy and must not name a Core`,
+    });
+  }
+});
 
 export type EngineManifest = z.infer<typeof engineManifestSchema>;
 
@@ -197,7 +250,7 @@ export interface ManifestParseFailure {
   error: string;
 }
 
-const KNOWN_FIELDS = new Set(Object.keys(engineManifestSchema.shape));
+const KNOWN_FIELDS = new Set(Object.keys(engineManifestObject.shape));
 
 /**
  * Reads a manifest, tolerating the future and refusing the present's mistakes.
@@ -225,9 +278,35 @@ export function parseEngineManifest(input: unknown): ManifestParseSuccess | Mani
   let candidate = raw;
   const droppedFields: string[] = [];
 
+  if (!("layer" in raw)) {
+    // A manifest without a layer predates classification. There is nothing to
+    // recover but the old drawing hint: `hivePlacement: "core"` meant "put this
+    // in the centre", which is Prime and nothing else, so that intent survives
+    // exactly. `"ring"` meant "not the centre", which says nothing about what
+    // the component IS.
+    //
+    // Everything else therefore becomes `plane` — the Hive runs it and has no
+    // classification for it, which for a manifest published by something else
+    // is simply true. Defaulting to `specialized` would read better on the
+    // board and would be a fabricated classification, the same invention this
+    // schema refuses for `ai-intelligence`.
+    //
+    // No version gate, deliberately. This tolerance exists for manifests we did
+    // not write; a manifest we DO write cannot reach here missing a layer,
+    // because `EngineManifest` requires it and the build fails first. So the
+    // ambiguity that would otherwise matter — did the author forget, or is this
+    // deliberately unclassified — cannot arise for our own manifests, and does
+    // not arise for foreign ones either, where "unknown" is the honest answer.
+    candidate = {
+      ...raw,
+      layer: raw["hivePlacement"] === "core" ? "prime" : "plane",
+      coreDomain: null,
+    };
+  }
+
   if (declared > MANIFEST_VERSION) {
     const trimmed: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(raw)) {
+    for (const [key, value] of Object.entries(candidate)) {
       if (KNOWN_FIELDS.has(key)) trimmed[key] = value;
       else droppedFields.push(key);
     }

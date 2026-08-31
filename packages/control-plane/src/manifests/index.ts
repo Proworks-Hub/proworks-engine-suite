@@ -22,7 +22,7 @@ const LATENCY = { key: "avgLatencyMs", label: "Avg response", unit: "ms", better
 
 /** The orchestrator. Routes; does not do the work. */
 export const primeManifest: EngineManifest = {
-  manifestVersion: 1,
+  manifestVersion: 2,
   id: "prime",
   name: "Prime",
   description: "Orchestration core",
@@ -32,6 +32,8 @@ export const primeManifest: EngineManifest = {
   icon: "orchestration-core",
   visualizationType: "orchestration-core",
   // The one manifest that claims the centre. Everything else rings it.
+  layer: "prime",
+  coreDomain: null,
   hivePlacement: "core",
   visualizationConfig: { rings: 3, routeGlowMs: 700 },
   capabilities: ["prime.orchestration", "prime.automation"],
@@ -54,7 +56,7 @@ export const primeManifest: EngineManifest = {
 };
 
 export const forgeIqManifest: EngineManifest = {
-  manifestVersion: 1,
+  manifestVersion: 2,
   id: "forgeiq",
   name: "ForgeIQ",
   description: "Manufacturing intelligence",
@@ -63,6 +65,8 @@ export const forgeIqManifest: EngineManifest = {
   colorToken: "engine-orange",
   icon: "fabrication-cell",
   visualizationType: "fabrication-cell",
+  layer: "industry",
+  coreDomain: "domain",
   hivePlacement: "ring",
   visualizationConfig: { armTravelMs: 2400, sparkOnPlan: true },
   capabilities: ["forgeiq.basic", "forgeiq.builder", "forgeiq.manufacturing"],
@@ -81,7 +85,7 @@ export const forgeIqManifest: EngineManifest = {
 };
 
 export const costIqManifest: EngineManifest = {
-  manifestVersion: 1,
+  manifestVersion: 2,
   id: "costiq",
   name: "CostIQ",
   description: "Cost calculation engine",
@@ -90,6 +94,8 @@ export const costIqManifest: EngineManifest = {
   colorToken: "engine-green",
   icon: "cost-stack",
   visualizationType: "cost-stack",
+  layer: "specialized",
+  coreDomain: "finance",
   hivePlacement: "ring",
   visualizationConfig: { layers: 4, settleMs: 900 },
   capabilities: ["costiq.basic", "costiq.advanced", "costiq.realtime"],
@@ -106,7 +112,7 @@ export const costIqManifest: EngineManifest = {
 };
 
 export const visionIqManifest: EngineManifest = {
-  manifestVersion: 1,
+  manifestVersion: 2,
   id: "visioniq",
   name: "VisionIQ",
   description: "Computer vision engine",
@@ -115,6 +121,8 @@ export const visionIqManifest: EngineManifest = {
   colorToken: "engine-purple",
   icon: "vision-lens",
   visualizationType: "vision-lens",
+  layer: "specialized",
+  coreDomain: "intelligence",
   hivePlacement: "ring",
   visualizationConfig: { scanMs: 1800, detectionPoints: 6 },
   capabilities: [],
@@ -134,7 +142,7 @@ export const visionIqManifest: EngineManifest = {
 };
 
 export const workOrderIqManifest: EngineManifest = {
-  manifestVersion: 1,
+  manifestVersion: 2,
   id: "workorderiq",
   name: "WorkOrderIQ",
   description: "Work order management",
@@ -143,6 +151,8 @@ export const workOrderIqManifest: EngineManifest = {
   colorToken: "engine-cyan",
   icon: "production-line",
   visualizationType: "production-line",
+  layer: "specialized",
+  coreDomain: "operations",
   hivePlacement: "ring",
   visualizationConfig: { stations: 4, travelMs: 3200 },
   capabilities: [
@@ -165,7 +175,7 @@ export const workOrderIqManifest: EngineManifest = {
 };
 
 export const receiptIqManifest: EngineManifest = {
-  manifestVersion: 1,
+  manifestVersion: 2,
   id: "receiptiq",
   name: "ReceiptIQ",
   description: "Receipt processing engine",
@@ -174,6 +184,8 @@ export const receiptIqManifest: EngineManifest = {
   colorToken: "engine-magenta",
   icon: "document-scanner",
   visualizationType: "document-scanner",
+  layer: "specialized",
+  coreDomain: "finance",
   hivePlacement: "ring",
   visualizationConfig: { scanMs: 1500, extractedFields: 5 },
   capabilities: ["receipts.capture", "receipts.cost_intelligence"],
@@ -191,7 +203,7 @@ export const receiptIqManifest: EngineManifest = {
 };
 
 export const inventoryIqManifest: EngineManifest = {
-  manifestVersion: 1,
+  manifestVersion: 2,
   id: "inventoryiq",
   name: "InventoryIQ",
   description: "Inventory intelligence engine",
@@ -200,6 +212,8 @@ export const inventoryIqManifest: EngineManifest = {
   colorToken: "engine-gold",
   icon: "inventory-racks",
   visualizationType: "inventory-racks",
+  layer: "specialized",
+  coreDomain: "resources",
   hivePlacement: "ring",
   visualizationConfig: { bins: 12, settleMs: 800 },
   capabilities: [
@@ -225,7 +239,7 @@ export const inventoryIqManifest: EngineManifest = {
 };
 
 export const orderIngestionManifest: EngineManifest = {
-  manifestVersion: 1,
+  manifestVersion: 2,
   id: "order-ingestion",
   name: "Order Ingestion",
   description: "Multi-channel intake",
@@ -234,6 +248,8 @@ export const orderIngestionManifest: EngineManifest = {
   colorToken: "engine-aqua",
   icon: "channel-funnel",
   visualizationType: "channel-funnel",
+  layer: "specialized",
+  coreDomain: "operations",
   hivePlacement: "ring",
   visualizationConfig: { channels: ["shopify", "etsy", "phone", "website", "manual"], convergeMs: 1400 },
   capabilities: [],
@@ -259,7 +275,7 @@ export const orderIngestionManifest: EngineManifest = {
  * counting it would make "8 of 8 engines online" wrong.
  */
 export const intelligenceManifest: EngineManifest = {
-  manifestVersion: 1,
+  manifestVersion: 2,
   id: "ai-intelligence",
   name: "AI / Intelligence",
   description: "The shared brain powering the hive",
@@ -267,6 +283,11 @@ export const intelligenceManifest: EngineManifest = {
   colorToken: "engine-violet",
   icon: "intelligence-core",
   visualizationType: "intelligence-core",
+  // No hiveMap row exists for this component, so no classification is
+  // recorded for it. `plane` states that truthfully; naming a tier here
+  // would be inventing one. Tracked as a Phase 1 reconciliation gap.
+  layer: "plane",
+  coreDomain: null,
   hivePlacement: "ring",
   visualizationConfig: { synapseMs: 2600 },
   capabilities: [],
@@ -297,7 +318,7 @@ export const intelligenceManifest: EngineManifest = {
 // would quietly undo that.
 
 export const trackingManifest: EngineManifest = {
-  manifestVersion: 1,
+  manifestVersion: 2,
   id: "tracking",
   name: "Tracking",
   description: "Where an order actually is, narrowed per audience",
@@ -306,6 +327,8 @@ export const trackingManifest: EngineManifest = {
   colorToken: "service-slate",
   icon: "route",
   visualizationType: "service-strip",
+  layer: "specialized",
+  coreDomain: "operations",
   hivePlacement: "ring",
   visualizationConfig: {},
   capabilities: [],
@@ -315,7 +338,7 @@ export const trackingManifest: EngineManifest = {
 };
 
 export const notificationsManifest: EngineManifest = {
-  manifestVersion: 1,
+  manifestVersion: 2,
   id: "notifications",
   name: "Notifications",
   description: "Delivery policy and quiet hours",
@@ -324,6 +347,8 @@ export const notificationsManifest: EngineManifest = {
   colorToken: "service-slate",
   icon: "bell",
   visualizationType: "service-strip",
+  layer: "specialized",
+  coreDomain: "communication",
   hivePlacement: "ring",
   visualizationConfig: {},
   capabilities: [],
