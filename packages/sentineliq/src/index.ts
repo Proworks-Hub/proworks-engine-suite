@@ -26,3 +26,8 @@ export * from "./v2/securityConventions.js";
 export * from "./v2/observation.js";
 export * from "./v2/providers.js";
 export * from "./v2/hiveSensors.js";
+
+// Detection methods and the exposure/attack-surface graph (DEC-028 increment
+// 2, directive §15-§16).
+export * from "./v2/detection.js";
+export * from "./v2/exposure.js";
