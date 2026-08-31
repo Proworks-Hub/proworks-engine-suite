@@ -172,10 +172,72 @@ describe("the hive layout", () => {
     }
   });
 
-  it("starts the ring at the top, so the arrangement is reproducible", () => {
+  it("starts every band at the top, so the arrangement is reproducible", () => {
+    // The claim is about ANGLE, not distance: each band opens straight up so
+    // the picture is identical run to run. The radius is the band's, and the
+    // hive now has more than one.
     const layout = computeHiveLayout(registry);
-    expect(layout.ring[0]?.x).toBeCloseTo(0, 3);
-    expect(layout.ring[0]?.y).toBeCloseTo(-1, 3);
+    for (const band of layout.bands) {
+      expect(band.nodes[0]?.x, band.layer).toBeCloseTo(0, 3);
+      expect(band.nodes[0]?.y, band.layer).toBeCloseTo(-band.radius, 3);
+    }
+  });
+
+  it("nests the bands at distinct increasing radii, out to the requested one", () => {
+    // Asserting only that the outermost lands on 1 is not enough: a layout that
+    // puts EVERY band at 1 satisfies that and has no nesting at all. The
+    // distinctness is the claim.
+    const layout = computeHiveLayout(registry);
+    const radii = layout.bands.map((b) => b.radius);
+    expect(radii.length).toBeGreaterThan(1);
+    expect(new Set(radii).size).toBe(radii.length);
+    expect([...radii]).toEqual([...radii].sort((a, b) => a - b));
+    expect(radii.at(-1)).toBeCloseTo(1, 3);
+    // Two occupied bands means the inner one sits halfway out, exactly.
+    expect(radii).toEqual([0.5, 1]);
+  });
+
+  it("collapses to the single ring the hive has always drawn when one band is occupied", () => {
+    // The compatibility property: nesting appears only once there is something
+    // to nest, so classifying nothing changes nothing.
+    const oneBand = createEngineRegistry([
+      primeManifest,
+      ...Array.from({ length: 4 }, (_, i) => ({ ...forgeIqManifest, id: `e${i}` })),
+    ]);
+    const layout = computeHiveLayout(oneBand);
+    expect(layout.bands).toHaveLength(1);
+    for (const node of layout.ring) expect(Math.hypot(node.x, node.y)).toBeCloseTo(1, 3);
+  });
+
+  it("orders the bands outward by distance from Prime in the work hierarchy", () => {
+    // The band ORDER carries meaning: Cores sit closest to Prime, their
+    // engines outside them, packs outside those. `plane` is outermost because
+    // an unclassified component has no place in the structure and should look
+    // like it. A reordering here would silently redraw those relationships.
+    const layered = createEngineRegistry([
+      primeManifest,
+      { ...forgeIqManifest, id: "unclassified", layer: "plane" as const, coreDomain: null },
+      { ...forgeIqManifest, id: "a-core", layer: "core" as const, coreDomain: "finance" as const },
+      { ...forgeIqManifest, id: "a-spec", layer: "specialized" as const, coreDomain: "finance" as const },
+      { ...forgeIqManifest, id: "a-pack" },
+    ]);
+    expect(computeHiveLayout(layered).bands.map((b) => b.layer)).toEqual([
+      "core",
+      "specialized",
+      "industry",
+      "plane",
+    ]);
+  });
+
+  it("orders a band by Core, so engines under one Core sit together", () => {
+    // Angular adjacency is all the layout may say about the Core relationship
+    // from the manifests alone — and it is ordered rather than file-ordered, so
+    // moving a manifest in the file does not move the engine on the board.
+    const layout = computeHiveLayout(registry);
+    const specialized = layout.bands.find((b) => b.layer === "specialized");
+    const cores = specialized?.nodes.map((n) => n.coreDomain) ?? [];
+    expect(cores.length).toBeGreaterThan(1);
+    expect([...cores]).toEqual([...cores].sort());
   });
 
   it("leaves the hive empty rather than inventing a centre", () => {

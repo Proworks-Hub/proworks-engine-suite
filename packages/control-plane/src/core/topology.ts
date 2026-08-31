@@ -2,6 +2,8 @@
 // Proprietary and confidential. Unauthorized copying, modification, or
 // distribution of this file, via any medium, is strictly prohibited.
 
+import type { CoreDomain, HiveLayer } from "@proworks-hub/contracts";
+
 import type { EngineRegistry } from "./registry.js";
 import type { EngineManifest } from "./manifest.js";
 
@@ -31,7 +33,25 @@ export interface HiveNode {
   readonly y: number;
   /** Radians from the centre. Handy for orienting a label outwards. */
   readonly angle: number;
+  /** The band this sits in, from the manifest. Never chosen by the layout. */
+  readonly layer: HiveLayer;
+  /** Which Core it belongs to, for the capability plane. Null elsewhere. */
+  readonly coreDomain: CoreDomain | null;
+  /** @deprecated superseded by `layer === "prime"`. Kept so consumers at
+   *  ^0.14.0 keep working while CC-ADR-004 is undecided. */
   readonly isCore: boolean;
+}
+
+/**
+ * One concentric band of the hive.
+ *
+ * Exposed so a renderer can label and ring the bands without recomputing which
+ * layer sits where — and so it cannot disagree with the layout about it.
+ */
+export interface HiveBand {
+  readonly layer: HiveLayer;
+  readonly radius: number;
+  readonly nodes: readonly HiveNode[];
 }
 
 export interface HiveEdge {
@@ -47,7 +67,13 @@ export interface HiveEdge {
 }
 
 export interface HiveLayout {
+  /** Prime, at the origin. Absent when no manifest claims the layer. */
+  readonly prime?: HiveNode;
+  /** The occupied bands, innermost first. Empty bands are not represented. */
+  readonly bands: readonly HiveBand[];
+  /** @deprecated alias for `prime`. */
   readonly core?: HiveNode;
+  /** @deprecated every non-prime node, flattened. Use `bands`. */
   readonly ring: readonly HiveNode[];
   readonly nodes: readonly HiveNode[];
   readonly edges: readonly HiveEdge[];
@@ -103,26 +129,54 @@ export function computeHiveLayout(
   const placed = options.includeServices
     ? [...registry.engines, ...registry.services]
     : registry.engines;
-  const coreManifest = placed.find((m) => m.hivePlacement === "core");
-  const ringManifests = placed.filter((m) => m !== coreManifest);
 
-  const core: HiveNode | undefined = coreManifest
-    ? { engineId: coreManifest.id, manifest: coreManifest, x: 0, y: 0, angle: 0, isCore: true }
+  const primeManifest = placed.find((m) => m.layer === "prime");
+  const prime: HiveNode | undefined = primeManifest
+    ? {
+        engineId: primeManifest.id,
+        manifest: primeManifest,
+        x: 0,
+        y: 0,
+        angle: 0,
+        layer: "prime",
+        coreDomain: null,
+        isCore: true,
+      }
     : undefined;
 
-  const ring: HiveNode[] = ringManifests.map((manifest, index) => {
-    const angle = startAngle + (index * 2 * Math.PI) / Math.max(1, ringManifests.length);
-    return {
-      engineId: manifest.id,
-      manifest,
-      x: round(Math.cos(angle) * radius),
-      y: round(Math.sin(angle) * radius),
-      angle,
-      isCore: false,
-    };
+  // Only the bands that actually hold something get a radius. An empty ring
+  // drawn for a layer nothing occupies reads as "these are missing" rather
+  // than "these do not exist here", and the console has no way to tell the
+  // viewer which it meant.
+  const occupied = BAND_ORDER.map((layer) => ({
+    layer,
+    manifests: placed.filter((m) => m !== primeManifest && m.layer === layer).sort(byCoreThenId),
+  })).filter((b) => b.manifests.length > 0);
+
+  const bands: HiveBand[] = occupied.map((band, bandIndex) => {
+    // Distributed across the OCCUPIED bands, so the outermost always lands on
+    // `radius`. With one occupied band this is exactly the single ring the
+    // hive has drawn all along — the nesting appears only once there is
+    // something to nest.
+    const bandRadius = round((radius * (bandIndex + 1)) / occupied.length);
+    const nodes = band.manifests.map((manifest, index) => {
+      const angle = startAngle + (index * 2 * Math.PI) / band.manifests.length;
+      return {
+        engineId: manifest.id,
+        manifest,
+        x: round(Math.cos(angle) * bandRadius),
+        y: round(Math.sin(angle) * bandRadius),
+        angle,
+        layer: band.layer,
+        coreDomain: manifest.coreDomain,
+        isCore: false,
+      } satisfies HiveNode;
+    });
+    return { layer: band.layer, radius: bandRadius, nodes };
   });
 
-  const nodes = core ? [core, ...ring] : ring;
+  const ring = bands.flatMap((b) => b.nodes);
+  const nodes = prime ? [prime, ...ring] : ring;
   const present = new Set(nodes.map((n) => n.engineId));
 
   // Edges come from the manifests' own event mappings. Nothing is drawn that
@@ -154,7 +208,47 @@ export function computeHiveLayout(
   edges.sort((a, b) => (a.from + a.to).localeCompare(b.from + b.to));
   danglingEdges.sort((a, b) => (a.from + a.to).localeCompare(b.from + b.to));
 
-  return { core, ring, nodes, edges, danglingEdges };
+  return { prime, core: prime, bands, ring, nodes, edges, danglingEdges };
+}
+
+/**
+ * The bands, innermost first. Prime is the origin, not a band.
+ *
+ * The ordering is distance from Prime in the WORK hierarchy: the Cores sit
+ * closest, their Specialized engines outside them, industry packs outside those
+ * because a pack composes what the layers beneath it provide.
+ *
+ * `platform` and `constitutional` are outside that hierarchy entirely — one is
+ * infrastructure beneath every engine, the other acts upon the whole system —
+ * and a concentric diagram has no way to draw "beneath" or "upon" except as
+ * further out. `plane` is outermost because an unclassified component is the
+ * one thing that has no place in the structure at all, and should look like it.
+ */
+const BAND_ORDER: readonly HiveLayer[] = [
+  "core",
+  "specialized",
+  "industry",
+  "platform",
+  "constitutional",
+  "plane",
+];
+
+/**
+ * Orders a band so same-Core engines land next to each other.
+ *
+ * Angular adjacency is the one thing the layout can say about the Core
+ * relationship without asserting more than the manifests declare. Aligning each
+ * group precisely under its Core would look better and would start encoding a
+ * hierarchy the band structure already carries.
+ *
+ * Sorting also delivers what this file has always claimed: an arrangement that
+ * is "stable and reproducible rather than depending on however the manifests
+ * happened to be ordered in a file." The previous version indexed into the
+ * array, so file order moved the engines.
+ */
+function byCoreThenId(a: EngineManifest, b: EngineManifest): number {
+  const core = (a.coreDomain ?? "").localeCompare(b.coreDomain ?? "");
+  return core !== 0 ? core : a.id.localeCompare(b.id);
 }
 
 function round(value: number): number {
