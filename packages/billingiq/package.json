@@ -1,0 +1,41 @@
+{
+  "name": "@proworks-hub/billingiq",
+  "version": "0.23.0",
+  "type": "module",
+  "description": "BillingIQ \u2014 invoice generation where the convention is never the engine's to pick: proration and price basis required (six defensible answers spread 6.9% on one golden event), tier mode required (68% apart on one quantity), gapless numbering where every value is accounted for or burned with a record, a tax gate that never softens to zero, and corrections as instruments \u2014 credit note, void, refund request \u2014 never edits.",
+  "author": "Steven Kreutzer",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Proworks-Hub/proworks-engine-suite.git",
+    "directory": "packages/billingiq"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@proworks-hub/contracts": "^0.23.0",
+    "@proworks-hub/core-kit": "^0.23.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "@types/node": "^22.10.2"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "prepare": "tsc -b"
+  }
+}

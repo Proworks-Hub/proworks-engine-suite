@@ -807,7 +807,7 @@
     "constitutionVersion": "1.0",
     "integrityHash": "sha256:70aedd6871e0289886bc15e95c489eed568d66cff82268ed7d07b600c77d2d30",
     "sourceDocument": "Documents/ProWorks-Ecosystem/charters/finance-program/BillingIQ/01_BillingIQ_Master_Engineering_Blueprint.md",
-    "implementationLifecycle": "CHARTERED"
+    "implementationLifecycle": "EXPERIMENTAL"
   },
   {
     "charterId": "charter.specialized.budgetiq",
@@ -846,7 +846,7 @@
     "constitutionVersion": "1.0",
     "integrityHash": "sha256:9b8e60e445f0e0492e66066efd52bb3a97b8485a14985ed35d9d3a0b2e988321",
     "sourceDocument": "Documents/ProWorks-Ecosystem/charters/finance-program/CollectionsIQ/01_CollectionsIQ_Master_Engineering_Blueprint.md",
-    "implementationLifecycle": "CHARTERED"
+    "implementationLifecycle": "EXPERIMENTAL"
   },
   {
     "charterId": "charter.specialized.consolidationiq",
@@ -872,7 +872,7 @@
     "constitutionVersion": "1.0",
     "integrityHash": "sha256:3d01cf4c4516cc5a9cf0323d6a43742ec92f46660cd44d5c980a837e1b3bb261",
     "sourceDocument": "Documents/ProWorks-Ecosystem/charters/finance-program/CreditIQ/01_CreditIQ_Master_Engineering_Blueprint.md",
-    "implementationLifecycle": "CHARTERED"
+    "implementationLifecycle": "EXPERIMENTAL"
   },
   {
     "charterId": "charter.specialized.debtiq",
