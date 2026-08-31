@@ -1,0 +1,41 @@
+{
+  "name": "@proworks-hub/taxiq",
+  "version": "0.23.0",
+  "type": "module",
+  "description": "TaxIQ \u2014 tax determination where an unmapped item is undetermined (never default-taxable, never default-exempt), nexus is a windowed function whose partial history can establish an obligation but never refute one, exemption is per-jurisdiction with evidence or nothing, rounding is a versioned per-jurisdiction method (never a setting), and a superseded determination adjusts the current period rather than rewriting a filed one.",
+  "author": "Steven Kreutzer",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Proworks-Hub/proworks-engine-suite.git",
+    "directory": "packages/taxiq"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@proworks-hub/contracts": "^0.23.0",
+    "@proworks-hub/core-kit": "^0.23.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "@types/node": "^22.10.2"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "prepare": "tsc -b"
+  }
+}

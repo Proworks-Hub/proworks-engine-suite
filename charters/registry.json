@@ -911,7 +911,7 @@
     "constitutionVersion": "1.0",
     "integrityHash": "sha256:9d9557f7768074b73343efd684e7d78823405ef906f3cc9b4a74ddf4226bbbdd",
     "sourceDocument": "Documents/ProWorks-Ecosystem/charters/finance-program/FinancialControlsIQ/01_FinancialControlsIQ_Master_Engineering_Blueprint.md",
-    "implementationLifecycle": "CHARTERED"
+    "implementationLifecycle": "EXPERIMENTAL"
   },
   {
     "charterId": "charter.specialized.financialreportingiq",
@@ -924,7 +924,7 @@
     "constitutionVersion": "1.0",
     "integrityHash": "sha256:89bf98a52843d433d219aeacd9965fdfbc5213fcbdfccfc1c4481407d6f8d0fb",
     "sourceDocument": "Documents/ProWorks-Ecosystem/charters/finance-program/FinancialReportingIQ/01_FinancialReportingIQ_Master_Engineering_Blueprint.md",
-    "implementationLifecycle": "CHARTERED"
+    "implementationLifecycle": "EXPERIMENTAL"
   },
   {
     "charterId": "charter.specialized.financialriskiq",
@@ -1106,7 +1106,7 @@
     "constitutionVersion": "1.0",
     "integrityHash": "sha256:1ee52b546ab47d2d86a092044509af7776b41ae2c02b2f24c039551023ee3b81",
     "sourceDocument": "Documents/ProWorks-Ecosystem/charters/finance-program/TaxIQ/01_TaxIQ_Master_Engineering_Blueprint.md",
-    "implementationLifecycle": "CHARTERED"
+    "implementationLifecycle": "EXPERIMENTAL"
   },
   {
     "charterId": "charter.specialized.varianceiq",
