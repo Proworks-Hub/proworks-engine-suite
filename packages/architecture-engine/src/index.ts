@@ -12,3 +12,7 @@ export * from "./chambers/goldenReference.js";
 export * from "./modules/collector.js";
 export * from "./traceability/index.js";
 export * from "./modules/migration.js";
+export * from "./modules/dependencyAssurance.js";
+export * from "./modules/contractCompatibility.js";
+export * from "./modules/certification.js";
+export * from "./modules/knowledge.js";
