@@ -5,7 +5,7 @@
 import { describe, expect, it } from "vitest";
 
 import { MANIFEST_VERSION, parseEngineManifest } from "../manifest.js";
-import { computeHiveLayout } from "../topology.js";
+import { computeHiveLayout, declaredRelationshipSchema } from "../topology.js";
 import { createEngineRegistry } from "../registry.js";
 import { SUITE_MANIFESTS, primeManifest, forgeIqManifest } from "../../manifests/index.js";
 
@@ -262,6 +262,67 @@ describe("the hive layout", () => {
     const layout = computeHiveLayout(partial);
     expect(layout.edges.every((e) => e.to !== "inventoryiq")).toBe(true);
     expect(layout.danglingEdges.some((e) => e.to === "inventoryiq")).toBe(true);
+  });
+
+  it("types every derived edge and names the source that produced it", () => {
+    const layout = computeHiveLayout(registry);
+    expect(layout.edges.length).toBeGreaterThan(0);
+    for (const edge of layout.edges) {
+      expect(edge.relationshipType).toBe("DATA");
+      expect(edge.derivedFrom).toBe("manifest.eventMappings");
+      // A declared mapping says a route exists, not that anything travelled it.
+      expect(edge.active).toBe(false);
+    }
+  });
+
+  it("reports the five relationship types with no read model bound", () => {
+    // The difference the console must not lose: "no authority relationships
+    // exist" and "no authority read model is bound" look identical as an empty
+    // view, and only one of them is true.
+    const layout = computeHiveLayout(registry);
+    expect([...layout.unboundRelationshipTypes].sort()).toEqual([
+      "AUTHORITY",
+      "DEPENDENCY",
+      "EVOLUTION",
+      "INTERCONNECT",
+      "OBSERVATION",
+    ]);
+  });
+
+  it("draws an authority edge only where a source declared one", () => {
+    // Governance authorising an engine is a call the ENGINE makes outward, so
+    // event flow would draw this arrow backwards. It is drawn from Governance's
+    // own records, pointing authority → subject, or it is not drawn.
+    const withAuthority = computeHiveLayout(registry, {
+      relationships: [
+        {
+          from: "prime",
+          to: "forgeiq",
+          relationshipType: "AUTHORITY",
+          derivedFrom: "governance.policies",
+          active: false,
+        },
+      ],
+    });
+    const authority = withAuthority.edges.filter((e) => e.relationshipType === "AUTHORITY");
+    expect(authority).toHaveLength(1);
+    expect(authority[0]).toMatchObject({ from: "prime", to: "forgeiq" });
+    expect(withAuthority.unboundRelationshipTypes).not.toContain("AUTHORITY");
+    // And nothing invents the rest just because one type became available.
+    expect(withAuthority.unboundRelationshipTypes).toContain("OBSERVATION");
+  });
+
+  it("refuses a relationship whose source cannot produce its type", () => {
+    // The rule that makes `derivedFrom` worth having: event mappings cannot
+    // produce an authority relationship, so a record claiming they did is
+    // rejected rather than drawn with a plausible-looking provenance.
+    const result = declaredRelationshipSchema.safeParse({
+      from: "prime",
+      to: "forgeiq",
+      relationshipType: "AUTHORITY",
+      derivedFrom: "manifest.eventMappings",
+    });
+    expect(result.success).toBe(false);
   });
 
   it("keeps services and the intelligence layer out of the hive", () => {
