@@ -31,3 +31,7 @@ export * from "./v2/hiveSensors.js";
 // 2, directive §15-§16).
 export * from "./v2/detection.js";
 export * from "./v2/exposure.js";
+
+// Incident correlation and SOC read models (DEC-028 increment 3, §20-§21).
+export * from "./v2/incident.js";
+export * from "./v2/readModels.js";
