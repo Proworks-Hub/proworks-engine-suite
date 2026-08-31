@@ -40,3 +40,8 @@ export * from "./v2/readModels.js";
 // increment 4, directive §19/§23).
 export * from "./v2/conditionEffects.js";
 export * from "./v2/executors.js";
+
+// Forensic reconstruction, Sentinel self-defense and supply-chain ingest
+// (DEC-028 increment 5, directive §24-§27).
+export * from "./v2/forensics.js";
+export * from "./v2/selfDefense.js";
