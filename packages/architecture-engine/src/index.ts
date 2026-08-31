@@ -10,3 +10,4 @@ export * from "./rules.js";
 export * from "./chambers/conformance.js";
 export * from "./chambers/goldenReference.js";
 export * from "./modules/collector.js";
+export * from "./traceability/index.js";
