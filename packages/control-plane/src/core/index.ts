@@ -30,3 +30,4 @@ export * from "./recovery.js";
 export * from "./diagnostics.js";
 export * from "./incident.js";
 export * from "./validationLab.js";
+export * from "./architecture.js";

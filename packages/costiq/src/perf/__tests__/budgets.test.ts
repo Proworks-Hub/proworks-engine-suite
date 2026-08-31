@@ -28,9 +28,20 @@ import {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const timed = (work: () => void): number => {
-  const started = Date.now();
+  // `performance.now()` rather than `Date.now()`, and the difference is not
+  // cosmetic here. `Date.now()` on Windows advances in steps of roughly 1-16ms,
+  // so once this code got fast enough that the 25k rollup takes ~8ms, the
+  // small measurement is only a handful of ticks and a single tick of error is
+  // over 10%. The scaling check divides the two measurements, so that error
+  // lands straight in the exponent -- which is how a 1.53 reading against a
+  // 1.5 ceiling turned up on a machine doing nothing wrong.
+  //
+  // This is the fix that made the gate honest. Running the perf suite
+  // sequentially removes CONTENTION; sub-millisecond resolution removes
+  // QUANTISATION, and the 1.53 failure was the second one.
+  const started = performance.now();
   work();
-  return Date.now() - started;
+  return performance.now() - started;
 };
 
 /**
@@ -273,10 +284,26 @@ describe("measured against the real code", () => {
     const large = { size: 100_000, ms: 0 };
     const smallGraph = build(wideGraph(small.size));
     const largeGraph = build(wideGraph(large.size));
-    // Best of three on each size. Both are measured the same way, so the ratio
-    // the exponent is computed from stays honest.
-    small.ms = bestOf(3, () => rollup(smallGraph));
-    large.ms = bestOf(3, () => rollup(largeGraph));
+    // INTERLEAVED best-of-five, not two separate best-of-N passes.
+    //
+    // The exponent is a RATIO, so what corrupts it is not noise but noise that
+    // hits one size harder than the other. Measuring all the small runs and
+    // then all the large ones lets background load drift between the two
+    // groups, and the larger workload is the one that suffers most under
+    // memory pressure from parallel workers -- which inflates the ratio and
+    // reads as a complexity regression that is not there.
+    //
+    // Alternating them means any drift lands on both, and taking the minimum
+    // of each keeps the least-contended sample. A genuinely quadratic rollup
+    // is still quadratic in its best interleaved run.
+    let bestSmall = Number.POSITIVE_INFINITY;
+    let bestLarge = Number.POSITIVE_INFINITY;
+    for (let i = 0; i < 5; i += 1) {
+      bestSmall = Math.min(bestSmall, timed(() => rollup(smallGraph)));
+      bestLarge = Math.min(bestLarge, timed(() => rollup(largeGraph)));
+    }
+    small.ms = bestSmall;
+    large.ms = bestLarge;
 
     const verdict = assessScaling(budgetFor("costGraph.rollup"), small, large);
     expect(verdict.acceptable, verdict.note).toBe(true);

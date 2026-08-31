@@ -90,6 +90,17 @@ export default defineConfig({
       "packages/*/tests/**/*.test.ts",
       "packages/*/src/**/__tests__/**/*.test.ts",
     ],
+    // Wall-clock perf gates are excluded here and run in their own pass. They
+    // compare a RATIO between two workload sizes, and what corrupts a ratio is
+    // not noise but noise that lands harder on one size than the other --
+    // which is exactly what happens when 260 test files compete for memory and
+    // the larger workload takes the brunt. Interleaved best-of-five still
+    // failed roughly one run in three.
+    //
+    // They are not dropped: `npm run verify` runs `test:perf` straight after
+    // this, sequentially. The gate keeps its full reach and stops reporting
+    // machine load as a complexity regression.
+    exclude: ["**/node_modules/**", "**/dist/**", "packages/*/src/perf/__tests__/**"],
     testTimeout: 20000,
   },
 });
