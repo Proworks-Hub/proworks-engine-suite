@@ -16,3 +16,5 @@ export * from "./modules/dependencyAssurance.js";
 export * from "./modules/contractCompatibility.js";
 export * from "./modules/certification.js";
 export * from "./modules/knowledge.js";
+export * from "./modules/capabilities.js";
+export * from "./modules/adoption.js";

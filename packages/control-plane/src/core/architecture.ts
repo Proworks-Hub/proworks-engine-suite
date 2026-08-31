@@ -92,7 +92,7 @@ export interface ArchitectureOverview {
   readonly totals: Readonly<Record<ConformanceStatus, number>>;
   /** Subjects with at least one blocking failure. */
   readonly failingSubjects: number;
-  /** Subjects that have adopted the standard at all. */
+  /** Subjects with every rule actually applied to them. */
   readonly adoptedSubjects: number;
   /**
    * Adoption progress as a fraction, or null when there is nothing to divide.
@@ -106,7 +106,21 @@ export interface ArchitectureOverview {
 function stateOf(view: Omit<ArchitectureSubjectView, "state">): ArchitectureState {
   if (view.blockingFailures.length > 0) return "attention";
   if (view.unevaluated > 0) return "unevaluated";
-  if (view.passing === 0 && view.outOfScope > 0) return "out-of-scope";
+  // ANY rule out of scope means this subject has not fully adopted the
+  // standard.
+  //
+  // The first version of this asked for `passing === 0 && outOfScope > 0`, and
+  // it was wrong in the most embarrassing possible direction: every package
+  // passes the three dependency rules, which apply from the first run, so
+  // `passing` was never 0 and nothing was ever out of scope. The console
+  // reported "65 of 65 adopted" against a true figure of 1 of 64 -- a
+  // flattering number produced by the console this program built to refuse
+  // flattering numbers.
+  //
+  // Partial adoption reads as not-adopted, which is the conservative
+  // direction: a subject counts as having adopted the standard only when
+  // every rule was actually applied to it.
+  if (view.outOfScope > 0) return "out-of-scope";
   return "conformant";
 }
 
@@ -176,7 +190,11 @@ export function summarizeArchitecture(
  */
 export function architectureHeadline(overview: ArchitectureOverview): string {
   if (overview.subjects.length === 0) return "No conformance report loaded.";
-  const parts = [`${overview.adoptedSubjects} of ${overview.subjects.length} adopted`];
+  // "subjects", not "packages". A findings set is heterogeneous: a package is
+  // a subject, and so is a stable id, because identity rules are evaluated
+  // per-id rather than per-package. Saying "packages" would be a small lie
+  // that a reader could only catch by counting.
+  const parts = [`${overview.adoptedSubjects} of ${overview.subjects.length} subjects adopted`];
   if (overview.failingSubjects > 0) parts.push(`${overview.failingSubjects} with violations`);
   if (overview.totals.UNKNOWN > 0) parts.push(`${overview.totals.UNKNOWN} rules unevaluated`);
   return parts.join(" · ");

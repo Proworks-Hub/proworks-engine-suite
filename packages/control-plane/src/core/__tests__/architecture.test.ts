@@ -101,6 +101,21 @@ describe("the architecture read model", () => {
     expect(headline).toContain("1 rules unevaluated");
   });
 
+  it("counts a partly-scoped subject as not adopted, even when other rules passed", () => {
+    // The regression that produced "65 of 65 adopted" against a true 1 of 64.
+    // Every package passes the dependency rules from the first run, so a
+    // subject with passing findings AND out-of-scope findings must still read
+    // as not adopted -- otherwise the dependency rules alone certify adoption
+    // that never happened.
+    const overview = summarizeArchitecture([
+      f({ status: "PASS", ruleId: "ARCH-DEP-1" }),
+      f({ status: "PASS", ruleId: "ARCH-DEP-2" }),
+      f({ status: "NOT_APPLICABLE", ruleId: "ARCH-RUNTIME-METADATA" }),
+    ]);
+    expect(overview.subjects[0]?.state).toBe("out-of-scope");
+    expect(overview.adoptedSubjects).toBe(0);
+  });
+
   it("counts violations across subjects", () => {
     const overview = summarizeArchitecture([
       f({ status: "FAIL" }),
