@@ -20,12 +20,13 @@ describe("the approved charter registry", () => {
   it("loads every record without a problem", () => {
     expect(registry.problems()).toEqual([]);
     // 58 approved engine charters + 1 framework document, plus the 27 Finance
-    // Core Engine Program charters ratified 2026-08-30 (DEC-025). SpendIQ is
-    // deliberately absent from those 27: its own package's verdict was
-    // "module, not engine". The framework does not increase the engine count
-    // and must not: Overwatch is a relationship.
-    expect(registry.all()).toHaveLength(86);
-    expect(registry.all().filter((r) => r.canonicalEngineId).length).toBe(85);
+    // Core Engine Program charters ratified 2026-08-30 (DEC-025) and SpendIQ
+    // chartered 2026-08-30 by owner ruling (DEC-026, overruling the package's
+    // own "module, not engine" verdict -- the conflict is recorded in the
+    // decision register, not resolved silently). The framework does not
+    // increase the engine count and must not: Overwatch is a relationship.
+    expect(registry.all()).toHaveLength(87);
+    expect(registry.all().filter((r) => r.canonicalEngineId).length).toBe(86);
   });
 
   it("matches the approved registry counts exactly", () => {
@@ -37,8 +38,8 @@ describe("the approved charter registry", () => {
     expect(by("CONSTITUTIONAL_ORCHESTRATION")).toBe(1);
     expect(by("CORE")).toBe(8);
     expect(by("SHARED_PLATFORM")).toBe(12);
-    // 20 approved + 27 DEC-025 Finance Program charters.
-    expect(by("SPECIALIZED")).toBe(47);
+    // 20 approved + 27 DEC-025 Finance Program charters + SpendIQ (DEC-026).
+    expect(by("SPECIALIZED")).toBe(48);
     expect(by("INDUSTRY")).toBe(13);
   });
 

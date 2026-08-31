@@ -44,6 +44,8 @@
       "@proworks-hub/taxiq": ["./packages/taxiq/src/index.ts"],
       "@proworks-hub/financialreportingiq": ["./packages/financialreportingiq/src/index.ts"],
       "@proworks-hub/financialcontrolsiq": ["./packages/financialcontrolsiq/src/index.ts"],
+      "@proworks-hub/spendiq": ["./packages/spendiq/src/index.ts"],
+      "@proworks-hub/forecastiq": ["./packages/forecastiq/src/index.ts"],
       "@proworks-hub/projectfinanceiq": ["./packages/projectfinanceiq/src/index.ts"],
       "@proworks-hub/simulation-lab": ["./packages/simulation-lab/src/index.ts"],
       "@proworks-hub/operations-core": ["./packages/operations-core/src/index.ts"],

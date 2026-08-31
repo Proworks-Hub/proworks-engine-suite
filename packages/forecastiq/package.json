@@ -1,0 +1,41 @@
+{
+  "name": "@proworks-hub/forecastiq",
+  "version": "0.23.0",
+  "type": "module",
+  "description": "ForecastIQ \u2014 forecasting where seasonal naive is the permanent benchmark: FVA and its verdict are required on every published forecast (and allowed to be bad), intervals carry a declared basis with observed coverage that is null until measured (never an implied success), rolling-origin backtests refuse single splits, selection is contaminated until post-selection origins exist, coherence is proven post-quantization with a required residual rule, overrides retain the forecast they replaced and are scored against it, and detected bias is never auto-corrected.",
+  "author": "Steven Kreutzer",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Proworks-Hub/proworks-engine-suite.git",
+    "directory": "packages/forecastiq"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@proworks-hub/contracts": "^0.23.0",
+    "@proworks-hub/core-kit": "^0.23.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "@types/node": "^22.10.2"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "prepare": "tsc -b"
+  }
+}

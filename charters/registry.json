@@ -583,7 +583,7 @@
     "constitutionVersion": "1.0",
     "integrityHash": "sha256:f86062bb10e7d648c80898729a914a5b30429ad4f84273fae1c0b7853fd72beb",
     "sourceDocument": "ForecastIQ_Charter_V1_0.docx",
-    "implementationLifecycle": "CHARTERED"
+    "implementationLifecycle": "EXPERIMENTAL"
   },
   {
     "charterId": "charter.specialized.forgeiq",
@@ -1093,6 +1093,19 @@
     "constitutionVersion": "1.0",
     "integrityHash": "sha256:21230e163a83637fe3dfdb63a9a9735b6deaed7800270c04b423305f869e3189",
     "sourceDocument": "Documents/ProWorks-Ecosystem/charters/finance-program/ScenarioIQ/01_ScenarioIQ_Master_Engineering_Blueprint.md",
+    "implementationLifecycle": "EXPERIMENTAL"
+  },
+  {
+    "charterId": "charter.specialized.spendiq",
+    "canonicalEngineId": "hive.spendiq",
+    "canonicalName": "SpendIQ",
+    "classification": "SPECIALIZED",
+    "charterVersion": "1.0",
+    "status": "ACTIVE",
+    "ratificationState": "RATIFIED_AMENDMENT",
+    "constitutionVersion": "1.0",
+    "integrityHash": "sha256:eef4328d42a69da987c84bfded301a544cdc0f392335642359abef98c95fb24f",
+    "sourceDocument": "Documents/ProWorks-Ecosystem/charters/finance-program/SpendIQ/01_SpendIQ_Master_Engineering_Blueprint.md",
     "implementationLifecycle": "EXPERIMENTAL"
   },
   {

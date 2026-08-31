@@ -44,6 +44,8 @@ export default defineConfig({
       "@proworks-hub/taxiq": pkg("taxiq", "src/index.ts"),
       "@proworks-hub/financialreportingiq": pkg("financialreportingiq", "src/index.ts"),
       "@proworks-hub/financialcontrolsiq": pkg("financialcontrolsiq", "src/index.ts"),
+      "@proworks-hub/spendiq": pkg("spendiq", "src/index.ts"),
+      "@proworks-hub/forecastiq": pkg("forecastiq", "src/index.ts"),
       "@proworks-hub/projectfinanceiq": pkg("projectfinanceiq", "src/index.ts"),
       "@proworks-hub/simulation-lab": pkg("simulation-lab", "src/index.ts"),
       "@proworks-hub/senseiq": pkg("senseiq", "src/index.ts"),
