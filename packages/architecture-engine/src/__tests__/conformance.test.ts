@@ -222,6 +222,50 @@ describe("against the real repository", () => {
     expect(counts.UNKNOWN).toBe(0);
   });
 
+  it("would catch a violation introduced into the real set, not just a fixture", () => {
+    // The gap this closes: every assertion above is of the form "no failures
+    // found". That passes just as happily if the collector returned nothing, or
+    // if the rule silently stopped applying to real packages. Proving the
+    // pipeline is LIVE means proving it can go red.
+    //
+    // Verified by hand once, by adding the Architecture Engine to forgeiq's
+    // dependencies and watching the suite fail. This makes that permanent, so
+    // nobody has to re-derive it.
+    const poisoned = packages.map((p) =>
+      p.packageName === "@proworks-hub/forgeiq"
+        ? { ...p, dependencies: [...p.dependencies, "@proworks-hub/architecture-engine"] }
+        : p,
+    );
+    const findings = evaluateConformance(
+      worldOf({ packages: poisoned, adopted: ["@proworks-hub/architecture-engine"] }),
+    );
+    const violation = of(findings, "ARCH-DEP-ENGINE-ISOLATION", "@proworks-hub/forgeiq");
+    expect(violation?.status).toBe("FAIL");
+    expect(blocksBuild(findings)).toBe(true);
+  });
+
+  it("would catch a Control Center dependency introduced into the real set", () => {
+    const poisoned = packages.map((p) =>
+      p.packageName === "@proworks-hub/costiq"
+        ? { ...p, dependencies: [...p.dependencies, "@proworks-hub/control-plane"] }
+        : p,
+    );
+    const findings = evaluateConformance(
+      worldOf({ packages: poisoned, adopted: ["@proworks-hub/architecture-engine"] }),
+    );
+    expect(of(findings, "ARCH-DEP-NO-CONTROL-CENTER", "@proworks-hub/costiq")?.status).toBe("FAIL");
+    expect(blocksBuild(findings)).toBe(true);
+  });
+
+  it("names a real package in the poisoned set, so the fixture cannot drift out of existence", () => {
+    // If forgeiq or costiq were renamed, the two tests above would silently
+    // stop testing anything: `map` would match nothing and the poisoned set
+    // would equal the clean one.
+    const names = packages.map((p) => p.packageName);
+    expect(names).toContain("@proworks-hub/forgeiq");
+    expect(names).toContain("@proworks-hub/costiq");
+  });
+
   it("is deterministic, so two runs can be diffed", () => {
     const again = evaluateConformance(
       worldOf({ packages, adopted: ["@proworks-hub/architecture-engine"] }),
