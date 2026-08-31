@@ -1,0 +1,41 @@
+{
+  "name": "@proworks-hub/invoiceiq",
+  "version": "0.23.0",
+  "type": "module",
+  "description": "InvoiceIQ \u2014 invoice capture and matching where the type carries the honesty rule: a two-way result has no goods-receipt field to read, a skipped check can never produce matched, tolerance schemes refuse unconfigured dimensions as infinite, duplicate detection computes at most review-required (a human confirms), and supersession never carries a prior approval forward.",
+  "author": "Steven Kreutzer",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Proworks-Hub/proworks-engine-suite.git",
+    "directory": "packages/invoiceiq"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@proworks-hub/contracts": "^0.23.0",
+    "@proworks-hub/core-kit": "^0.23.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "@types/node": "^22.10.2"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "prepare": "tsc -b"
+  }
+}

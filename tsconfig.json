@@ -36,6 +36,8 @@
       "@proworks-hub/debtiq": ["./packages/debtiq/src/index.ts"],
       "@proworks-hub/investmentiq": ["./packages/investmentiq/src/index.ts"],
       "@proworks-hub/financialriskiq": ["./packages/financialriskiq/src/index.ts"],
+      "@proworks-hub/expenseiq": ["./packages/expenseiq/src/index.ts"],
+      "@proworks-hub/invoiceiq": ["./packages/invoiceiq/src/index.ts"],
       "@proworks-hub/projectfinanceiq": ["./packages/projectfinanceiq/src/index.ts"],
       "@proworks-hub/simulation-lab": ["./packages/simulation-lab/src/index.ts"],
       "@proworks-hub/operations-core": ["./packages/operations-core/src/index.ts"],

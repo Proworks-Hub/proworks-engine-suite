@@ -36,6 +36,8 @@ export default defineConfig({
       "@proworks-hub/debtiq": pkg("debtiq", "src/index.ts"),
       "@proworks-hub/investmentiq": pkg("investmentiq", "src/index.ts"),
       "@proworks-hub/financialriskiq": pkg("financialriskiq", "src/index.ts"),
+      "@proworks-hub/expenseiq": pkg("expenseiq", "src/index.ts"),
+      "@proworks-hub/invoiceiq": pkg("invoiceiq", "src/index.ts"),
       "@proworks-hub/projectfinanceiq": pkg("projectfinanceiq", "src/index.ts"),
       "@proworks-hub/simulation-lab": pkg("simulation-lab", "src/index.ts"),
       "@proworks-hub/senseiq": pkg("senseiq", "src/index.ts"),

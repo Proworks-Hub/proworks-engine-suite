@@ -1,0 +1,41 @@
+{
+  "name": "@proworks-hub/expenseiq",
+  "version": "0.23.0",
+  "type": "module",
+  "description": "ExpenseIQ \u2014 expense policy as versioned data over a closed rule vocabulary: total evaluation where a missing input is undeterminable and undeterminable outranks everything, per-diem entitlement with the partial-day factor on M&IE only, mileage with mid-year rate splits and cumulative tiers that never assume zero, ordinal card matching that never scores, and personal-charge candidates that carry reply paths instead of accusations.",
+  "author": "Steven Kreutzer",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Proworks-Hub/proworks-engine-suite.git",
+    "directory": "packages/expenseiq"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@proworks-hub/contracts": "^0.23.0",
+    "@proworks-hub/core-kit": "^0.23.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "@types/node": "^22.10.2"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "prepare": "tsc -b"
+  }
+}

@@ -898,7 +898,7 @@
     "constitutionVersion": "1.0",
     "integrityHash": "sha256:7629d0774c103025de637f4b4d78e06811901f443f3d9d1ecfbccb35ec607c94",
     "sourceDocument": "Documents/ProWorks-Ecosystem/charters/finance-program/ExpenseIQ/01_ExpenseIQ_Master_Engineering_Blueprint.md",
-    "implementationLifecycle": "CHARTERED"
+    "implementationLifecycle": "EXPERIMENTAL"
   },
   {
     "charterId": "charter.specialized.financialcontrolsiq",
@@ -963,7 +963,7 @@
     "constitutionVersion": "1.0",
     "integrityHash": "sha256:b5454bf3e60848600d52f6b90b800771d7e2fe4b75310b532267d2e58d2e419a",
     "sourceDocument": "Documents/ProWorks-Ecosystem/charters/finance-program/InvoiceIQ/01_InvoiceIQ_Master_Engineering_Blueprint.md",
-    "implementationLifecycle": "CHARTERED"
+    "implementationLifecycle": "EXPERIMENTAL"
   },
   {
     "charterId": "charter.specialized.leasefinanceiq",
