@@ -1,0 +1,41 @@
+{
+  "name": "@proworks-hub/paymentsiq",
+  "version": "0.23.0",
+  "type": "module",
+  "description": "PaymentsIQ \u2014 payment instruction lifecycle with a composite duplicate fingerprint that can say WHY two instructions collide, a duplication rule that never re-pays an unknown fate, unmapped scheme statuses that go to review instead of a default, a deterministic risk-class ladder with recorded escalations, and run composition that recommends and cannot release.",
+  "author": "Steven Kreutzer",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Proworks-Hub/proworks-engine-suite.git",
+    "directory": "packages/paymentsiq"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@proworks-hub/contracts": "^0.23.0",
+    "@proworks-hub/core-kit": "^0.23.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "@types/node": "^22.10.2"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "prepare": "tsc -b"
+  }
+}

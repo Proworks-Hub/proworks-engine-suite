@@ -1,0 +1,41 @@
+{
+  "name": "@proworks-hub/investmentiq",
+  "version": "0.23.0",
+  "type": "module",
+  "description": "InvestmentIQ \u2014 investment positions and policy: convention-true yield family (discount, MMY, BEY, EAY), day-count-required accrual, effective-interest amortization to par with the residual declared, six ternary limit tests where indeterminate never rounds down to compliant, disposal with a required method over a declared lot order, and cash-equivalent candidacy that never asserts.",
+  "author": "Steven Kreutzer",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Proworks-Hub/proworks-engine-suite.git",
+    "directory": "packages/investmentiq"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@proworks-hub/contracts": "^0.23.0",
+    "@proworks-hub/core-kit": "^0.23.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "@types/node": "^22.10.2"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "prepare": "tsc -b"
+  }
+}

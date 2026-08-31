@@ -1,0 +1,41 @@
+{
+  "name": "@proworks-hub/financialriskiq",
+  "version": "0.23.0",
+  "type": "module",
+  "description": "FinancialRiskIQ \u2014 exposure aggregation under an honest coverage manifest: partial coverage yields contributedExposure and never exposure, the one-sided determinacy rule proves breaches on partial data but never compliance, FX transaction and translation never sum, settlement exposure never nets, VaR is gated behind documented distributions and cannot be aggregated, and every indeterminate limit outcome names its deficiency.",
+  "author": "Steven Kreutzer",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Proworks-Hub/proworks-engine-suite.git",
+    "directory": "packages/financialriskiq"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@proworks-hub/contracts": "^0.23.0",
+    "@proworks-hub/core-kit": "^0.23.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "@types/node": "^22.10.2"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "prepare": "tsc -b"
+  }
+}

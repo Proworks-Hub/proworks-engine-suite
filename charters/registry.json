@@ -885,7 +885,7 @@
     "constitutionVersion": "1.0",
     "integrityHash": "sha256:97a202c8c482b8db90133dd48dc41855d530bdfd25919b5a808a2839782bf28d",
     "sourceDocument": "Documents/ProWorks-Ecosystem/charters/finance-program/DebtIQ/01_DebtIQ_Master_Engineering_Blueprint.md",
-    "implementationLifecycle": "CHARTERED"
+    "implementationLifecycle": "EXPERIMENTAL"
   },
   {
     "charterId": "charter.specialized.expenseiq",
@@ -937,7 +937,7 @@
     "constitutionVersion": "1.0",
     "integrityHash": "sha256:6d9fca0c5b3ab5ab4ed9071fd6dcd90f23996c42366a8e2ddf7077c8d1e4a9dd",
     "sourceDocument": "Documents/ProWorks-Ecosystem/charters/finance-program/FinancialRiskIQ/01_FinancialRiskIQ_Master_Engineering_Blueprint.md",
-    "implementationLifecycle": "CHARTERED"
+    "implementationLifecycle": "EXPERIMENTAL"
   },
   {
     "charterId": "charter.specialized.investmentiq",
@@ -950,7 +950,7 @@
     "constitutionVersion": "1.0",
     "integrityHash": "sha256:44c55e815f45c4749741d5f8363fb87059b13a3271e339ea11bd551270e31f36",
     "sourceDocument": "Documents/ProWorks-Ecosystem/charters/finance-program/InvestmentIQ/01_InvestmentIQ_Master_Engineering_Blueprint.md",
-    "implementationLifecycle": "CHARTERED"
+    "implementationLifecycle": "EXPERIMENTAL"
   },
   {
     "charterId": "charter.specialized.invoiceiq",
@@ -1002,7 +1002,7 @@
     "constitutionVersion": "1.0",
     "integrityHash": "sha256:143710f17cb09304588047472cff5ea38547f628e7137b1c28c42667cea05ea8",
     "sourceDocument": "Documents/ProWorks-Ecosystem/charters/finance-program/LiquidityIQ/01_LiquidityIQ_Master_Engineering_Blueprint.md",
-    "implementationLifecycle": "CHARTERED"
+    "implementationLifecycle": "EXPERIMENTAL"
   },
   {
     "charterId": "charter.specialized.payablesiq",
@@ -1028,7 +1028,7 @@
     "constitutionVersion": "1.0",
     "integrityHash": "sha256:86bd8062ca0e6eff777bcb6fc262608a90fb5a91d58b2899ec49a1c255b7ca84",
     "sourceDocument": "Documents/ProWorks-Ecosystem/charters/finance-program/PaymentsIQ/01_PaymentsIQ_Master_Engineering_Blueprint.md",
-    "implementationLifecycle": "CHARTERED"
+    "implementationLifecycle": "EXPERIMENTAL"
   },
   {
     "charterId": "charter.specialized.profitabilityiq",
