@@ -50,7 +50,12 @@ function makeMethod(overrides?: Partial<ReplayableMethod<{ x: number }, { y: num
   };
 }
 
-function catalogOf(...methods: ReplayableMethod<never, unknown>[]): MethodCatalogPort {
+// Generic over the method shape: `never` in the input position made this
+// parameter contravariant, so no concrete method was assignable to it. The
+// catalog is heterogeneous by design — which is why `resolve` already erases
+// the type parameters below, and why that cast is the right and only place
+// for the erasure to happen.
+function catalogOf<I, O>(...methods: ReplayableMethod<I, O>[]): MethodCatalogPort {
   return {
     resolve: (r) =>
       (methods.find(
