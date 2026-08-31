@@ -90,6 +90,18 @@ export const HIVE_MAP: readonly HiveComponent[] = [
       "The machinery every Core coordinator shares: registry, routing, timeouts, failure isolation, partial answers. Knows no domain.",
   }),
   component({
+    id: "hive-runtime", name: "Common Hive Runtime", tier: "platform", status: "existing",
+    packageName: "@proworks-hub/hive-runtime",
+    responsibility:
+      "The Common Hive Runtime Standard: contracts and a reference kit every canonical participant conforms to. A specification, not a daemon — there is nothing to start, so conformance never becomes a runtime dependency.",
+  }),
+  component({
+    id: "architecture-engine", name: "Architecture Engine", tier: "platform", status: "existing",
+    packageName: "@proworks-hub/architecture-engine",
+    responsibility:
+      "Evaluates whether the Hive matches its own declared architecture, and holds a Golden Reference showing what conformance looks like. Reports; never authorizes. No engine may depend on it.",
+  }),
+  component({
     id: "control-plane", name: "Hive Control Plane", tier: "platform", status: "existing",
     packageName: "@proworks-hub/control-plane",
     responsibility:

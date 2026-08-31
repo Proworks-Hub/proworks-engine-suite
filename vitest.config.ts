@@ -16,6 +16,8 @@ export default defineConfig({
       "@proworks-hub/forgeiq/demo/firepit": pkg("forgeiq", "src/demo/firepit.ts"),
       "@proworks-hub/forgeiq/demo/metalSign": pkg("forgeiq", "src/demo/metalSign.ts"),
       "@proworks-hub/forgeiq/manufacturing": pkg("forgeiq", "src/manufacturing/buildManufacturingPlan.ts"),
+      "@proworks-hub/hive-runtime": pkg("hive-runtime", "src/index.ts"),
+      "@proworks-hub/architecture-engine": pkg("architecture-engine", "src/index.ts"),
       "@proworks-hub/control-plane/manifests": pkg("control-plane", "src/manifests/index.ts"),
       "@proworks-hub/contracts": pkg("contracts", "src/index.ts"),
       "@proworks-hub/ledgeriq": pkg("ledgeriq", "src/index.ts"),

@@ -74,6 +74,8 @@
       "@proworks-hub/visioniq": ["./packages/visioniq/src/index.ts"],
       "@proworks-hub/platform-events": ["./packages/platform-events/src/index.ts"],
       "@proworks-hub/platform-runtime": ["./packages/platform-runtime/src/index.ts"],
+      "@proworks-hub/hive-runtime": ["./packages/hive-runtime/src/index.ts"],
+      "@proworks-hub/architecture-engine": ["./packages/architecture-engine/src/index.ts"],
       "@proworks-hub/control-plane/manifests": ["./packages/control-plane/src/manifests/index.ts"],
       "@proworks-hub/control-plane": ["./packages/control-plane/src/core/index.ts"]
     }

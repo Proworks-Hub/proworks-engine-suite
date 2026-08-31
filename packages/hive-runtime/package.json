@@ -1,0 +1,24 @@
+{
+  "name": "@proworks-hub/hive-runtime",
+  "version": "0.23.0",
+  "type": "module",
+  "description": "The Common Hive Runtime Standard: contracts and a reference kit every canonical participant conforms to. Specification, not a daemon.",
+  "author": "Steven Kreutzer",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Proworks-Hub/proworks-engine-suite.git",
+    "directory": "packages/hive-runtime"
+  },
+  "publishConfig": { "registry": "https://npm.pkg.github.com" },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "dependencies": {
+    "@proworks-hub/contracts": "^0.23.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": { "typescript": "^5.6.3", "@types/node": "^22.10.2" },
+  "files": ["dist", "README.md"],
+  "scripts": { "build": "tsc -b", "prepare": "tsc -b" }
+}
