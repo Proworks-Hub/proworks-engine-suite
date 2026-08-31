@@ -35,3 +35,8 @@ export * from "./v2/exposure.js";
 // Incident correlation and SOC read models (DEC-028 increment 3, §20-§21).
 export * from "./v2/incident.js";
 export * from "./v2/readModels.js";
+
+// Condition-level effects and containment executor adapters (DEC-028
+// increment 4, directive §19/§23).
+export * from "./v2/conditionEffects.js";
+export * from "./v2/executors.js";
