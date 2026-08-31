@@ -11,3 +11,4 @@ export * from "./chambers/conformance.js";
 export * from "./chambers/goldenReference.js";
 export * from "./modules/collector.js";
 export * from "./traceability/index.js";
+export * from "./modules/migration.js";
