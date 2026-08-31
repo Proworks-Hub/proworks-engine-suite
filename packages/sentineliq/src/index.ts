@@ -18,3 +18,11 @@ export * from "./v2/assurance.js";
 export * from "./v2/threat.js";
 export * from "./v2/governance.js";
 export * from "./v2/telemetry.js";
+
+// Security Observation Plane (DEC-028 increment 1, directive §9-§13): the
+// canonical normalized observation record, Hive security semantic
+// conventions, provider-neutral sensor ports, and Hive-native producers.
+export * from "./v2/securityConventions.js";
+export * from "./v2/observation.js";
+export * from "./v2/providers.js";
+export * from "./v2/hiveSensors.js";
